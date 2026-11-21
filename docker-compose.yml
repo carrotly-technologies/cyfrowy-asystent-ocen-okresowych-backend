@@ -1,21 +1,77 @@
-# Local PostgreSQL for development: `docker compose up -d db`, then
-# DATABASE_URL=postgres://hacknation:hacknation@localhost:5432/hacknation
+# Cyfrowy Asystent Ocen Okresowych: the whole stack with one command.
+#
+#   cp .env.example .env        # set JWT_SECRET, OFFICE_NAME, OFFICE_CITY, POSTGRES_PASSWORD
+#   docker compose up -d --build
+#   -> frontend http://localhost:8080, API http://localhost:3000/api/health
+#
+# The frontend is built from its repository cloned next to this one
+# (FRONTEND_DIR, default ../cyfrowy-asystent-ocen-okresowych-frontend).
+# Local LLM (optional, offline): docker compose --profile llm up -d, then set
+# LLM_BASE_URL=http://ollama:11434/v1 and LLM_MODEL in .env.
+# Development database only: docker compose up -d db
 services:
   db:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: hacknation
-      POSTGRES_USER: hacknation
-      POSTGRES_PASSWORD: hacknation
+      POSTGRES_DB: ${POSTGRES_DB:-hacknation}
+      POSTGRES_USER: ${POSTGRES_USER:-hacknation}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hacknation}
     ports:
-      - '5432:5432'
+      # Bound to localhost only: the database is never exposed to the network.
+      - '127.0.0.1:${DB_PORT:-5432}:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U hacknation -d hacknation']
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 5s
       timeout: 3s
       retries: 10
 
+  backend:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-hacknation}:${POSTGRES_PASSWORD:-hacknation}@db:5432/${POSTGRES_DB:-hacknation}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      JWT_SECRET: ${JWT_SECRET:-}
+      DEMO_TODAY: ${DEMO_TODAY:-2026-11-21}
+      FEATURE_ASSISTANT: ${FEATURE_ASSISTANT:-true}
+      OFFICE_NAME: ${OFFICE_NAME:-}
+      OFFICE_CITY: ${OFFICE_CITY:-}
+      OFFICE_LOGO_URL: ${OFFICE_LOGO_URL:-}
+      OBJECTION_RECIPIENT_A: ${OBJECTION_RECIPIENT_A:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+    ports:
+      - '${BACKEND_PORT:-3000}:3000'
+
+  frontend:
+    build:
+      context: ${FRONTEND_DIR:-../cyfrowy-asystent-ocen-okresowych-frontend}
+      args:
+        # The address under which users' browsers reach the API.
+        VITE_API_URL: ${PUBLIC_API_URL:-http://localhost:3000}
+        VITE_DEMO_ACCOUNTS: ${VITE_DEMO_ACCOUNTS:-}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - '${FRONTEND_PORT:-8080}:80'
+
+  # Optional local LLM (no data leaves the office): docker compose --profile llm up -d
+  ollama:
+    image: ollama/ollama:0.6.8
+    profiles: ['llm']
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+
 volumes:
   db-data:
+  ollama-data:
