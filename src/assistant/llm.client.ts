@@ -19,21 +19,40 @@ export class LlmClient {
   private readonly logger = new Logger(LlmClient.name);
   private readonly baseUrl?: string;
   private readonly apiKey?: string;
-  private readonly model?: string;
+  /** LLM_MODEL may list several models separated by commas; they are tried in order. */
+  private readonly models: string[];
 
   constructor(config: ConfigService) {
     this.baseUrl = config.get<string>('LLM_BASE_URL')?.replace(/\/+$/, '');
     this.apiKey = config.get<string>('LLM_API_KEY');
-    this.model = config.get<string>('LLM_MODEL');
+    this.models = (config.get<string>('LLM_MODEL') ?? '')
+      .split(',')
+      .map((m) => m.trim())
+      .filter(Boolean);
   }
 
   get configured(): boolean {
-    return Boolean(this.baseUrl && this.model);
+    return Boolean(this.baseUrl && this.models.length > 0);
   }
 
-  /** Returns the reply text, or null when not configured or the call fails. */
+  /**
+   * Returns the reply text, or null when not configured or every model fails.
+   * Free hosted models are often rate-limited, so each configured model is
+   * tried in turn.
+   */
   async chat(messages: ChatMessage[]): Promise<string | null> {
     if (!this.configured) return null;
+    for (const model of this.models) {
+      const text = await this.chatWith(model, messages);
+      if (text) return text;
+    }
+    return null;
+  }
+
+  private async chatWith(
+    model: string,
+    messages: ChatMessage[],
+  ): Promise<string | null> {
     try {
       const res = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
@@ -42,26 +61,31 @@ export class LlmClient {
           ...(this.apiKey ? { authorization: `Bearer ${this.apiKey}` } : {}),
         },
         body: JSON.stringify({
-          model: this.model,
+          model,
           messages,
           temperature: 0.1,
-          max_tokens: 900,
+          // Reasoning models spend part of the budget before the answer.
+          max_tokens: 2500,
         }),
         signal: AbortSignal.timeout(LLM_TIMEOUT_MS),
       });
+      const raw = await res.text();
       if (!res.ok) {
         this.logger.warn(
-          `LLM HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`,
+          `LLM ${model} HTTP ${res.status}: ${raw.slice(0, 200)}`,
         );
         return null;
       }
-      const data = (await res.json()) as {
+      // Some providers emit raw control characters inside JSON strings.
+      // eslint-disable-next-line no-control-regex
+      const data = JSON.parse(raw.replace(/[\u0000-\u001f]/g, ' ')) as {
         choices?: { message?: { content?: string } }[];
       };
       const text = data.choices?.[0]?.message?.content?.trim();
+      if (!text) this.logger.warn(`LLM ${model} returned an empty answer`);
       return text ? text : null;
     } catch (error) {
-      this.logger.warn(`LLM call failed: ${String(error)}`);
+      this.logger.warn(`LLM ${model} call failed: ${String(error)}`);
       return null;
     }
   }
