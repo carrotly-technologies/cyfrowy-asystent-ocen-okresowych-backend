@@ -64,7 +64,7 @@ describe('previous assessment (part II item 10)', () => {
     // Up to the opening talk everything starts empty, as the rest of the form.
     expect(seed('c-005').previousAssessment).toBeNull();
     expect(seed('c-002').previousAssessment).toBeNull(); // pracownik
-    expect(seed('c-004').previousAssessment).toBeNull(); // first assessment
+    expect(seed('c-004').previousAssessment).toBeNull(); // newly hired
   });
 
   it('merges fields, normalises the level and validates it', () => {
@@ -89,24 +89,17 @@ describe('previous assessment (part II item 10)', () => {
     ).toBeNull();
   });
 
-  it('is a draft before signing, locked after it and in the first assessment', () => {
+  it('is a draft before signing, locked after it and without a sheet', () => {
     expect(
       applyPatch(seed('c-003'), { previousAssessment: null }, TODAY)
         .previousAssessment,
     ).toBeNull();
     expect(() =>
-      applyPatch(seed('c-002'), { previousAssessment: null }, TODAY),
+      applyPatch(seed('c-004'), { previousAssessment: null }, TODAY),
     ).toThrow(CaseRuleError);
     expect(() =>
       applyPatch(seed('c-006'), { previousAssessment: null }, TODAY),
     ).toThrow(/zablokowane/);
-    expect(() =>
-      applyPatch(
-        seed('c-004'),
-        { promotionRequest: { attached: 'NO' } },
-        TODAY,
-      ),
-    ).toThrow(/nie pierwszej oceny/);
   });
 });
 

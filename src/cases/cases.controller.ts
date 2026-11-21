@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { Can } from '@nestjs/authorization';
 import { Roles } from '../auth/roles.decorator.js';
-import type { CaseAction, CaseDetail, CaseSummary } from './case.types.js';
+import type { CaseDetail, CaseSummary } from './case.types.js';
 import {
   type ActionInput,
   actionSchema,
@@ -41,13 +41,13 @@ export class CasesController {
   }
 
   @Get('cases')
-  @Roles('SUPERVISOR', 'HR')
+  @Roles('SUPERVISOR', 'EMPLOYEE', 'HR')
   list(): CaseSummary[] {
     return this.cases.visibleCases();
   }
 
   @Get('cases/:id')
-  @Roles('SUPERVISOR', 'HR')
+  @Roles('SUPERVISOR', 'EMPLOYEE', 'HR')
   findOne(@Param('id') id: string): Promise<CaseDetail> {
     return this.cases.view(id);
   }
@@ -71,13 +71,13 @@ export class CasesController {
   }
 
   @Post('cases/:id/actions')
-  @Roles('SUPERVISOR')
+  @Roles('SUPERVISOR', 'EMPLOYEE')
   @HttpCode(200)
   action(
     @Param('id') id: string,
     @Body({ schema: actionSchema }) body: ActionInput,
   ): Promise<CaseDetail> {
-    return this.cases.action(id, body.action as CaseAction);
+    return this.cases.action(id, body.action);
   }
 
   /** Demo tool: any signed-in role may restore the seed. */

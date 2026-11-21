@@ -6,7 +6,7 @@ import { AuthenticationRoot, AuthModule } from './auth/auth.module.js';
 import { AppConfigModule } from './config/app-config.module.js';
 import { AssistantModule } from './assistant/assistant.module.js';
 import { AssessmentsModule } from './assessments/assessments.module.js';
-import { CompetencyModelModule } from './competency-model/competency-model.module.js';
+import { CriteriaModule } from './criteria/criteria.module.js';
 import { CasesModule } from './cases/cases.module.js';
 import { CivilServiceGradesModule } from './civil-service-grades/civil-service-grades.module.js';
 import { DatabaseModule } from './database/database.module.js';
@@ -14,7 +14,6 @@ import { DocsModule } from './docs/docs.module.js';
 import { HealthModule } from './health/health.module.js';
 import { HrModule } from './hr/hr.module.js';
 import { JournalModule } from './journal/journal.module.js';
-import { OspModule } from './osp/osp.module.js';
 import { SheetsModule } from './sheets/sheets.module.js';
 
 @Module({
@@ -27,11 +26,10 @@ import { SheetsModule } from './sheets/sheets.module.js';
     AuthModule,
     HealthModule,
     AppConfigModule,
-    CompetencyModelModule,
+    CriteriaModule,
     SheetsModule,
     CivilServiceGradesModule,
     AssessmentsModule,
-    OspModule,
     CasesModule,
     HrModule,
     AssistantModule,

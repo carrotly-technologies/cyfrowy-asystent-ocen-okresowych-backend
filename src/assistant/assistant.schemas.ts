@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { FIRST_STAGES, PERIODIC_STAGES } from '../cases/case.types.js';
+import { STAGES } from '../cases/case.types.js';
 
-export const STAGE_IDS = [...PERIODIC_STAGES, ...FIRST_STAGES] as const;
+export const STAGE_IDS = STAGES;
 
 export const askSchema = z.object({
   question: z.string().trim().min(3).max(2000),

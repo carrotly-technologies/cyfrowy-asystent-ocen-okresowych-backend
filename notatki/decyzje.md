@@ -2,6 +2,14 @@
 
 Decyzje dotyczące interpretacji przepisów i dokumentów z `docs/`, podjęte w trakcie prac. Każdy wpis: data, decyzja, źródło, stan poprzedni.
 
+## 2026-11-21: Etapy oceny okresowej i potwierdzenia ocenianego (faza 0 Cyfrowego Asystenta)
+
+- **Decyzja:** proces ma 7 etapów: `SHEET_SELECTION` (arkusz, ≤ 3 kryteria dodatkowe bez powtórzeń, termin oceny), `OPENING_TALK` (rozmowa rozpoczynająca, potwierdzenie oceniającego), `PART_I_ACK` (potwierdzenie ocenianego), `OBSERVATION`, `ASSESSMENT` (rozmowa oceniająca, oceny, uzasadnienie, IPRZ, część III), `SIGNATURE` (podpis i przekazanie), `ACKNOWLEDGEMENT` (zapoznanie). Potwierdzenia `EMPLOYEE_ACK_PART_I` i `EMPLOYEE_ACK_ASSESSMENT` wykonuje tylko oceniany ze swojego konta (rola `EMPLOYEE`). Podpis wymaga odnotowania rozmowy oceniającej (`ASSESSMENT_TALK_HELD`).
+- **Źródło:** §3, §5–§6, §10–§12 rozp. PRM z 4.04.2016; art. 81–83 ustawy o służbie cywilnej; „use cases – opis” z materiałów wyzwania.
+- **Wcześniej (Kompas Kompetencji):** analiza OSP, „Wstępny formularz”, ścieżka pierwszej oceny, potwierdzenia ocenianego klikane przez przełożonego.
+- **Arkusz:** propozycja regułą (kierownik urzędu → A, bezpośrednie kierowanie pracownikami → B, pozostali → C), zatwierdza oceniający.
+- **Kryteria:** wykaz z załącznika nr 1 ma 14 pozycji (nie 13); wszystkie są w `src/criteria/data/criteria.data.ts`.
+
 ## 2026-11-21: Część II arkusza edytowalna przed rozmową oceniającą (wersja robocza)
 
 - **Decyzja:** część II arkusza oceny okresowej (oceny wskaźników, oceny cząstkowe, notatki, uzasadnienie, IPRZ, poprzednia ocena, wniosek o kolejny stopień służbowy i część III) można zapisywać roboczo od chwili wybrania arkusza (etap „Wstępny formularz”) aż do podpisu oceniającego. Po podpisie (`SIGN_ASSESSMENT`) pola są zablokowane. Podpis nadal jest dostępny dopiero po rozpoczęciu rozmowy oceniającej (`START_ASSESSMENT`).

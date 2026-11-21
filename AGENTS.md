@@ -29,9 +29,9 @@ Nest's packages are ESM only, and this project is ESM too: relative imports end 
 
 In this project, `src/main.ts` creates the app and listens on `PORT` (3000 by default), `src/configure-app.ts` sets the global `api` prefix and CORS for `FRONTEND_URL` (shared with e2e tests), and `src/app.module.ts` is the root module (global `ConfigModule`) that imports the feature modules, such as `src/health`. Unit tests sit beside the code as `*.spec.ts` and e2e tests are in `test/`; Vitest runs them (`npm test`, `npm run test:e2e`).
 
-## Wymagania wdrożeniowe (zadanie „Kompas Kompetencji”)
+## Wymagania wdrożeniowe (Cyfrowy Asystent Ocen Okresowych)
 
-Te wymagania z opisu zadania (`docs/zadanie/opis-zadania-kompas-kompetencji.pdf`, rozdz. 5, tekst w `docs/tekst/zadanie/`) obowiązują przy każdej zmianie, w obu repo (backend i [hacknation-frontend](https://github.com/carrotly-technologies/hacknation-frontend)). Jury ocenia potencjał wdrożeniowy, więc zmiana, która łamie którąś z poniższych reguł, wymaga uzasadnienia w opisie PR.
+Te wymagania wdrożeniowe (wspólne dla wyzwań KPRM: neutralność technologiczna, łatwe wdrożenie, różne urzędy, łatwa aktualizacja, zgodność z prawem, elastyczność na zmiany przepisów) obowiązują przy każdej zmianie, w obu repo (backend i [cyfrowy-asystent-ocen-okresowych-frontend](https://github.com/carrotly-technologies/cyfrowy-asystent-ocen-okresowych-frontend)). Jury ocenia potencjał wdrożeniowy, więc zmiana, która łamie którąś z poniższych reguł, wymaga uzasadnienia w opisie PR.
 
 Rozwiązanie powinno być:
 
@@ -60,15 +60,15 @@ Rozwiązanie powinno być:
    - Moduły Nest są małe i niezależne (`src/<feature>/`), żeby poprawka jednego obszaru nie wymagała zmian w innych.
 
 5. **Zgodne z przepisami**: uwzględnia przepisy ustawy o służbie cywilnej oraz regulacje dotyczące ochrony danych.
-   - Źródłem prawdy są dokumenty w `docs/` (ustawa, rozporządzenia z 2015 i 2016 r., model kompetencji, poradniki); spis w `docs/README.md`, stan zgodności w `docs/audyt-zgodnosci.md`. Nie wymyślaj reguł, których tam nie ma.
+   - Źródłem prawdy są dokumenty w `docs/` (ustawa, rozporządzenie z 2016 r., poradniki); spis w `docs/README.md`, stan zgodności w `docs/audyt-zgodnosci.md`. Nie wymyślaj reguł, których tam nie ma.
    - RODO i minimalizacja danych: przetwarzamy tylko pola potrzebne do oceny. Żadnych danych osobowych (imię, nazwisko, PESEL, treść ocen) w logach.
    - Do zewnętrznego LLM wysyłamy tylko to, co potrzebne do odpowiedzi. Bez identyfikatorów pracownika, jeśli pytanie ich nie wymaga.
-   - AI jest wyłącznie doradcze: może sugerować (np. `src/assessments/suggest-level.rules.ts`), ale nigdy nie ustala ostatecznej oceny. Decyzja zawsze należy do przełożonego, co widać w API i w UI.
+   - AI i reguły są wyłącznie doradcze: mogą sugerować (np. arkusz w `src/sheets/sheet-suggestion.rules.ts`), ale nigdy nie ustala ostatecznej oceny. Decyzja zawsze należy do przełożonego, co widać w API i w UI.
    - Asystent odpowiada na podstawie bazy wiedzy, wskazuje źródło, a przy braku informacji mówi to wprost, zamiast zgadywać.
-   - Dostęp do danych pracowników tylko dla właściwej roli (przełożony: własny zespół, HR: monitoring).
+   - Dostęp do danych pracowników tylko dla właściwej roli (przełożony: własny zespół, oceniany: tylko własne oceny, HR: monitoring).
 
 6. **Elastyczne i otwarte na modyfikacje wynikające ze zmian przepisów**, tak żeby aktualizacja modułów opartych na regulacjach była prosta i nie wymagała przebudowy całego systemu.
-   - Logika wynikająca z przepisów żyje wyłącznie w plikach `*.rules.ts` i danych `data/*.data.ts`, np. `src/cases/deadlines.rules.ts`, `src/cases/stages.rules.ts`, `src/cases/formal-check.rules.ts`, `src/assessments/evaluate.rules.ts`, `src/assessments/suggest-level.rules.ts`, `src/competency-model/data/model.data.ts`. Kontrolery i serwisy tylko je wywołują.
+   - Logika wynikająca z przepisów żyje wyłącznie w plikach `*.rules.ts` i danych `data/*.data.ts`, np. `src/cases/deadlines.rules.ts`, `src/cases/stages.rules.ts`, `src/cases/formal-check.rules.ts`, `src/assessments/evaluate.rules.ts`, `src/sheets/sheet-suggestion.rules.ts`, `src/criteria/data/criteria.data.ts`. Kontrolery i serwisy tylko je wywołują.
    - Każda stała z przepisu (termin, skala, próg, liczba kryteriów) ma jedno miejsce w kodzie i komentarz ze źródłem, np. `// § 7 ust. 2 rozp. PRM z 4.04.2016 (Dz.U. 2016 poz. 470)`.
    - Frontend nie duplikuje stałych prawnych: skale, terminy i progi dostaje z API.
    - Zmiana przepisu = edycja jednego pliku reguł + jego testu. Jeśli wymaga zmian w wielu modułach, najpierw wydziel regułę.

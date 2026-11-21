@@ -5,30 +5,8 @@ import { SHEET_IDS } from '../sheets/sheet.types.js';
 z.config(z.locales.pl());
 
 const sheetId = z.enum(SHEET_IDS, {
-  error: 'sheetId musi mieć jedną z wartości: A, B, C, FIRST.',
+  error: 'sheetId musi mieć jedną z wartości: A, B, C.',
 });
-
-const indicatorPoints = z
-  .union(
-    [1, 3, 5, 7, 9].map((p) => z.literal(p)),
-    {
-      error:
-        'Ocena wskaźnika musi wynosić 1, 3, 5, 7 lub 9 pkt albo null (brak podstaw do oceny).',
-    },
-  )
-  .nullable();
-
-export const suggestLevelSchema = z.object({
-  sheetId,
-  competencyId: z.string().min(1),
-  indicatorRatings: z.array(
-    z.object({
-      indicatorId: z.string().min(1),
-      points: indicatorPoints,
-    }),
-  ),
-});
-export type SuggestLevelRequest = z.infer<typeof suggestLevelSchema>;
 
 export const evaluateSchema = z.object({
   sheetId,
@@ -38,14 +16,5 @@ export const evaluateSchema = z.object({
       points: z.number(),
     }),
   ),
-  firstAssessment: z
-    .object({
-      examPassed: z.enum(['YES', 'NO', 'NOT_APPLICABLE'], {
-        error:
-          'examPassed musi mieć jedną z wartości: YES, NO, NOT_APPLICABLE.',
-      }),
-      reportSubmittedOnTime: z.boolean(),
-    })
-    .optional(),
 });
 export type EvaluateRequest = z.infer<typeof evaluateSchema>;

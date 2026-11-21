@@ -1,18 +1,13 @@
-import {
-  listPoints,
-  RO_2016,
-  RP_2015,
-} from '../assessments/assessment.format.js';
+import { listPoints, RO_2016 } from '../assessments/assessment.format.js';
 import {
   caseCriteria,
   computeEvaluation,
   criterionName,
-  reportOnTime,
   sheetOf,
 } from './case.rules.js';
 import type { CaseRecord, FormalCheckItem } from './case.types.js';
 import { formatDatePl } from './dates.js';
-import { firstAssessmentWindow, USC } from './deadlines.rules.js';
+import { USC } from './deadlines.rules.js';
 import { promotionRequestCheck } from './promotion.rules.js';
 
 const quoted = (ids: readonly string[]) =>
@@ -33,18 +28,16 @@ export function formalCheck(
       {
         id: 'SHEET_SELECTED',
         ok: false,
-        message:
-          'Nie wybrano arkusza oceny: zatwierdź analizę opisu stanowiska.',
+        message: 'Nie wybrano arkusza oceny: wybierz arkusz A, B albo C.',
         legalBasis: `§3 ${RO_2016}`,
       },
     ];
   }
-  const isFirst = sheet.kind === 'FIRST';
   const criteria = caseCriteria(record);
   const evaluation = computeEvaluation(record, today);
   const items: FormalCheckItem[] = [];
 
-  if (!isFirst) {
+  {
     const confirmed =
       record.partI.confirmedByEvaluatorOn !== null &&
       record.partI.acknowledgedByEmployeeOn !== null;
@@ -64,11 +57,9 @@ export function formalCheck(
     ok: missing.length === 0,
     message:
       missing.length === 0
-        ? `Wszystkie ${isFirst ? 'elementy' : 'kryteria'} (${criteria.length}) mają ocenę cząstkową.`
+        ? `Wszystkie kryteria (${criteria.length}) mają ocenę cząstkową.`
         : `Brak oceny cząstkowej: ${quoted(missing)}.`,
-    legalBasis: isFirst
-      ? `§9 ust. 1 ${RP_2015}`
-      : `§11 ust. 1 pkt 1 ${RO_2016}`,
+    legalBasis: `§11 ust. 1 pkt 1 ${RO_2016}`,
   });
 
   const outOfScale = Object.entries(record.decisions)
@@ -81,12 +72,10 @@ export function formalCheck(
       outOfScale.length === 0
         ? `Oceny cząstkowe mieszczą się w skali arkusza (${listPoints(sheet.scale)} pkt).`
         : `Ocena spoza skali ${listPoints(sheet.scale)} pkt: ${quoted(outOfScale)}.`,
-    legalBasis: isFirst
-      ? `§9 ust. 1 ${RP_2015}`
-      : `§11 ust. 1 pkt 1 ${RO_2016}`,
+    legalBasis: `§11 ust. 1 pkt 1 ${RO_2016}`,
   });
 
-  if (!isFirst) {
+  {
     const additional = record.partI.additionalCriteria;
     const allowed = new Set(criteria);
     const foreign = Object.keys(record.decisions).filter(
@@ -128,39 +117,14 @@ export function formalCheck(
     });
   }
 
-  if (isFirst) {
-    const onTime = reportOnTime(record.firstConditions, today);
-    const exam = record.firstConditions?.examPassed ?? null;
-    const filled = exam !== null && onTime !== null;
-    const parts: string[] = [];
-    if (exam === null)
-      parts.push(
-        'wynik egzaminu ze służby przygotowawczej (TAK / NIE / NIE DOTYCZY)',
-      );
-    if (onTime === null)
-      parts.push('informację o złożeniu sprawozdania w terminie');
-    items.push({
-      id: 'FIRST_CONDITIONS_FILLED',
-      ok: filled,
-      message: filled
-        ? 'Warunki pierwszej oceny są uzupełnione (egzamin, sprawozdanie w terminie).'
-        : `Uzupełnij warunki pierwszej oceny: ${parts.join(' oraz ')}.`,
-      legalBasis: `§10 ust. 1 pkt 1–2 ${RP_2015}`,
-    });
-
-    const window = firstAssessmentWindow(record.person.hiredOn);
-    const inWindow = today >= window.from && today <= window.to;
-    items.push({
-      id: 'FIRST_ASSESSMENT_WINDOW',
-      ok: inWindow,
-      message: inWindow
-        ? `Ocena mieści się w terminie: od ${formatDatePl(window.from)} do ${formatDatePl(window.to)}.`
-        : today < window.from
-          ? `Pierwszej oceny można dokonać dopiero po upływie 8 miesięcy pracy, od ${formatDatePl(window.from)}.`
-          : `Minął termin pierwszej oceny (${formatDatePl(window.to)}: miesiąc przed końcem umowy).`,
-      legalBasis: `art. 38 ust. 1 ${USC}`,
-    });
-  }
+  items.push({
+    id: 'ASSESSMENT_TALK_HELD',
+    ok: record.assessmentTalkOn !== null,
+    message: record.assessmentTalkOn
+      ? `Rozmowę oceniającą przeprowadzono ${formatDatePl(record.assessmentTalkOn)}.`
+      : 'Przed sporządzeniem oceny na piśmie przeprowadź rozmowę oceniającą.',
+    legalBasis: `§10 ${RO_2016}`,
+  });
 
   const justified = record.justification.trim().length > 0;
   const negative = evaluation?.result === 'NEGATIVE';
@@ -174,21 +138,11 @@ export function formalCheck(
         : negative
           ? 'Ocena jest negatywna: wpisz uzasadnienie (pole obowiązkowe).'
           : 'Ocena jest pozytywna: uzasadnienie jest opcjonalne, ale zalecane.',
-    legalBasis: isFirst ? `§10 ust. 4 ${RP_2015}` : `§11 ust. 3–4 ${RO_2016}`,
+    legalBasis: `§11 ust. 3–4 ${RO_2016}`,
   });
 
   const hasIprz = record.iprz.trim().length > 0;
-  if (isFirst) {
-    const ok = !(hasIprz && negative);
-    items.push({
-      id: 'DEVELOPMENT_ONLY_IF_POSITIVE',
-      ok,
-      message: ok
-        ? 'Wnioski dotyczące rozwoju zawodowego są opcjonalne i dopuszczalne tylko przy ocenie pozytywnej.'
-        : 'Ocena jest negatywna: usuń wnioski dotyczące rozwoju zawodowego (dopuszczalne tylko przy ocenie pozytywnej).',
-      legalBasis: `§10 ust. 5–6 ${RP_2015}`,
-    });
-  } else {
+  {
     items.push({
       id: 'IPRZ_REQUIRED',
       ok: hasIprz,

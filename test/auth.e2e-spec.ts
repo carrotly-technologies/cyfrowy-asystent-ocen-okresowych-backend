@@ -50,7 +50,7 @@ describe('Authentication, roles and permissions (e2e)', () => {
     it('returns an 8 h bearer token and the user', async () => {
       const res = await anon()
         .post('/api/auth/login')
-        .send({ login: 'J.Kaminska', password: 'Kompas2026!' })
+        .send({ login: 'J.Kaminska', password: 'Ocena2026!' })
         .expect(200);
       expect(res.body).toMatchObject({
         tokenType: 'Bearer',
@@ -92,7 +92,7 @@ describe('Authentication, roles and permissions (e2e)', () => {
       ['get', '/api/hr/overview'],
       ['get', '/api/admin/users'],
       ['get', '/api/docs'],
-      ['get', '/api/competency-model'],
+      ['get', '/api/criteria'],
       ['post', '/api/demo/reset'],
     ] as const)('%s %s', async (method, path) => {
       await anon()[method](path).expect(401);
@@ -130,12 +130,15 @@ describe('Authentication, roles and permissions (e2e)', () => {
     it('lists only own cases', async () => {
       const mine = await as(kaminska).get('/api/cases').expect(200);
       expect(mine.body.map((c: { id: string }) => c.id)).toEqual([
+        'c-000',
         'c-001',
         'c-002',
         'c-003',
         'c-004',
         'c-005',
         'c-006',
+        'c-007',
+        'c-008',
       ]);
       const theirs = await as(sikora).get('/api/cases').expect(200);
       expect(theirs.body.map((c: { id: string }) => c.id)).toEqual([
@@ -157,8 +160,8 @@ describe('Authentication, roles and permissions (e2e)', () => {
         .send(OBSERVATION)
         .expect(403);
       await as(sikora)
-        .post('/api/cases/c-002/actions')
-        .send({ action: 'ACCEPT_OSP_ANALYSIS' })
+        .post('/api/cases/c-004/actions')
+        .send({ action: 'ACCEPT_SHEET' })
         .expect(403);
       await as(kaminska).get('/api/cases/c-101').expect(403);
       await as(sikora).get('/api/cases/c-101').expect(200);
@@ -189,7 +192,7 @@ describe('Authentication, roles and permissions (e2e)', () => {
     it('sees the HR panel and every case', async () => {
       await as(hr).get('/api/hr/overview').expect(200);
       const all = await as(hr).get('/api/cases').expect(200);
-      expect(all.body).toHaveLength(10);
+      expect(all.body).toHaveLength(14);
       const detail = await as(hr).get('/api/cases/c-001').expect(200);
       expect(detail.body.status).toBe('W_TOKU');
     });
@@ -210,7 +213,7 @@ describe('Authentication, roles and permissions (e2e)', () => {
 
     it('uses the shared resources', async () => {
       await as(hr).get('/api/docs').expect(200);
-      await as(hr).get('/api/competency-model').expect(200);
+      await as(hr).get('/api/criteria').expect(200);
       await as(hr).get('/api/assistant/suggestions').expect(200);
     });
   });
@@ -224,6 +227,8 @@ describe('Authentication, roles and permissions (e2e)', () => {
         'a.pawlak',
         'a.lis',
         'admin',
+        'a.nowak',
+        'p.wojcik',
       ]);
       expect(JSON.stringify(res.body)).not.toContain('scrypt');
     });

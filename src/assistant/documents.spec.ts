@@ -25,10 +25,8 @@ describe('source documents', () => {
   it('lists every original in docs/ (not the text versions)', () => {
     const files = new Set(SOURCE_DOCUMENTS.map((d) => d.file));
     for (const f of [
-      'zadanie/opis-zadania-kompas-kompetencji.pdf',
-      'zadanie/regulamin-zadania.pdf',
-      'opisy-stanowisk/osp-dsi-wwi-5-radca.docx',
-      'model-kompetencji/model-kompetencji.xlsx',
+      'ocena-okresowa/rozporzadzenie-oceny-okresowe-2016.pdf',
+      'model-kompetencji/wykaz-kryteriow-oceny-zal-1-rozporzadzenie-2016.pdf',
     ]) {
       expect(files.has(f)).toBe(true);
     }
@@ -62,12 +60,10 @@ describe('source documents', () => {
     });
   });
 
-  it('marks the hackathon materials and sample OSPs as not indexed', () => {
+  it('marks the criteria catalogue PDF as not indexed', () => {
     const notIndexed = listDocuments()
       .filter((d) => !d.indexed)
       .map((d) => d.id);
-    expect(notIndexed).toEqual(
-      expect.arrayContaining(['opis-zadania', 'regulamin', 'osp-radca']),
-    );
+    expect(notIndexed).toEqual(expect.arrayContaining(['wykaz-kryteriow']));
   });
 });

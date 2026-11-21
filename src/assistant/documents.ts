@@ -120,52 +120,6 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     indexed: false,
     note: 'treść w bazie jako załącznik rozporządzenia z 2016 r.',
   },
-  {
-    id: 'sciezki-oceny',
-    title: 'Kompas Kompetencji: ścieżki oceny (grafika koncepcyjna)',
-    description: 'jak model kompetencji łączy się z oceną okresową',
-    file: 'model-kompetencji/kompas-kompetencji-sciezki-oceny.png',
-    indexed: false,
-  },
-  {
-    id: 'osp-starszy-specjalista',
-    title:
-      'Przykładowy OSP: starszy specjalista, Departament Cyberbezpieczeństwa',
-    description: 'przykład opisu stanowiska pracy z wymaganiami',
-    file: 'opisy-stanowisk/osp-dc-wzksoic-6-starszy-specjalista.docx',
-    indexed: false,
-  },
-  {
-    id: 'osp-radca',
-    title:
-      'Przykładowy OSP: radca, Departament Rozwoju i Bezpieczeństwa Sztucznej Inteligencji',
-    description: 'przykład opisu stanowiska pracy z wymaganiami',
-    file: 'opisy-stanowisk/osp-dsi-wwi-5-radca.docx',
-    indexed: false,
-  },
-  {
-    id: 'osp-naczelnik',
-    title:
-      'Przykładowy OSP: naczelnik wydziału, Departament Współpracy Międzynarodowej',
-    description: 'przykład opisu stanowiska kierowniczego z wymaganiami',
-    file: 'opisy-stanowisk/osp-dwm-wkam-1-naczelnik-wydzialu.docx',
-    indexed: false,
-  },
-  {
-    id: 'opis-zadania',
-    title: 'Opis zadania „Kompas Kompetencji” (HackNation 2026)',
-    description:
-      'wymagania zadania hackathonu, na których opiera się aplikacja',
-    file: 'zadanie/opis-zadania-kompas-kompetencji.pdf',
-    indexed: false,
-  },
-  {
-    id: 'regulamin',
-    title: 'Regulamin zadania',
-    description: 'zasady zadania hackathonu',
-    file: 'zadanie/regulamin-zadania.pdf',
-    indexed: false,
-  },
 ];
 
 const byId = new Map(SOURCE_DOCUMENTS.map((d) => [d.id, d]));

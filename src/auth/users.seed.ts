@@ -1,9 +1,10 @@
 import type { User } from './user.types.js';
 
 /**
- * Demo accounts (fictional people). Every password is `Kompas2026!` (see
+ * Demo accounts (fictional people). Every password is `Ocena2026!` (see
  * README); hashes are scrypt from `node scripts/hash-password.mjs <password>`.
- * Supervisors are linked to EVALUATORS in src/cases/seed/seed.data.ts.
+ * Supervisors are linked to EVALUATORS and employees (EMPLOYEE, the assessed
+ * person) to `Person.id` of cases in src/cases/seed/seed.data.ts.
  */
 export const USER_SEED: readonly (User & { passwordHash: string })[] = [
   {
@@ -15,8 +16,9 @@ export const USER_SEED: readonly (User & { passwordHash: string })[] = [
     position: 'Naczelnik wydziału',
     unit: 'Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych',
     evaluatorId: 'ev-kaminska',
+    personId: null,
     passwordHash:
-      '$scrypt$ln=17,r=8,p=1$muCUlBLCt06LxcoiuAUJOA$iCkYIK9Mn+/nXMxyhfvS/n+cGi2bb/xX3fF2fM75L9E',
+      '$scrypt$ln=17,r=8,p=1$jzd/0OSRw48ZbZglQQSqhw$ptsLTqhtw6rYDWTuk319LpDZ3sK09stdqz78f5pW3mY',
   },
   {
     id: 'u-sikora',
@@ -27,8 +29,9 @@ export const USER_SEED: readonly (User & { passwordHash: string })[] = [
     position: 'Naczelnik wydziału',
     unit: 'Wydział Budżetu i Finansów, Biuro Dyrektora Generalnego',
     evaluatorId: 'ev-sikora',
+    personId: null,
     passwordHash:
-      '$scrypt$ln=17,r=8,p=1$MSpHBp94rpSu/maQVuJQ3g$0sMx7F0dMorcvQLk/wFGRCBiU573x+Z35j9aqKMp5mY',
+      '$scrypt$ln=17,r=8,p=1$vN02hjw3WtGGUtZm0xztnw$1gBvW1l3fJFjp1JDjQTkhL2l1t7ddjr0VQO5E2HT39w',
   },
   {
     id: 'u-pawlak',
@@ -39,8 +42,9 @@ export const USER_SEED: readonly (User & { passwordHash: string })[] = [
     position: 'Naczelnik wydziału',
     unit: 'Wydział Legislacji, Departament Prawny',
     evaluatorId: 'ev-pawlak',
+    personId: null,
     passwordHash:
-      '$scrypt$ln=17,r=8,p=1$WSDKoFIVqLBuRVhi24CqlA$hZdea8jTqKwU848ffQjta4iaGY+WCD2hPpsHB+x4yjE',
+      '$scrypt$ln=17,r=8,p=1$XfprfNbJskmMw4Tq+T0h9A$m3n9H8BJ3vtV+pzbXpyCqZ6ns5j2ewE8VZS5R4Cj+4s',
   },
   {
     id: 'u-lis',
@@ -51,8 +55,9 @@ export const USER_SEED: readonly (User & { passwordHash: string })[] = [
     position: 'Specjalistka ds. kadr',
     unit: 'Biuro Dyrektora Generalnego, Wydział Kadr',
     evaluatorId: null,
+    personId: null,
     passwordHash:
-      '$scrypt$ln=17,r=8,p=1$wXT7igtTbLTi4gLon4aZdw$TMy/xSIkZ9bCJ+rD0gzGVG0csp9LXiunCn3QjmBIujU',
+      '$scrypt$ln=17,r=8,p=1$L+QheEGNBk8OFsJ4vuY4xQ$yHuMHS3/KryD2aOgzdzSLBL7GeF/S0sBYRc7Q8rDDgE',
   },
   {
     id: 'u-admin',
@@ -63,7 +68,35 @@ export const USER_SEED: readonly (User & { passwordHash: string })[] = [
     position: 'Administrator systemu',
     unit: 'Biuro Informatyki',
     evaluatorId: null,
+    personId: null,
     passwordHash:
-      '$scrypt$ln=17,r=8,p=1$Ylmh4H6+RBr9K26THx0f1w$cQ93L1GjIs4C3XLiFgZiK9JidTxTpjYE/ES/tF7YSA0',
+      '$scrypt$ln=17,r=8,p=1$42iK28FCDXeyoFD58TP8LA$HcENaHP38k1HlYM+7csA8n2yTO7wz/AWalXeOo35sYA',
+  },
+  {
+    id: 'u-nowak',
+    login: 'a.nowak',
+    firstName: 'Anna',
+    lastName: 'Nowak',
+    role: 'EMPLOYEE',
+    position: 'Radca do spraw regulacji sztucznej inteligencji',
+    unit: 'Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych',
+    evaluatorId: null,
+    personId: 'p-nowak',
+    passwordHash:
+      '$scrypt$ln=17,r=8,p=1$Kjclg4xeSlqpOhY0H4df0w$C4mD2RxnZ3bInH10CjSvjAjVJB0GUDevi7yZqdj0qKg',
+  },
+  {
+    id: 'u-wojcik',
+    login: 'p.wojcik',
+    firstName: 'Piotr',
+    lastName: 'Wójcik',
+    role: 'EMPLOYEE',
+    position:
+      'Starszy specjalista do spraw zarządzania kryzysowego w cyberprzestrzeni',
+    unit: 'Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych',
+    evaluatorId: null,
+    personId: 'p-wojcik',
+    passwordHash:
+      '$scrypt$ln=17,r=8,p=1$N5iar5+gwIjUfj+g1T/E6w$XNndSd8FzKNvPtZef861AioCJVJDF7eKBA0H6ift2bo',
   },
 ];

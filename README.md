@@ -1,7 +1,8 @@
-# hacknation-backend
+# Cyfrowy Asystent Ocen Okresowych — backend
 
-NestJS API for HackNation. The React frontend lives in
-[hacknation-frontend](https://github.com/carrotly-technologies/hacknation-frontend).
+NestJS API of **Cyfrowy Asystent Ocen Okresowych**: the whole periodic assessment of civil servants (ocena okresowa,
+rozp. PRM z 4.04.2016, art. 81–83 ustawy o służbie cywilnej) on sheets A, B and C. The React frontend lives in
+[cyfrowy-asystent-ocen-okresowych-frontend](https://github.com/carrotly-technologies/cyfrowy-asystent-ocen-okresowych-frontend).
 
 ## Setup
 
@@ -53,7 +54,7 @@ from answer links in a new tab). A route for another role answers 403.
 
 ```bash
 TOKEN=$(curl -s -X POST localhost:3000/api/auth/login -H 'content-type: application/json' \
-  -d '{"login":"j.kaminska","password":"Kompas2026!"}' | jq -r .accessToken)
+  -d '{"login":"j.kaminska","password":"Ocena2026!"}' | jq -r .accessToken)
 curl localhost:3000/api/me -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -67,10 +68,11 @@ curl localhost:3000/api/me -H "Authorization: Bearer $TOKEN"
 
 | Role         | May                                                                                                   | 403 on                                                    |
 | ------------ | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `SUPERVISOR` | `GET /api/team`, `GET /api/cases` (own only), read, PATCH, observations and actions of own cases; own journal about own employees | other supervisors' cases and employees, `/api/hr/*`, `/api/admin/*` |
+| `SUPERVISOR` | `GET /api/team`, `GET /api/cases` (own only), read, PATCH, observations and the evaluator's actions of own cases; own journal about own employees | other supervisors' cases and employees, `EMPLOYEE_ACK_*` actions, `/api/hr/*`, `/api/admin/*` |
+| `EMPLOYEE`   | the assessed person: `GET /api/cases` and `GET /api/cases/:id` of own cases only (read only; no observations, part II only after hand-over), actions `EMPLOYEE_ACK_PART_I` and `EMPLOYEE_ACK_ASSESSMENT` | other cases, PATCH, observations, other actions, `/api/team`, `/api/hr/*`, `/api/admin/*`, journal |
 | `HR`         | `/api/hr/*`, `GET /api/cases` (all), `GET /api/cases/:id` (read only)                                 | PATCH, observations, actions, `/api/team`, `/api/admin/*`, journal |
 | `ADMIN`      | `/api/admin/*`                                                                                        | cases, `/api/team`, `/api/hr/*`, journal                  |
-| every role   | `/api/me`, assistant, `/api/docs`, competency model, sheets, assessments, OSP, `POST /api/demo/reset` | —                                                         |
+| every role   | `/api/me`, assistant, `/api/docs`, criteria, sheets, assessments, `POST /api/demo/reset` | —                                                         |
 
 - The role is read from the account on every request, never from the token: a role changed by an ADMIN applies to
   that user's next request (the frontend picks it up at the next sign-in).
@@ -78,59 +80,62 @@ curl localhost:3000/api/me -H "Authorization: Bearer $TOKEN"
   password and an unknown login get the same 401. `node scripts/hash-password.mjs <password>` prints a hash.
 - Accounts sit behind `UsersRepository` (`src/auth/users.repository.ts`); the in-memory implementation
   (`users.in-memory.repository.ts`, seed in `users.seed.ts`) is bound in `AuthModule` and can be swapped for a
-  database one there. Supervisors are linked to `EVALUATORS` of the case seed by `evaluatorId`.
+  database one there. Supervisors are linked to `EVALUATORS` of the case seed by `evaluatorId`, employees to the
+  assessed person (`Person.id`) by `personId`.
 
 ### Demo accounts (for the jury)
 
 All people are fictional.
 
-| Login        | Password      | Role         | Who                                     |
-| ------------ | ------------- | ------------ | --------------------------------------- |
-| `j.kaminska` | `Kompas2026!` | `SUPERVISOR` | Joanna Kamińska, 6 cases (c-001…c-006)  |
-| `r.sikora`   | `Kompas2026!` | `SUPERVISOR` | Robert Sikora, 2 cases (c-101, c-102)   |
-| `a.pawlak`   | `Kompas2026!` | `SUPERVISOR` | Agnieszka Pawlak, 2 cases (c-103, c-104) |
-| `a.lis`      | `Kompas2026!` | `HR`         | Agnieszka Lis, HR (kadry)               |
-| `admin`      | `Kompas2026!` | `ADMIN`      | Marek Zając, administrator              |
+Every demo account has the password `Ocena2026!`.
+
+| Login        | Role         | Who                                                            |
+| ------------ | ------------ | -------------------------------------------------------------- |
+| `j.kaminska` | `SUPERVISOR` | Joanna Kamińska, cases c-000…c-008 (team view hides archived c-000) |
+| `r.sikora`   | `SUPERVISOR` | Robert Sikora, cases c-101, c-102                              |
+| `a.pawlak`   | `SUPERVISOR` | Agnieszka Pawlak, cases c-103, c-104                           |
+| `a.nowak`    | `EMPLOYEE`   | Anna Nowak (assessed), cases c-000 (previous cycle) and c-001  |
+| `p.wojcik`   | `EMPLOYEE`   | Piotr Wójcik (assessed), case c-002 waiting for his part I confirmation |
+| `a.lis`      | `HR`         | Agnieszka Lis, HR (kadry), all 14 cases                        |
+| `admin`      | `ADMIN`      | Marek Zając, administrator                                     |
 
 ## API
 
-Contract: `notatki/api-kontrakt-v1.md`. Static data and pure functions.
+Static data and pure functions.
+
 | Route                                 | What it does                                                                                       |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `GET /api/competency-model`           | 14 competencies, 49 indicators with level descriptions, scale 1/3/5/7/9, instructions (Polish)     |
-| `GET /api/sheets`                     | Sheets `A`, `B`, `C` (periodic, rozp. 2016) and `FIRST` (first assessment, rozp. 2015)             |
+| `GET /api/criteria`                   | Catalogue of the 14 criteria of załącznik nr 1 (id, number, name, description bullets) and the 1–9 scale |
+| `GET /api/sheets`                     | Sheets `A`, `B`, `C` (rozp. 2016): mandatory criteria, scale, max 3 additional, template texts     |
 | `GET /api/civil-service-grades`       | `{ grades, legalBasis }`: the nine civil-service grades `I`…`IX` (art. 86 ust. 1 ustawy), lowest first |
-| `POST /api/assessments/suggest-level` | Suggested criterion score from indicator ratings (`null` = no basis to rate). Only a suggestion    |
 | `POST /api/assessments/evaluate`      | Average, level and POSITIVE/NEGATIVE result with Polish reasons citing the regulation              |
 
-- Suggest rule (ours, not from the regulations): mean of rated indicators, snapped to the nearest point of the
-  sheet's scale, exact ties toward 5. On `FIRST`, indicator levels 1/9 are clamped to 3/7 before averaging.
-- Periodic: POSITIVE iff average > 4 and no score equals 1 (§11 rozp. 2016). FIRST: POSITIVE iff exam `YES` or
-  `NOT_APPLICABLE`, report on time, at most one 3 and average ≥ 5 (§10 rozp. 2015). Thresholds use the exact average.
+- The criteria catalogue is data in one file, `src/criteria/data/criteria.data.ts` (verbatim from załącznik nr 1):
+  edit it when the law changes. Ids are stable keys stored in cases.
+- POSITIVE iff average > 4 and no score equals 1 (§11 rozp. 2016). Thresholds use the exact average.
 - Validation errors answer 400 with `message` as an array of Polish strings.
-- Each periodic sheet has `template`: the fixed texts of its official template (annex, title, „Potwierdzamy” of part I,
+- Each sheet has `template`: the fixed texts of its official template (annex, title, „Potwierdzamy” of part I,
   the assessed person's statement, „Pouczenie” of art. 83 ust. 1, the part III note, footnote and request sentence),
-  so the UI never retypes them. `FIRST` has `template: null`.
+  so the UI never retypes them.
 
 ```bash
-curl -X POST localhost:3000/api/assessments/evaluate -H 'content-type: application/json' \
-  -d '{"sheetId":"FIRST","scores":[{"criterionId":"rzetelnosc","points":5},{"criterionId":"wykorzystywanie_wiedzy","points":5},{"criterionId":"organizacja_pracy","points":5},{"criterionId":"komunikacja","points":5},{"criterionId":"wspolpraca","points":5}],"firstAssessment":{"examPassed":"YES","reportSubmittedOnTime":true}}'
+curl -X POST localhost:3000/api/assessments/evaluate -H 'content-type: application/json' -H "Authorization: Bearer $TOKEN" \
+  -d '{"sheetId":"C","scores":[{"criterionId":"rzetelnosc","points":5},{"criterionId":"wykorzystywanie_wiedzy","points":5},{"criterionId":"organizacja_pracy","points":5},{"criterionId":"komunikacja","points":5},{"criterionId":"wspolpraca","points":7}]}'
 ```
 
-### v2: assessment cases (in-memory demo)
+### Assessment cases (in-memory demo)
 
-Contract: `notatki/api-kontrakt-v2.md`. Cases live in memory, seeded on startup (and on `POST /api/demo/reset`) with
+Cases live in memory behind `CaseStore` (`src/cases/case-store.service.ts`, swap it for persistent storage there), seeded on startup (and on `POST /api/demo/reset`) with
 fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadline is computed against that date.
 
 | Route                            | What it does                                                                             |
 | -------------------------------- | ---------------------------------------------------------------------------------------- |
-| `GET /api/cases`                 | Cases visible to the caller (`CaseSummary[]`): own for a supervisor, all for HR          |
+| `GET /api/cases`                 | Cases visible to the caller (`CaseSummary[]`): own for a supervisor, own („Moje oceny”) for an employee, all for HR |
 | `GET /api/team`                  | The supervisor's cases (`CaseSummary[]`) and `todo` sorted by deadline                   |
-| `GET /api/cases/:id`             | `CaseDetail`: stages, deadlines, OSP + analysis, part I, observations, ratings, check    |
+| `GET /api/cases/:id`             | `CaseDetail`: stages, deadlines, sheet suggestion, part I, observations, part II, formal check |
 | `PATCH /api/cases/:id`           | Partial update; 400 for invalid values, 409 for parts locked at the current stage       |
 | `POST /api/cases/:id/observations` | Adds an S-D-R observation (201)                                                        |
-| `POST /api/cases/:id/actions`    | State machine (`{ action }`); 409 with a Polish explanation for an illegal transition   |
-| `GET /api/osp`                   | The 3 real OSP documents from the materials (`src/osp/osp.data.ts`)                     |
+| `POST /api/cases/:id/actions`    | State machine (`{ action }`); 403 when the caller is not the actor of the action, 409 with a Polish explanation for an illegal transition |
 | `GET /api/hr/overview`           | Counters and every case in the office, with evaluator and last reminder                 |
 | `POST /api/hr/reminders`         | Simulated reminders (`{ caseIds }`), logged in each case's history                       |
 | `POST /api/demo/reset`           | Restores the seed (cases and the journal)                                                |
@@ -138,14 +143,14 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
 - Rules are pure functions with unit tests in `src/cases/*.rules.ts`: deadlines (`deadlines.rules.ts`, KC term rules
   incl. shifting from Saturdays, Sundays and holidays, each `Deadline` with `legalBasis`), stages
   (`stages.rules.ts`), actions (`actions.rules.ts`), PATCH locks (`patch.rules.ts`) and the formal check
-  (`formal-check.rules.ts`). The OSP proposal (sheet + additional criteria) is `src/osp/osp-analysis.rules.ts`.
+  (`formal-check.rules.ts`). The sheet suggestion (kierownik urzędu → A, directly manages people → B, else C;
+  §3 ust. 2–4) is `src/sheets/sheet-suggestion.rules.ts`, from `Person.officeHead` / `Person.managesPeople`.
 - `evaluation` in `CaseDetail` is computed with the v1 `evaluate` rules once every criterion is decided.
-- PATCH merges one level deep (ratings per indicator); `null` in `decisions` / `deviationNotes` removes a key.
+- PATCH merges one level deep; `null` in `decisions` / `deviationNotes` removes a key.
 - Part II items 10–11 and part III of sheets A/B/C (`src/cases/promotion.rules.ts`), editable on the same stages as
   `justification` / `iprz` (until the evaluator signs):
   - `previousAssessment: { result: POSITIVE|NEGATIVE|null, level, date } | null`; `level` is a scale label as the
-    sheet writes it (`na poziomie oczekiwań`); seeded (system data) only for urzędnicy past `OPENING_TALK` whose cycle
-    started with a previous assessment. Every case up to `OPENING_TALK` starts with these fields empty.
+    sheet writes it (`na poziomie oczekiwań`).
   - `promotionRequest: { attached: YES|NO|NOT_APPLICABLE|null, appointedYear, currentGrade, gradeGrantedOn,
     requestedGrade, motivation }`. A pracownik służby cywilnej is always `NOT_APPLICABLE` (YES/NO → 400); an urzędnik
     answers YES or NO; YES is refused for a negative result (§11 ust. 5 rozp. 2016). Part III fields are accepted and
@@ -154,12 +159,20 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
   - The formal check item `PROMOTION_REQUEST` requires an answer and, with YES, a complete part III.
 - 409 body: `{ statusCode, error, message }` (+ `formalCheck` with the failing items for `SIGN_ASSESSMENT`).
 - `CaseDetail` also carries `availableActions` (actions legal right now), an addition to the contract.
-- Periodic stages: `OSP_ANALYSIS` → `SHEET_PROPOSAL` („Wstępny formularz”: the evaluator reviews the proposed sheet and
-  criteria, may change them with PATCH, then `ACCEPT_SHEET`) → `OPENING_TALK` → … `ACCEPT_OSP_ANALYSIS` now moves the
-  case to `SHEET_PROPOSAL`; cases already past it report its `completedOn` as the OSP analysis date.
+- `CaseDetail` for an `EMPLOYEE` hides `observations` and `formalCheck`, and part II (decisions, justification, IPRZ,
+  evaluation) until `SEND_FOR_ACK`; `availableActions` lists only what the caller may do.
 
-The competency data in `src/competency-model/data/model.data.ts` is generated from `notatki/model-kompetencji.json`
-by `node scripts/generate-model-data.mjs` (then run prettier on it). Don't edit it by hand.
+Stages (`STAGES` in `src/cases/case.types.ts`) and actions (`src/cases/actions.rules.ts`, actor in `ACTION_ACTOR`):
+
+| # | Stage             | Action that ends it                         | Actor     |
+| - | ----------------- | ------------------------------------------- | --------- |
+| 1 | `SHEET_SELECTION` | `ACCEPT_SHEET` (sheet A/B/C, ≤ 3 additional criteria, due date: default 24 months, 6 after a negative one) | evaluator |
+| 2 | `OPENING_TALK`    | `CONFIRM_PART_I`                            | evaluator |
+| 3 | `PART_I_ACK`      | `EMPLOYEE_ACK_PART_I`                       | employee  |
+| 4 | `OBSERVATION`     | `START_ASSESSMENT`                          | evaluator |
+| 5 | `ASSESSMENT`      | `COMPLETE_ASSESSMENT_TALK` (scores, justification, IPRZ, part III are drafted from stage 1 until the signature) | evaluator |
+| 6 | `SIGNATURE`       | `SIGN_ASSESSMENT` (formal check), then `SEND_FOR_ACK` | evaluator |
+| 7 | `ACKNOWLEDGEMENT` | `EMPLOYEE_ACK_ASSESSMENT` (starts the 7-day objection term) | employee  |
 
 ### Journal: notes and observations about an employee
 
@@ -176,7 +189,7 @@ author only (someone else's entry: 404). Lists are newest first.
 | `PATCH /api/notes/:id`                 | `{ text }` → note with new `updatedAt`                                                    |
 | `DELETE /api/notes/:id`                | 204                                                                                       |
 | `GET /api/people/:personId/observations` | The user's observations about the person, by `date`                                     |
-| `POST /api/people/:personId/observations` | `{ date, criterionId, indicatorId?, kind, situation, action, result }` → observation (201); 400 for an unknown criterion, an indicator of another criterion, a date after today, S/D/R empty or over 2000 chars |
+| `POST /api/people/:personId/observations` | `{ date, criterionId, indicatorId?, kind, situation, action, result }` → observation (201; `indicatorId` is a legacy free field); 400 for an unknown criterion, a date after today, S/D/R empty or over 2000 chars |
 | `PATCH /api/observations/:id`          | Any of those fields; the merged observation is validated again                            |
 | `DELETE /api/observations/:id`         | 204                                                                                       |
 
@@ -195,8 +208,7 @@ author only (someone else's entry: 404). Lists are newest first.
   is `src/assistant/documents.ts`.
 - Knowledge base: `src/assistant/data/knowledge.data.ts`, generated by `npm run kb:build`
   (`scripts/build-knowledge-base.mjs`, needs `pdftotext` and `unzip`) only from `docs/`: both regulations, both KPRM
-  guides, sheets B, C and of the first assessment, and the competency model (per competency and per indicator with
-  its 5 levels). Acts are chunked by art./§/ust., guides by page, sheets by part. The act (`U`), the deadline note
+  guides and the sheets (the first-assessment sources RP/PP are excluded from case conversations). Acts are chunked by art./§/ust., guides by page, sheets by part. The act (`U`), the deadline note
   (`LT`) and the Q&A set (`QA`) are not in `docs/` yet: their chunks already in the data file are kept until the file
   is added at the path in the script (see `docs/README.md`). Don't edit the data file by hand.
 - Retrieval: local BM25 (`bm25.ts`, `text-normalize.ts`: no diacritics, light Polish stemming, bigrams); below a
@@ -220,20 +232,17 @@ npm run test:cov
 
 ## Deploy
 
-Production runs on Coolify (project **Hackathons**, environment `production`)
-as the `hacknation-backend` application, built from this repo's `Dockerfile`:
+`main` is auto-deployed to Coolify from this repo's `Dockerfile` (one image, no manual steps on the server).
 
-- URL: <https://api.hacknation.rabbithole.carrotly.tech> (health: `/api/health`)
-- Every push to `main` triggers a new deploy (GitHub App source, auto-deploy on).
-- Env: `PORT=3000`, `FRONTEND_URL=https://hacknation.rabbithole.carrotly.tech`, `JWT_SECRET` (32+ random bytes),
-  optional `FEATURE_ASSISTANT=false`.
-  Change them in the Coolify app settings and redeploy.
+- Env: `PORT=3000`, `FRONTEND_URL=<frontend origin>`, `JWT_SECRET` (32+ random bytes), optional `DEMO_TODAY`,
+  `DATABASE_URL`, `FEATURE_ASSISTANT`, `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL`.
+- Health: `/api/health`.
 
 Build and run the image locally:
 
 ```bash
-docker build -t hacknation-backend .
-docker run --rm -p 3000:3000 -e FRONTEND_URL=http://localhost:5173 hacknation-backend
+docker build -t cyfrowy-asystent-backend .
+docker run --rm -p 3000:3000 -e FRONTEND_URL=http://localhost:5173 cyfrowy-asystent-backend
 curl localhost:3000/api/health   # {"status":"ok"}
 ```
 

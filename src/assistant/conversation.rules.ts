@@ -1,37 +1,27 @@
 import type { CaseDetail, StageId } from '../cases/case.types.js';
-import {
-  COMPETENCY_MODEL,
-  SHEET_MAPPING,
-} from '../competency-model/data/model.data.js';
+import { findCriterion } from '../criteria/data/criteria.data.js';
 import { SHEETS } from '../sheets/sheets.data.js';
 
-const competency = (id: string) =>
-  COMPETENCY_MODEL.competencies.find((c) => c.id === id);
-const criterionName = (id: string) => competency(id)?.name.toLowerCase() ?? id;
+const criterionName = (id: string) =>
+  findCriterion(id)?.name.toLowerCase() ?? id;
 
 /** Rule question that backs each stage with citable sources. */
 export const STAGE_RULE_QUERY: Record<StageId, string> = {
-  OSP_ANALYSIS:
-    'wybór arkusza oceny i kryteriów dodatkowych na podstawie opisu stanowiska',
-  SHEET_PROPOSAL:
+  SHEET_SELECTION:
     'wybór arkusza oceny A B C i kryteriów dodatkowych najwyżej 3',
   OPENING_TALK: 'co omawia się na rozmowie rozpoczynającej proces oceny',
+  PART_I_ACK:
+    'oceniany potwierdza podpisem rozmowę i zapoznanie z kryteriami oceny',
   OBSERVATION:
     'proces oceniania obserwacja pracownika udzielanie informacji zwrotnej',
-  ASSESSMENT: 'rozmowa oceniająca co omawia się kierunki rozwoju',
-  JUSTIFICATION: 'uzasadnienie ocen cząstkowych wnioski do IPRZ',
-  DOCUMENT: 'zapoznanie ocenianego z oceną sprzeciw 7 dni',
-  INTRO_TALK: 'rozmowa wstępna pierwsza ocena 21 dni',
-  REPORT: 'sprawozdanie w pierwszej ocenie termin złożenia',
-  FIRST_ASSESSMENT: 'rozmowa oceniająca w pierwszej ocenie',
-  FIRST_CONDITIONS: 'warunki przyznania pozytywnej pierwszej oceny',
-  FIRST_DOCUMENT: 'zapoznanie z pierwszą oceną akta osobowe',
+  ASSESSMENT: 'rozmowa oceniająca uzasadnienie wnioski do IPRZ',
+  SIGNATURE: 'sporządzenie oceny na piśmie podpis oceniającego',
+  ACKNOWLEDGEMENT: 'zapoznanie ocenianego z oceną sprzeciw 7 dni',
 };
 
 /** Criteria the case is assessed on: sheet mandatory + chosen additional. */
 export function caseCriteria(detail: CaseDetail): string[] {
-  if (detail.path === 'FIRST') return [...SHEET_MAPPING.first.elements];
-  const sheetId = detail.sheetId ?? detail.ospAnalysis?.suggestedSheet?.sheetId;
+  const sheetId = detail.sheetId ?? detail.sheetSuggestion.sheetId;
   const sheet = SHEETS.find((s) => s.id === sheetId);
   return [
     ...new Set([
@@ -47,7 +37,7 @@ export function caseCriteria(detail: CaseDetail): string[] {
  */
 export function caseContext(detail: CaseDetail, stage: StageId): string {
   const lines = [
-    `Ścieżka: ${detail.path === 'FIRST' ? 'pierwsza ocena' : 'ocena okresowa'}; arkusz: ${detail.sheetId ?? 'nie wybrano'}; etap: ${stage}.`,
+    `Ocena okresowa; arkusz: ${detail.sheetId ?? 'nie wybrano'}; etap: ${stage}.`,
     `Stanowisko ocenianego: ${detail.person.position} (${detail.person.unit}).`,
     `Kryteria: ${caseCriteria(detail).map(criterionName).join('; ')}.`,
   ];
@@ -81,7 +71,7 @@ const lowerFirst = (s: string) =>
 
 /**
  * Deterministic coaching template used when no language model is configured:
- * questions from the criteria indicators and the observations, an SDR
+ * questions from the criteria descriptions and the observations, an SDR
  * feedback outline and IPRZ ideas. Never proposes a rating.
  */
 export function conversationTemplate(
@@ -96,14 +86,14 @@ export function conversationTemplate(
   ];
   if (criteria.length === 0) {
     out.push(
-      '- Arkusz nie jest jeszcze wybrany, więc nie ma kryteriów – najpierw dobierz arkusz na podstawie opisu stanowiska.',
+      '- Arkusz nie jest jeszcze wybrany, więc nie ma kryteriów – najpierw wybierz arkusz i kryteria dodatkowe.',
     );
   }
   for (const id of criteria) {
-    const indicators = competency(id)?.indicators.slice(0, 1) ?? [];
-    for (const ind of indicators) {
+    const first = findCriterion(id)?.description[0];
+    if (first) {
       out.push(
-        `- (${criterionName(id)}) Proszę podać przykład z ocenianego okresu, który pokazuje: ${lowerFirst(ind.name)}. Co było trudne i jaki był rezultat?`,
+        `- (${criterionName(id)}) Proszę podać przykład z ocenianego okresu, który pokazuje: ${lowerFirst(first)}. Co było trudne i jaki był rezultat?`,
       );
     }
   }
@@ -145,9 +135,9 @@ export function conversationTemplate(
     );
   }
   for (const id of devAreas) {
-    const ind = competency(id)?.indicators[0];
+    const first = findCriterion(id)?.description[0];
     out.push(
-      `- ${criterionName(id)}: działanie rozwojowe (szkolenie, mentoring, zadanie rozwojowe)${ind ? ` ukierunkowane na: ${lowerFirst(ind.name)}` : ''}.`,
+      `- ${criterionName(id)}: działanie rozwojowe (szkolenie, mentoring, zadanie rozwojowe)${first ? ` ukierunkowane na: ${lowerFirst(first)}` : ''}.`,
     );
   }
   return out.join('\n');
@@ -160,18 +150,13 @@ export const STAGE_SUGGESTIONS: Record<StageId | 'GENERAL', string[]> = {
   GENERAL: [
     'Kto podlega ocenie okresowej?',
     'Jak często sporządza się ocenę okresową?',
-    'Kiedy dokonuje się pierwszej oceny?',
+    'Ile kryteriów dodatkowych można wybrać?',
     'W jakim terminie można wnieść sprzeciw od oceny okresowej?',
   ],
-  OSP_ANALYSIS: [
+  SHEET_SELECTION: [
     'Kiedy używa się arkusza A, B, a kiedy C?',
     'Ile kryteriów dodatkowych można wybrać i skąd?',
     'Kierownik zespołu bez tytułu naczelnika – który arkusz?',
-  ],
-  SHEET_PROPOSAL: [
-    'Kiedy używa się arkusza A, B, a kiedy C?',
-    'Ile kryteriów dodatkowych można wybrać i skąd?',
-    'Czy można zmienić arkusz po rozmowie rozpoczynającej?',
   ],
   OPENING_TALK: [
     'Co omawia się na rozmowie rozpoczynającej?',
@@ -188,34 +173,18 @@ export const STAGE_SUGGESTIONS: Record<StageId | 'GENERAL', string[]> = {
     'Jaka jest skala ocen cząstkowych w ocenie okresowej?',
     'Jak ze średniej wyznacza się ogólny poziom spełniania kryteriów?',
   ],
-  JUSTIFICATION: [
-    'Kiedy trzeba uzasadnić ocenę cząstkową?',
+  PART_I_ACK: [
+    'Co potwierdza oceniany po rozmowie rozpoczynającej?',
+    'Co dzieje się z częścią I arkusza po potwierdzeniu?',
+  ],
+  SIGNATURE: [
+    'Kiedy trzeba uzasadnić ocenę?',
     'Co powinny zawierać wnioski do IPRZ?',
     'Kiedy można wnioskować o kolejny stopień służbowy?',
   ],
-  DOCUMENT: [
+  ACKNOWLEDGEMENT: [
     'W jakim terminie przysługuje sprzeciw od oceny okresowej?',
     'Co dzieje się po uzyskaniu oceny negatywnej?',
     'Co zrobić z arkuszem po zapoznaniu ocenianego z oceną?',
-  ],
-  INTRO_TALK: [
-    'W jakim terminie przeprowadza się rozmowę wstępną?',
-    'Co omawia się na rozmowie wstępnej w pierwszej ocenie?',
-  ],
-  REPORT: [
-    'Czym jest sprawozdanie w pierwszej ocenie i jaki okres obejmuje?',
-    'Kiedy wyznacza się nowy termin na złożenie sprawozdania?',
-  ],
-  FIRST_ASSESSMENT: [
-    'Jaka jest skala ocen w pierwszej ocenie?',
-    'Kto dokonuje pierwszej oceny i co dzieje się potem?',
-  ],
-  FIRST_CONDITIONS: [
-    'Jakie są warunki pozytywnej pierwszej oceny?',
-    'Średnia 5,4, egzamin zaliczony, ale sprawozdanie złożone po terminie. Jaki jest wynik?',
-  ],
-  FIRST_DOCUMENT: [
-    'Czy od pierwszej oceny przysługuje sprzeciw?',
-    'Co oznacza negatywna pierwsza ocena dla umowy o pracę?',
   ],
 };

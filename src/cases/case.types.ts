@@ -1,31 +1,32 @@
 import type { EvaluateResult } from '../assessments/evaluate.rules.js';
+import type { SheetSuggestion } from '../sheets/sheet-suggestion.rules.js';
 import type { SheetId } from '../sheets/sheet.types.js';
 
 /** Types of contract v2 (notatki/api-kontrakt-v2.md). */
 
-export type Path = 'PERIODIC' | 'FIRST';
-
-export const PERIODIC_STAGES = [
-  'OSP_ANALYSIS',
-  // "Wstępny formularz": the evaluator reviews the proposed sheet and its
-  // criteria before the opening talk.
-  'SHEET_PROPOSAL',
+/**
+ * Stages of a periodic assessment (rozp. PRM z 4.04.2016, ustawa o SC art.
+ * 81–83), in order:
+ * 1. SHEET_SELECTION – the evaluator picks sheet A/B/C, up to 3 additional
+ *    criteria and the assessment due date (§3, §5 ust. 2–3);
+ * 2. OPENING_TALK – the opening talk and its confirmation by the evaluator (§5–§6);
+ * 3. PART_I_ACK – the assessed person confirms part I (§6 ust. 2);
+ * 4. OBSERVATION – the assessment period;
+ * 5. ASSESSMENT – assessment talk (§10), partial scores, justification, IPRZ,
+ *    part III (§11);
+ * 6. SIGNATURE – the evaluator signs the assessment and hands it over (§12 ust. 1);
+ * 7. ACKNOWLEDGEMENT – the assessed person acknowledges it (§12; art. 83).
+ */
+export const STAGES = [
+  'SHEET_SELECTION',
   'OPENING_TALK',
+  'PART_I_ACK',
   'OBSERVATION',
   'ASSESSMENT',
-  'JUSTIFICATION',
-  'DOCUMENT',
+  'SIGNATURE',
+  'ACKNOWLEDGEMENT',
 ] as const;
-export const FIRST_STAGES = [
-  'INTRO_TALK',
-  'REPORT',
-  'FIRST_ASSESSMENT',
-  'FIRST_CONDITIONS',
-  'FIRST_DOCUMENT',
-] as const;
-export type PeriodicStageId = (typeof PERIODIC_STAGES)[number];
-export type FirstStageId = (typeof FIRST_STAGES)[number];
-export type StageId = PeriodicStageId | FirstStageId;
+export type StageId = (typeof STAGES)[number];
 
 export type StageStatus = 'DONE' | 'CURRENT' | 'UPCOMING' | 'LOCKED';
 export type DeadlineState = 'OK' | 'SOON' | 'OVERDUE' | 'NONE';
@@ -42,6 +43,10 @@ export interface Person {
   unit: string;
   employment: Employment;
   hiredOn: string;
+  /** The position is "kierownik urzędu" (sheet A, §3 ust. 2). */
+  officeHead: boolean;
+  /** The work consists in directly managing employees (sheet B, §3 ust. 3). */
+  managesPeople: boolean;
 }
 
 export interface Evaluator {
@@ -72,7 +77,6 @@ export interface StageInfo {
 export interface CaseSummary {
   id: string;
   person: Person;
-  path: Path;
   sheetId: SheetId | null;
   cycleLabel: string;
   currentStage: StageId;
@@ -87,35 +91,10 @@ export interface Observation {
   id: string;
   date: string;
   criterionId: string;
-  indicatorId: string | null;
   kind: ObservationKind;
   situation: string;
   action: string;
   result: string;
-}
-
-export interface OspDoc {
-  id: string;
-  title: string;
-  purpose: string;
-  subordinates: string;
-  mainTasks: string[];
-  softCompetencies: string[];
-  otherRequirements: string[];
-  source: string;
-}
-
-export interface OspAnalysis {
-  suggestedSheet: {
-    sheetId: SheetId;
-    reason: string;
-    legalBasis: string;
-  } | null;
-  additionalCandidates: {
-    criterionId: string;
-    reason: string;
-    ospQuote: string;
-  }[];
 }
 
 export interface PartITopics {
@@ -132,17 +111,6 @@ export interface PartI {
   expectations: Record<string, string>;
   confirmedByEvaluatorOn: string | null;
   acknowledgedByEmployeeOn: string | null;
-}
-
-export type RatingPoints = 1 | 3 | 5 | 7 | 9;
-export type Ratings = Record<string, Record<string, RatingPoints | null>>;
-
-export type ExamPassed = 'YES' | 'NO' | 'NOT_APPLICABLE';
-
-export interface FirstConditions {
-  examPassed: ExamPassed | null;
-  reportSubmittedOn: string | null;
-  reportDue: string | null;
 }
 
 /**
@@ -187,21 +155,20 @@ export interface HistoryEntry {
 export interface CaseDetail extends CaseSummary {
   evaluator: Omit<Evaluator, 'id'>;
   officeName: string;
-  osp: OspDoc | null;
-  ospAnalysis: OspAnalysis | null;
+  sheetSuggestion: SheetSuggestion;
   partI: PartI;
   observations: Observation[];
-  ratings: Ratings;
   decisions: Record<string, number>;
   deviationNotes: Record<string, string>;
   justification: string;
   iprz: string;
   previousAssessment: PreviousAssessment | null;
   promotionRequest: PromotionRequest;
-  firstConditions: FirstConditions | null;
   evaluation: EvaluateResult | null;
   formalCheck: FormalCheckItem[];
+  assessmentTalkOn: string | null;
   signedByEvaluatorOn: string | null;
+  sentForAckOn: string | null;
   acknowledgedOn: string | null;
   objectionDeadline: Deadline | null;
   history: HistoryEntry[];
@@ -217,65 +184,44 @@ export type CycleStart =
   | { kind: 'PREVIOUS_POSITIVE'; assessedOn: string }
   | { kind: 'PREVIOUS_NEGATIVE'; assessedOn: string; acknowledgedOn: string };
 
-/**
- * Stored stages. ASSESSMENT also covers JUSTIFICATION, and FIRST_ASSESSMENT
- * covers FIRST_CONDITIONS: which one is current is derived from whether every
- * criterion has a decision.
- */
-export type StoredStage = Exclude<
-  StageId,
-  'JUSTIFICATION' | 'FIRST_CONDITIONS'
->;
-
 /** What the in-memory store keeps; everything else is derived on read. */
 export interface CaseRecord {
   id: string;
   person: Person;
   evaluatorId: string;
-  path: Path;
   sheetId: SheetId | null;
-  ospId: string | null;
   cycleStart: CycleStart;
-  stage: StoredStage;
+  stage: StageId;
   completedOn: Partial<Record<StageId, string>>;
   partI: PartI;
   observations: Observation[];
-  ratings: Ratings;
   decisions: Record<string, number>;
   deviationNotes: Record<string, string>;
   justification: string;
   iprz: string;
   previousAssessment: PreviousAssessment | null;
   promotionRequest: PromotionRequest;
-  firstConditions: FirstConditions | null;
+  assessmentTalkOn: string | null;
   signedByEvaluatorOn: string | null;
   sentForAckOn: string | null;
   acknowledgedOn: string | null;
   history: HistoryEntry[];
   lastReminderOn: string | null;
+  /** Set when a later cycle of the same person exists (this one is archived). */
+  nextCaseId: string | null;
 }
 
-export type CaseAction =
-  | 'ACCEPT_OSP_ANALYSIS'
-  | 'ACCEPT_SHEET'
-  | 'CONFIRM_PART_I'
-  | 'EMPLOYEE_ACK_PART_I'
-  | 'START_ASSESSMENT'
-  | 'SIGN_ASSESSMENT'
-  | 'SEND_FOR_ACK'
-  | 'EMPLOYEE_ACK_ASSESSMENT'
-  | 'REPORT_SUBMITTED'
-  | 'COMPLETE_INTRO_TALK';
-
-export const CASE_ACTIONS: readonly CaseAction[] = [
-  'ACCEPT_OSP_ANALYSIS',
+export const CASE_ACTIONS = [
   'ACCEPT_SHEET',
   'CONFIRM_PART_I',
   'EMPLOYEE_ACK_PART_I',
   'START_ASSESSMENT',
+  'COMPLETE_ASSESSMENT_TALK',
   'SIGN_ASSESSMENT',
   'SEND_FOR_ACK',
   'EMPLOYEE_ACK_ASSESSMENT',
-  'REPORT_SUBMITTED',
-  'COMPLETE_INTRO_TALK',
-];
+] as const;
+export type CaseAction = (typeof CASE_ACTIONS)[number];
+
+/** Who performs an action: the case's evaluator or the assessed person. */
+export type Actor = 'EVALUATOR' | 'EMPLOYEE';

@@ -1,10 +1,10 @@
-import { criterionName, findCompetency } from '../cases/case.rules.js';
+import { findCriterion } from '../criteria/data/criteria.data.js';
 import type { ObservationFields } from './journal.types.js';
 
 /**
- * Checks of an observation against the competency model and "today"
+ * Checks of an observation against the criteria catalogue and "today"
  * (DEMO_TODAY). Returns Polish messages; empty = valid. Unlike a case
- * observation, any criterion of the model is allowed: the journal is kept
+ * observation, any criterion of the catalogue is allowed: the journal is kept
  * before the case's criteria are chosen.
  */
 export function observationErrors(
@@ -12,17 +12,9 @@ export function observationErrors(
   today: string,
 ): string[] {
   const errors: string[] = [];
-  const competency = findCompetency(input.criterionId);
-  if (!competency) {
+  if (!findCriterion(input.criterionId)) {
     errors.push(
-      `Kryterium „${input.criterionId}” nie istnieje w modelu kompetencji.`,
-    );
-  } else if (
-    input.indicatorId !== null &&
-    !competency.indicators.some((i) => i.id === input.indicatorId)
-  ) {
-    errors.push(
-      `Wskaźnik „${input.indicatorId}” nie należy do kryterium „${criterionName(input.criterionId)}”.`,
+      `Kryterium „${input.criterionId}” nie istnieje w wykazie kryteriów oceny.`,
     );
   }
   if (input.date > today)

@@ -1,4 +1,4 @@
-export const ROLES = ['SUPERVISOR', 'HR', 'ADMIN'] as const;
+export const ROLES = ['SUPERVISOR', 'EMPLOYEE', 'HR', 'ADMIN'] as const;
 export type Role = (typeof ROLES)[number];
 
 /** A signed-in account. Never carries the password hash. */
@@ -12,6 +12,8 @@ export interface User {
   unit: string;
   /** The EVALUATORS id whose cases a SUPERVISOR handles; null for others. */
   evaluatorId: string | null;
+  /** The assessed person (`Person.id`) an EMPLOYEE account belongs to; null for others. */
+  personId: string | null;
 }
 
 /** What the users API returns: the account without internal links. */

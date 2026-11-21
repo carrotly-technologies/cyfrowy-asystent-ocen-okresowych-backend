@@ -11,16 +11,6 @@ const isoDate = z
   .string()
   .refine(isIsoDate, { error: 'Data musi mieć format RRRR-MM-DD.' });
 
-const ratingPoints = z
-  .union(
-    [1, 3, 5, 7, 9].map((p) => z.literal(p)),
-    {
-      error:
-        'Ocena wskaźnika musi wynosić 1, 3, 5, 7 lub 9 pkt albo null (brak podstaw do oceny).',
-    },
-  )
-  .nullable();
-
 const grade = (what: string) =>
   z
     .enum(GRADE_IDS, {
@@ -34,15 +24,14 @@ const MOTIVATION_MAX = 4000;
 
 /**
  * PATCH /cases/:id. Objects are merged one level deep (keys given replace
- * keys stored); ratings are merged per indicator. In `decisions` and
- * `deviationNotes` a null value removes the key. Dates confirmed by actions
- * (confirmedByEvaluatorOn, acknowledgedByEmployeeOn, reportSubmittedOn) are
- * set by actions only and ignored here.
+ * keys stored). In `decisions` and `deviationNotes` a null value removes the
+ * key. Dates confirmed by actions (confirmedByEvaluatorOn,
+ * acknowledgedByEmployeeOn) are set by actions only and ignored here.
  */
 export const patchCaseSchema = z.object({
   sheetId: z
     .enum(SHEET_IDS, {
-      error: 'sheetId musi mieć jedną z wartości: A, B, C, FIRST.',
+      error: 'sheetId musi mieć jedną z wartości: A, B, C.',
     })
     .optional(),
   partI: z
@@ -61,7 +50,6 @@ export const patchCaseSchema = z.object({
       expectations: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
-  ratings: z.record(z.string(), z.record(z.string(), ratingPoints)).optional(),
   decisions: z.record(z.string(), z.number().nullable()).optional(),
   deviationNotes: z.record(z.string(), z.string().nullable()).optional(),
   justification: z.string().optional(),
@@ -105,25 +93,12 @@ export const patchCaseSchema = z.object({
     })
     .partial()
     .optional(),
-  firstConditions: z
-    .object({
-      examPassed: z
-        .enum(['YES', 'NO', 'NOT_APPLICABLE'], {
-          error:
-            'examPassed musi mieć jedną z wartości: YES, NO, NOT_APPLICABLE albo null.',
-        })
-        .nullable()
-        .optional(),
-      reportDue: isoDate.nullable().optional(),
-    })
-    .optional(),
 });
 export type PatchCase = z.infer<typeof patchCaseSchema>;
 
 export const observationSchema = z.object({
   date: isoDate,
   criterionId: z.string().min(1),
-  indicatorId: z.string().min(1).nullable(),
   kind: z.enum(['STRENGTH', 'DEVELOPMENT'], {
     error:
       'kind musi mieć wartość STRENGTH (mocna strona) albo DEVELOPMENT (do rozwoju).',
@@ -135,7 +110,7 @@ export const observationSchema = z.object({
 export type ObservationInput = z.infer<typeof observationSchema>;
 
 export const actionSchema = z.object({
-  action: z.enum(CASE_ACTIONS as [string, ...string[]], {
+  action: z.enum(CASE_ACTIONS, {
     error: `action musi mieć jedną z wartości: ${CASE_ACTIONS.join(', ')}.`,
   }),
 });

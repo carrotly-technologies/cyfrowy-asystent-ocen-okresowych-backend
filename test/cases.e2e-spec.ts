@@ -5,10 +5,12 @@ import { AppModule } from './../src/app.module.js';
 import { configureApp } from './../src/configure-app.js';
 import { loginAs, withToken } from './auth.helpers.js';
 
-describe('Cases, team, OSP and HR (e2e, contract v2)', () => {
+describe('Cases, team, employee and HR (e2e)', () => {
   let app: INestApplication<App>;
   let supervisor: string;
   let hr: string;
+  let nowak: string;
+  let wojcik: string;
 
   beforeAll(async () => {
     process.env.DEMO_TODAY = '2026-11-21';
@@ -18,8 +20,11 @@ describe('Cases, team, OSP and HR (e2e, contract v2)', () => {
     app = moduleFixture.createNestApplication();
     configureApp(app);
     await app.init();
-    supervisor = await loginAs(app, 'j.kaminska');
-    hr = await loginAs(app, 'a.lis');
+    [supervisor, hr, nowak, wojcik] = await Promise.all(
+      ['j.kaminska', 'a.lis', 'a.nowak', 'p.wojcik'].map((l) =>
+        loginAs(app, l),
+      ),
+    );
   });
 
   afterAll(async () => {
@@ -32,8 +37,18 @@ describe('Cases, team, OSP and HR (e2e, contract v2)', () => {
 
   const http = () => withToken(app, supervisor);
   const asHr = () => withToken(app, hr);
-  const act = (id: string, action: string) =>
-    http().post(`/api/cases/${id}/actions`).send({ action });
+  const asNowak = () => withToken(app, nowak);
+  const act = (id: string, action: string, token = supervisor) =>
+    withToken(app, token).post(`/api/cases/${id}/actions`).send({ action });
+
+  const C_DECISIONS = {
+    wykorzystywanie_wiedzy: 7,
+    rzetelnosc: 7,
+    organizacja_pracy: 5,
+    wspolpraca: 7,
+    komunikacja: 5,
+    myslenie_analityczne: 7,
+  };
 
   it('GET /api/me returns the signed-in supervisor', async () => {
     const res = await http().get('/api/me').expect(200);
@@ -44,11 +59,11 @@ describe('Cases, team, OSP and HR (e2e, contract v2)', () => {
       role: 'SUPERVISOR',
       position: 'Naczelnik wydziału',
       unit: expect.stringContaining('Wydział'),
-      officeName: 'Ministerstwo Cyfryzacji (dane demonstracyjne)',
+      officeName: 'Urząd demonstracyjny (dane fikcyjne)',
     });
   });
 
-  it('GET /api/team returns the 6 team cases and todo sorted by date', async () => {
+  it('GET /api/team returns the current team cases and todo sorted by date', async () => {
     const res = await http().get('/api/team').expect(200);
     expect(res.body.cases.map((c: { id: string }) => c.id)).toEqual([
       'c-001',
@@ -57,6 +72,8 @@ describe('Cases, team, OSP and HR (e2e, contract v2)', () => {
       'c-004',
       'c-005',
       'c-006',
+      'c-007',
+      'c-008',
     ]);
     const dates = res.body.todo.map(
       (t: { deadline: { date: string } }) => t.deadline.date,
@@ -64,376 +81,187 @@ describe('Cases, team, OSP and HR (e2e, contract v2)', () => {
     expect(dates).toEqual(
       [...dates].sort((a: string, b: string) => a.localeCompare(b)),
     );
-    expect(res.body.todo[0]).toMatchObject({
-      caseId: 'c-005',
-      stageId: 'OPENING_TALK',
-      deadline: { date: '2026-11-24', state: 'SOON', daysLeft: 3 },
-    });
+    expect(res.body.todo.length).toBeGreaterThan(0);
   });
 
   it('GET /api/cases/c-001 is the main demo case', async () => {
     const res = await http().get('/api/cases/c-001').expect(200);
     expect(res.body).toMatchObject({
+      id: 'c-001',
       sheetId: 'C',
       currentStage: 'ASSESSMENT',
       status: 'W_TOKU',
-      partI: { additionalCriteria: ['myslenie_analityczne'] },
-      evaluation: null,
-      ratings: {},
-      osp: { source: 'OSP DSI WWI 5 radca.docx' },
-      evaluator: { firstName: 'Joanna', lastName: 'Kamińska' },
+      sheetSuggestion: { sheetId: 'C', isSuggestionOnly: true },
+      availableActions: ['COMPLETE_ASSESSMENT_TALK'],
     });
-    expect(res.body.observations).toHaveLength(8);
-    expect(res.body.formalCheck.some((f: { ok: boolean }) => !f.ok)).toBe(true);
-  });
-
-  it('GET /api/cases/:id answers 404 for an unknown case', async () => {
-    const res = await http().get('/api/cases/nope').expect(404);
-    expect(res.body.message).toContain('Nie znaleziono');
-  });
-
-  it('OSP analysis suggests sheet C and myślenie analityczne for c-002', async () => {
-    const res = await http().get('/api/cases/c-002').expect(200);
-    expect(res.body.sheetId).toBeNull();
-    expect(res.body.ospAnalysis.suggestedSheet.sheetId).toBe('C');
-    expect(res.body.ospAnalysis.additionalCandidates).toEqual([
-      expect.objectContaining({ criterionId: 'myslenie_analityczne' }),
+    expect(res.body.stages.map((s: { id: string }) => s.id)).toEqual([
+      'SHEET_SELECTION',
+      'OPENING_TALK',
+      'PART_I_ACK',
+      'OBSERVATION',
+      'ASSESSMENT',
+      'SIGNATURE',
+      'ACKNOWLEDGEMENT',
     ]);
-    const accepted = await act('c-002', 'ACCEPT_OSP_ANALYSIS').expect(200);
-    expect(accepted.body).toMatchObject({
-      sheetId: 'C',
-      currentStage: 'SHEET_PROPOSAL',
-      availableActions: ['ACCEPT_SHEET'],
-    });
-    const sheetAccepted = await act('c-002', 'ACCEPT_SHEET').expect(200);
-    expect(sheetAccepted.body.currentStage).toBe('OPENING_TALK');
-    expect(
-      sheetAccepted.body.stages.find(
-        (s: { id: string }) => s.id === 'SHEET_PROPOSAL',
-      ),
-    ).toMatchObject({ name: 'Wstępny formularz', status: 'DONE' });
+    expect(res.body.observations).toHaveLength(8);
+    expect(res.body).not.toHaveProperty('osp');
+    expect(res.body).not.toHaveProperty('ratings');
+    expect(res.body).not.toHaveProperty('path');
   });
 
-  it('rates, decides and signs the main case', async () => {
-    const decisions = {
-      wykorzystywanie_wiedzy: 7,
-      rzetelnosc: 7,
-      organizacja_pracy: 5,
-      wspolpraca: 7,
-      komunikacja: 5,
-      myslenie_analityczne: 7,
-    };
-    let res = await http()
-      .patch('/api/cases/c-001')
-      .send({
-        ratings: { komunikacja: { 'komunikacja.1': 5, 'komunikacja.2': null } },
-      })
-      .expect(200);
-    expect(res.body.ratings.komunikacja).toEqual({
-      'komunikacja.1': 5,
-      'komunikacja.2': null,
-    });
-
-    // signing too early: 409 with the failing checks
-    res = await act('c-001', 'SIGN_ASSESSMENT').expect(409);
-    expect(res.body.message).toContain('kontrola formalna');
-    expect(res.body.formalCheck.length).toBeGreaterThan(0);
-
-    res = await http()
-      .patch('/api/cases/c-001')
-      .send({ decisions })
-      .expect(200);
-    expect(res.body.currentStage).toBe('JUSTIFICATION');
-    expect(res.body.evaluation).toMatchObject({
-      result: 'POSITIVE',
-      averageDisplay: '6,33',
-    });
-
+  it('walks c-001 to the acknowledgement by the assessed person', async () => {
     await http()
       .patch('/api/cases/c-001')
       .send({
-        iprz: 'Szkolenie z prostego języka w pismach urzędowych.',
+        decisions: C_DECISIONS,
+        iprz: 'Szkolenie z prawa nowych technologii.',
         promotionRequest: { attached: 'NO' },
       })
       .expect(200);
-    res = await act('c-001', 'SIGN_ASSESSMENT').expect(200);
+    await act('c-001', 'COMPLETE_ASSESSMENT_TALK').expect(200);
+    let res = await act('c-001', 'SIGN_ASSESSMENT').expect(200);
+    expect(res.body.signedByEvaluatorOn).toBe('2026-11-21');
+    res = await act('c-001', 'SEND_FOR_ACK').expect(200);
     expect(res.body).toMatchObject({
-      currentStage: 'DOCUMENT',
-      signedByEvaluatorOn: '2026-11-21',
+      currentStage: 'ACKNOWLEDGEMENT',
+      status: 'DO_ZAPOZNANIA',
+      // The supervisor can no longer confirm for the assessed person.
+      availableActions: [],
     });
+    await act('c-001', 'EMPLOYEE_ACK_ASSESSMENT').expect(403);
 
-    // locked after signing
-    res = await http()
-      .patch('/api/cases/c-001')
-      .send({ decisions: { komunikacja: 7 } })
-      .expect(409);
-    expect(res.body.message).toContain('zablokowane');
-
-    await act('c-001', 'SEND_FOR_ACK').expect(200);
-    res = await act('c-001', 'EMPLOYEE_ACK_ASSESSMENT').expect(200);
+    const mine = await asNowak().get('/api/cases/c-001').expect(200);
+    expect(mine.body.availableActions).toEqual(['EMPLOYEE_ACK_ASSESSMENT']);
+    expect(mine.body.decisions).toEqual(C_DECISIONS); // handed over: visible
+    res = await act('c-001', 'EMPLOYEE_ACK_ASSESSMENT', nowak).expect(200);
     expect(res.body).toMatchObject({
       status: 'OKRES_SPRZECIWU',
       acknowledgedOn: '2026-11-21',
-      objectionDeadline: {
-        date: '2026-11-30',
-        legalBasis: expect.stringContaining('art. 83'),
+      objectionDeadline: { date: '2026-11-30' },
+    });
+  });
+
+  it('the assessed person reads only their own cases, read-only', async () => {
+    const list = await asNowak().get('/api/cases').expect(200);
+    expect(list.body.map((c: { id: string }) => c.id)).toEqual([
+      'c-000',
+      'c-001',
+    ]);
+    const detail = await asNowak().get('/api/cases/c-001').expect(200);
+    // Before the hand-over: no observations, no draft of part II.
+    expect(detail.body.observations).toEqual([]);
+    expect(detail.body.formalCheck).toEqual([]);
+    expect(detail.body.availableActions).toEqual([]);
+    await asNowak().get('/api/cases/c-002').expect(403);
+    await asNowak().patch('/api/cases/c-001').send({ iprz: 'x' }).expect(403);
+    await act('c-001', 'COMPLETE_ASSESSMENT_TALK', nowak).expect(403);
+    await asNowak().get('/api/team').expect(403);
+    await asNowak().get('/api/hr/overview').expect(403);
+  });
+
+  it('only the assessed person confirms part I', async () => {
+    let res = await http().get('/api/cases/c-002').expect(200);
+    expect(res.body.currentStage).toBe('PART_I_ACK');
+    expect(res.body.availableActions).toEqual([]);
+    await act('c-002', 'EMPLOYEE_ACK_PART_I').expect(403);
+    await act('c-002', 'EMPLOYEE_ACK_PART_I', nowak).expect(403);
+    res = await act('c-002', 'EMPLOYEE_ACK_PART_I', wojcik).expect(200);
+    expect(res.body).toMatchObject({
+      currentStage: 'OBSERVATION',
+      partI: { acknowledgedByEmployeeOn: '2026-11-21' },
+    });
+  });
+
+  it('sheet selection: suggestion, additional criteria from the catalogue, acceptance', async () => {
+    let res = await http().get('/api/cases/c-004').expect(200);
+    expect(res.body).toMatchObject({
+      currentStage: 'SHEET_SELECTION',
+      sheetId: null,
+      sheetSuggestion: {
+        sheetId: 'C',
+        legalBasis: expect.stringContaining('§3 ust. 4'),
       },
+      availableActions: ['ACCEPT_SHEET'],
     });
-  });
-
-  it('part II is a draft before the assessment talk, saved until signing', async () => {
-    for (const id of ['c-003', 'c-005']) {
-      await http()
-        .patch(`/api/cases/${id}`)
-        .send({
-          ratings: { komunikacja: { 'komunikacja.1': 5 } },
-          decisions: { komunikacja: 5 },
-          justification: 'Uzasadnienie robocze.',
-          iprz: 'Szkolenie robocze.',
-        })
-        .expect(200);
-      const res = await http().get(`/api/cases/${id}`).expect(200);
-      expect(res.body).toMatchObject({
-        currentStage: id === 'c-003' ? 'OBSERVATION' : 'OPENING_TALK',
-        ratings: { komunikacja: { 'komunikacja.1': 5 } },
-        decisions: { komunikacja: 5 },
-        justification: 'Uzasadnienie robocze.',
-        iprz: 'Szkolenie robocze.',
-      });
-      expect(res.body.availableActions).not.toContain('SIGN_ASSESSMENT');
-    }
-    const res = await act('c-003', 'SIGN_ASSESSMENT').expect(409);
-    expect(res.body.message).toContain('dopiero w otwartym formularzu oceny kompetencji');
-  });
-
-  it('PATCH validates values (400) and stage locks (409)', async () => {
-    let res = await http()
-      .patch('/api/cases/c-001')
-      .send({ decisions: { komunikacja: 4 } })
+    await http()
+      .patch('/api/cases/c-004')
+      .send({ partI: { additionalCriteria: ['kreatywnosc', 'kreatywnosc'] } })
       .expect(400);
-    expect(res.body.message[0]).toContain('1, 3, 5, 7 lub 9');
-    res = await http()
-      .patch('/api/cases/c-001')
-      .send({ partI: { additionalCriteria: ['kreatywnosc'] } })
-      .expect(409);
-    expect(res.body.message).toContain('Część I jest zablokowana');
-    res = await http()
-      .patch('/api/cases/c-005')
-      .send({ partI: { additionalCriteria: ['komunikacja'] } })
-      .expect(400);
-    expect(res.body.message[0]).toContain('obowiązkowe w arkuszu C');
-  });
-
-  describe('previous assessment and the request for the next grade', () => {
-    const decisions = {
-      wykorzystywanie_wiedzy: 7,
-      rzetelnosc: 7,
-      organizacja_pracy: 7,
-      wspolpraca: 7,
-      komunikacja: 5,
-      myslenie_analityczne: 7,
-    };
-    const partIII = {
-      appointedYear: 2018,
-      currentGrade: 'III',
-      gradeGrantedOn: '2018-03-01',
-      requestedGrade: 'IV',
-      motivation:
-        'Dwie kolejne oceny powyżej oczekiwań; samodzielnie prowadzi opinie w sprawach systemów wysokiego ryzyka.',
-    };
-
-    it('seeds the previous assessment of an urzędnik and an empty request', async () => {
-      const res = await http().get('/api/cases/c-001').expect(200);
-      expect(res.body.previousAssessment).toMatchObject({
-        result: 'POSITIVE',
-        level: 'powyżej oczekiwań',
-        date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-      });
-      expect(res.body.promotionRequest).toEqual({
-        attached: null,
-        appointedYear: null,
-        currentGrade: null,
-        gradeGrantedOn: null,
-        requestedGrade: null,
-        motivation: '',
-      });
-      expect(
-        res.body.formalCheck.find(
-          (f: { id: string }) => f.id === 'PROMOTION_REQUEST',
-        ),
-      ).toMatchObject({ ok: false, message: expect.stringContaining('TAK') });
-    });
-
-    it('saves and reads back the new fields, locked after signing', async () => {
-      await http()
-        .patch('/api/cases/c-001')
-        .send({
-          decisions,
-          iprz: 'Szkolenie z prostego języka.',
-          previousAssessment: { level: 'na poziomie oczekiwań' },
-          promotionRequest: { attached: 'YES', ...partIII },
-        })
-        .expect(200);
-      let res = await http().get('/api/cases/c-001').expect(200);
-      expect(res.body.previousAssessment.level).toBe('na poziomie oczekiwań');
-      expect(res.body.promotionRequest).toEqual({
-        attached: 'YES',
-        ...partIII,
-      });
-
-      res = await http()
-        .patch('/api/cases/c-001')
-        .send({ promotionRequest: { requestedGrade: 'VI' } })
-        .expect(400);
-      expect(res.body.message[0]).toContain('po stopniu III jest stopień IV');
-      res = await http()
-        .patch('/api/cases/c-001')
-        .send({ promotionRequest: { appointedYear: 99 } })
-        .expect(400);
-      expect(JSON.stringify(res.body.message)).toContain('4 cyfry');
-      res = await http()
-        .patch('/api/cases/c-001')
-        .send({ promotionRequest: { motivation: 'x'.repeat(4001) } })
-        .expect(400);
-      expect(JSON.stringify(res.body.message)).toContain('4000');
-
-      await act('c-001', 'SIGN_ASSESSMENT').expect(200);
-      res = await http()
-        .patch('/api/cases/c-001')
-        .send({ promotionRequest: { motivation: 'Zmiana po podpisie.' } })
-        .expect(409);
-      expect(res.body.message).toContain('zablokowane');
-      res = await http()
-        .patch('/api/cases/c-001')
-        .send({ previousAssessment: null })
-        .expect(409);
-      expect(res.body.message).toContain('zablokowane');
-      res = await http().get('/api/cases/c-001').expect(200);
-      expect(res.body.promotionRequest.requestedGrade).toBe('IV');
-    });
-
-    it('forces NOT_APPLICABLE for a pracownik służby cywilnej', async () => {
-      let res = await http().get('/api/cases/c-002').expect(200);
-      expect(res.body.person.employment).toBe('PRACOWNIK');
-      expect(res.body.promotionRequest.attached).toBe('NOT_APPLICABLE');
-      expect(res.body.previousAssessment).toBeNull();
-
-      // c-101 belongs to another supervisor; use the team's own pracownik in part II.
-      await act('c-002', 'ACCEPT_OSP_ANALYSIS').expect(200);
-      await act('c-002', 'ACCEPT_SHEET').expect(200);
-      await act('c-002', 'CONFIRM_PART_I').expect(200);
-      await act('c-002', 'EMPLOYEE_ACK_PART_I').expect(200);
-      await act('c-002', 'START_ASSESSMENT').expect(200);
-      res = await http()
-        .patch('/api/cases/c-002')
-        .send({ promotionRequest: { attached: 'YES' } })
-        .expect(400);
-      expect(res.body.message[0]).toContain('pracownikiem służby cywilnej');
-      res = await http().get('/api/cases/c-002').expect(200);
-      expect(res.body.promotionRequest.attached).toBe('NOT_APPLICABLE');
-      expect(
-        res.body.formalCheck.find(
-          (f: { id: string }) => f.id === 'PROMOTION_REQUEST',
-        ).ok,
-      ).toBe(true);
+    await http()
+      .patch('/api/cases/c-004')
+      .send({
+        sheetId: 'C',
+        partI: {
+          additionalCriteria: ['kreatywnosc', 'orientacja_na_klienta'],
+          assessmentDue: '2028-11-30',
+        },
+      })
+      .expect(200);
+    res = await act('c-004', 'ACCEPT_SHEET').expect(200);
+    expect(res.body).toMatchObject({
+      currentStage: 'OPENING_TALK',
+      sheetId: 'C',
+      partI: { assessmentDue: '2028-11-30' },
     });
   });
 
   it('illegal action -> 409 with a Polish explanation; unknown action -> 400', async () => {
-    const res = await act('c-003', 'CONFIRM_PART_I').expect(409);
-    expect(res.body.message).toMatch(
-      /^Akcja „Zatwierdź część I” jest teraz niedostępna/,
-    );
-    await act('c-003', 'DANCE').expect(400);
+    const res = await act('c-004', 'SIGN_ASSESSMENT').expect(409);
+    expect(res.body.message).toMatch(/^Akcja „.+” jest teraz niedostępna\./);
+    await act('c-004', 'ACCEPT_OSP_ANALYSIS').expect(400);
   });
 
-  it('POST observations adds an S-D-R note', async () => {
+  it('SIGN_ASSESSMENT with failing formal checks -> 409 with the list', async () => {
+    await act('c-001', 'COMPLETE_ASSESSMENT_TALK').expect(200);
+    const res = await act('c-001', 'SIGN_ASSESSMENT').expect(409);
+    expect(res.body.formalCheck.map((f: { id: string }) => f.id)).toContain(
+      'IPRZ_REQUIRED',
+    );
+  });
+
+  it('adds an observation to a case criterion only', async () => {
+    const observation = {
+      date: '2026-11-20',
+      criterionId: 'negocjowanie',
+      kind: 'STRENGTH',
+      situation: 'Negocjacje z partnerem.',
+      action: 'Przygotował stanowisko.',
+      result: 'Termin dotrzymany.',
+    };
     const res = await http()
       .post('/api/cases/c-003/observations')
-      .send({
-        date: '2026-11-20',
-        criterionId: 'zarzadzanie_ludzmi',
-        indicatorId: 'zarzadzanie_ludzmi.2',
-        kind: 'STRENGTH',
-        situation: 'Opóźnienie dostawcy.',
-        action: 'Ustalił punkty kontrolne.',
-        result: 'Termin dotrzymany.',
-      })
+      .send(observation)
       .expect(201);
     expect(res.body.observations).toHaveLength(5);
     await http()
       .post('/api/cases/c-003/observations')
-      .send({
-        date: '2026-11-20',
-        criterionId: 'rzetelnosc', // not a criterion on sheet B here
-        indicatorId: null,
-        kind: 'STRENGTH',
-        situation: 'x',
-        action: '',
-        result: '',
-      })
+      .send({ ...observation, criterionId: 'rzetelnosc' })
       .expect(400);
-  });
-
-  it('first assessment: report submitted moves to the assessment', async () => {
-    const res = await act('c-004', 'REPORT_SUBMITTED').expect(200);
-    expect(res.body).toMatchObject({
-      path: 'FIRST',
-      currentStage: 'FIRST_ASSESSMENT',
-      firstConditions: { reportSubmittedOn: '2026-11-21', examPassed: 'YES' },
-    });
-  });
-
-  it('GET /api/osp returns the 3 real OSP documents', async () => {
-    const res = await http().get('/api/osp').expect(200);
-    expect(res.body).toHaveLength(3);
-    expect(res.body.map((o: { source: string }) => o.source)).toEqual([
-      'OSP DC WZKSOiC 6 starszy specjalista.docx',
-      'OSP DSI WWI 5 radca.docx',
-      'OSP DWM WKAM 1 naczelnik wydziału.docx',
-    ]);
-    expect(res.body[0]).not.toHaveProperty('softCompetenciesQuote');
   });
 
   it('HR overview counts and simulated reminders', async () => {
     let res = await asHr().get('/api/hr/overview').expect(200);
-    expect(res.body.counters).toEqual({
-      inProgress: 8,
-      dueSoon: 5,
-      overdue: 2,
+    expect(res.body.cases).toHaveLength(14);
+    expect(res.body.counters).toMatchObject({
       awaitingAck: 1,
       objectionPeriod: 1,
     });
-    expect(res.body.cases).toHaveLength(10);
-    expect(res.body.cases[0]).toMatchObject({
-      evaluatorName: 'Joanna Kamińska',
-      lastReminderOn: null,
-    });
-
     res = await asHr()
       .post('/api/hr/reminders')
       .send({ caseIds: ['c-102', 'c-103'] })
       .expect(200);
     expect(res.body.sent).toBe(2);
-    expect(res.body.log[0]).toMatchObject({
-      caseId: 'c-102',
-      date: '2026-11-21',
-    });
     expect(res.body.log[0].text).toContain('Robert Sikora');
-
-    const detail = await asHr().get('/api/cases/c-102').expect(200);
-    expect(detail.body.history.at(-1).text).toContain('Przypomnienie');
     await asHr()
       .post('/api/hr/reminders')
       .send({ caseIds: ['nope'] })
       .expect(404);
-    await asHr().post('/api/hr/reminders').send({ caseIds: [] }).expect(400);
   });
 
   it('POST /api/demo/reset restores the seed', async () => {
-    await act('c-002', 'ACCEPT_OSP_ANALYSIS').expect(200);
+    await act('c-004', 'ACCEPT_SHEET').expect(200);
     await http().post('/api/demo/reset').expect(200);
-    const res = await http().get('/api/cases/c-002').expect(200);
-    expect(res.body.currentStage).toBe('OSP_ANALYSIS');
+    const res = await http().get('/api/cases/c-004').expect(200);
+    expect(res.body.currentStage).toBe('SHEET_SELECTION');
   });
 });

@@ -1,21 +1,19 @@
-import { COMPETENCY_MODEL } from '../competency-model/data/model.data.js';
+import {
+  CRITERIA_CATALOGUE,
+  knownCriterionName,
+} from '../criteria/data/criteria.data.js';
 import { SHEETS } from '../sheets/sheets.data.js';
 import type { Sheet, SheetId } from '../sheets/sheet.types.js';
-import { displayName } from './assessment.format.js';
 import {
   type CriterionScore,
   evaluate,
-  type FirstAssessmentInput,
   periodicLevel,
   validateEvaluation,
 } from './evaluate.rules.js';
 
 const sheet = (id: SheetId): Sheet => SHEETS.find((s) => s.id === id)!;
-const scale = COMPETENCY_MODEL.scale;
-const criterionName = (id: string) => {
-  const c = COMPETENCY_MODEL.competencies.find((x) => x.id === id);
-  return c ? displayName(c.name) : undefined;
-};
+const scale = CRITERIA_CATALOGUE.scale;
+const criterionName = knownCriterionName;
 
 // C: wykorzystywanie_wiedzy, rzetelnosc, organizacja_pracy, wspolpraca, komunikacja
 const scoresFor = (
@@ -30,20 +28,9 @@ const scoresFor = (
   ...extra,
 ];
 
-const run = (
-  id: SheetId,
-  scores: CriterionScore[],
-  first?: FirstAssessmentInput,
-) => {
-  expect(validateEvaluation(sheet(id), scores, first, criterionName)).toEqual(
-    [],
-  );
-  return evaluate(sheet(id), scores, first, criterionName, scale);
-};
-
-const OK_FIRST: FirstAssessmentInput = {
-  examPassed: 'YES',
-  reportSubmittedOnTime: true,
+const run = (id: SheetId, scores: CriterionScore[]) => {
+  expect(validateEvaluation(sheet(id), scores, criterionName)).toEqual([]);
+  return evaluate(sheet(id), scores, criterionName, scale);
 };
 
 describe('periodicLevel', () => {
@@ -131,67 +118,9 @@ describe('evaluate: periodic', () => {
   });
 });
 
-describe('evaluate: FIRST', () => {
-  it('average exactly 5 is POSITIVE', () => {
-    const result = run('FIRST', scoresFor('FIRST', [5, 5, 5, 5, 5]), OK_FIRST);
-    expect(result.average).toBe(5);
-    expect(result.averageDisplay).toBe('5,00');
-    expect(result.level).toBeNull();
-    expect(result.result).toBe('POSITIVE');
-  });
-
-  it('one 3 balanced by a 7 is POSITIVE', () => {
-    const result = run('FIRST', scoresFor('FIRST', [3, 7, 5, 5, 5]), OK_FIRST);
-    expect(result.result).toBe('POSITIVE');
-  });
-
-  it('two 3s are NEGATIVE even with average >= 5', () => {
-    const result = run('FIRST', scoresFor('FIRST', [3, 3, 7, 7, 7]), OK_FIRST);
-    expect(result.average).toBeCloseTo(5.4);
-    expect(result.result).toBe('NEGATIVE');
-    expect(result.reasons.join(' ')).toContain('najwyżej jedną');
-  });
-
-  it('average below 5 is NEGATIVE', () => {
-    const result = run('FIRST', scoresFor('FIRST', [3, 5, 5, 5, 5]), OK_FIRST);
-    expect(result.averageDisplay).toBe('4,60');
-    expect(result.result).toBe('NEGATIVE');
-  });
-
-  it('exam NO is NEGATIVE', () => {
-    const result = run('FIRST', scoresFor('FIRST', [7, 7, 7, 7, 7]), {
-      examPassed: 'NO',
-      reportSubmittedOnTime: true,
-    });
-    expect(result.result).toBe('NEGATIVE');
-    expect(result.reasons.join(' ')).toContain('nie został zaliczony');
-  });
-
-  it('exam NOT_APPLICABLE is fine', () => {
-    const result = run('FIRST', scoresFor('FIRST', [5, 5, 5, 5, 7]), {
-      examPassed: 'NOT_APPLICABLE',
-      reportSubmittedOnTime: true,
-    });
-    expect(result.result).toBe('POSITIVE');
-    expect(result.reasons.join(' ')).toContain('§10 ust. 3');
-  });
-
-  it('a late report is NEGATIVE', () => {
-    const result = run('FIRST', scoresFor('FIRST', [7, 7, 7, 7, 7]), {
-      examPassed: 'YES',
-      reportSubmittedOnTime: false,
-    });
-    expect(result.result).toBe('NEGATIVE');
-    expect(result.reasons.join(' ')).toContain('Sprawozdania nie złożono');
-  });
-});
-
 describe('validateEvaluation', () => {
-  const errors = (
-    id: SheetId,
-    scores: CriterionScore[],
-    first?: FirstAssessmentInput,
-  ) => validateEvaluation(sheet(id), scores, first, criterionName);
+  const errors = (id: SheetId, scores: CriterionScore[]) =>
+    validateEvaluation(sheet(id), scores, criterionName);
 
   it('reports a missing mandatory criterion', () => {
     const scores = scoresFor('B', [5, 5, 5, 5, 5]).slice(1);
@@ -245,9 +174,6 @@ describe('validateEvaluation', () => {
     expect(errors('C', scoresFor('C', [5, 4, 5, 5, 5]))).toEqual([
       'Ocena kryterium „Rzetelność” musi wynosić 1, 3, 5, 7 lub 9 pkt (podano 4).',
     ]);
-    expect(
-      errors('FIRST', scoresFor('FIRST', [9, 5, 5, 5, 1]), OK_FIRST),
-    ).toHaveLength(2);
   });
 
   it('reports an unknown criterion', () => {
@@ -257,23 +183,6 @@ describe('validateEvaluation', () => {
       [{ criterionId: 'xyz', points: 5 }],
     );
     expect(errors('C', scores)).toEqual(['Nieznane kryterium „xyz”.']);
-  });
-
-  it('requires firstAssessment for FIRST', () => {
-    expect(errors('FIRST', scoresFor('FIRST', [5, 5, 5, 5, 5]))).toEqual([
-      expect.stringContaining('wymaga pola firstAssessment'),
-    ]);
-  });
-
-  it('rejects additional criteria on FIRST', () => {
-    const scores = scoresFor(
-      'FIRST',
-      [5, 5, 5, 5, 5],
-      [{ criterionId: 'kreatywnosc', points: 5 }],
-    );
-    expect(errors('FIRST', scores, OK_FIRST)).toEqual([
-      expect.stringContaining('nie dopuszcza kryteriów dodatkowych'),
-    ]);
   });
 
   it('accepts up to 3 distinct additional criteria', () => {
