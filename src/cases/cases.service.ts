@@ -27,6 +27,8 @@ import type {
   StageId,
 } from './case.types.js';
 import { toDetail, toSummary } from './case-view.js';
+import { toExport } from './case-export.js';
+import type { CaseExport } from './case-export.schema.js';
 import type { ObservationInput, PatchCase } from './cases.schemas.js';
 import { formatDatePl } from './dates.js';
 import { describeDaysLeft, toDeadline } from './deadlines.rules.js';
@@ -173,6 +175,14 @@ export class CasesService {
     const record = this.record(id);
     await this.authorize('view', record);
     return this.detail(id, this.actorFor(record));
+  }
+
+  /**
+   * GET /api/cases/:id/export: the sheet's fields for an EZD or HR system.
+   * Same access and the same view as GET /api/cases/:id.
+   */
+  async export(id: string): Promise<CaseExport> {
+    return toExport(await this.view(id), new Date());
   }
 
   /** Who the caller is in this case; null when they only read it (HR). */

@@ -1,3 +1,4 @@
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '@nestjs/authentication';
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -10,12 +11,18 @@ export interface AppConfigResponse {
   office: OfficeConfig;
 }
 
+@ApiTags('System')
 @Public()
 @Controller('config')
 export class AppConfigController {
   constructor(private readonly config: ConfigService) {}
 
   @Get()
+  @ApiOperation({
+    summary: 'Konfiguracja aplikacji',
+    description: 'Włączone funkcje (np. asystent AI). Bez logowania.',
+  })
+  @ApiOkResponse({ description: '`{ features }`.' })
   get(): AppConfigResponse {
     return {
       features: readFeatures(this.config),

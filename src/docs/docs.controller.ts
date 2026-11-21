@@ -1,3 +1,11 @@
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ApiErrors } from '../openapi/api-docs.decorators.js';
 import { Public } from '@nestjs/authentication';
 import { Can } from '@nestjs/authorization';
 import { createReadStream } from 'node:fs';
@@ -21,15 +29,37 @@ import { contentType, resolveDocFile } from './docs-files.js';
  * list needs sign-in; the files are public legal documents linked from
  * answers and opened in a new tab, where no Bearer token can be sent.
  */
+@ApiTags('Dokumenty źródłowe')
 @Can.Anyone()
 @Controller('docs')
 export class DocsController {
   @Get()
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Lista dokumentów źródłowych',
+    description: 'Przepisy i poradniki, na których opiera się aplikacja.',
+  })
+  @ApiOkResponse({
+    description: '`{ id, title, description, url, indexed, note }[]`.',
+  })
+  @ApiErrors(401)
   list(): DocumentListItem[] {
     return listDocuments();
   }
 
   @Get('*path')
+  @ApiParam({
+    name: 'path',
+    description:
+      'Ścieżka pliku w katalogu docs/, np. `ocena-okresowa/arkusz-oceny-c.docx`.',
+  })
+  @ApiOperation({
+    summary: 'Plik dokumentu źródłowego',
+    description:
+      'Oryginał (PDF, DOCX). Bez logowania: to publiczne akty prawne.',
+  })
+  @ApiOkResponse({ description: 'Plik.' })
+  @ApiErrors(404)
   @Public()
   file(@Param('path') path: string | string[]): StreamableFile {
     const rel = Array.isArray(path) ? path.join('/') : path;

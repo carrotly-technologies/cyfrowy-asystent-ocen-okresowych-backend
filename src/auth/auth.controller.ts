@@ -1,4 +1,11 @@
 import {
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ApiErrors } from '../openapi/api-docs.decorators.js';
+import {
   Body,
   Controller,
   HttpCode,
@@ -18,6 +25,7 @@ export interface LoginResponse {
   user: UserView;
 }
 
+@ApiTags('Logowanie')
 @Public()
 @Controller('auth')
 export class AuthController {
@@ -27,6 +35,15 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @ApiOperation({
+    summary: 'Logowanie',
+    description:
+      'Zwraca token JWT (8 godzin) do nagłówka `Authorization: Bearer <token>`.',
+  })
+  @ApiOkResponse({
+    description: '`{ accessToken, tokenType, expiresIn, user }`.',
+  })
+  @ApiErrors(400, 401)
   @HttpCode(200)
   async login(
     @Body({ schema: loginSchema }) body: LoginInput,
@@ -47,6 +64,11 @@ export class AuthController {
 
   /** Tokens are stateless: the client drops its token. Kept for symmetry. */
   @Post('logout')
+  @ApiOperation({
+    summary: 'Wylogowanie',
+    description: 'Tokeny są bezstanowe: klient usuwa swój token.',
+  })
+  @ApiNoContentResponse({ description: 'Wylogowano.' })
   @HttpCode(204)
   logout(): void {}
 }
