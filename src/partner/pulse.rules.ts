@@ -9,6 +9,10 @@ import type { PulseAnswers, PulsePoint, PulseResponse } from './pulse.types.js';
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
+/** An index for Polish text: decimal comma, e.g. 3,7. */
+export const plIndex = (n: number | undefined): string =>
+  String(round1(n ?? 0)).replace('.', ',');
+
 /** Average of all answers of one response (1–5). */
 export function pulseIndex(answers: PulseAnswers): number {
   const values = PULSE_QUESTION_IDS.map((q) => answers[q]);
@@ -106,7 +110,7 @@ export function pulseTrend(responses: readonly PulseResponse[]): TrendResult {
       kind: 'SUDDEN_DROP',
       delta,
       droppedQuestions,
-      description: `Nagły spadek w ostatnim pulsie: indeks ${pulseIndex(latest.answers)} wobec średnio ${round1(baseline)} wcześniej.`,
+      description: `Nagły spadek w ostatnim pulsie: indeks ${plIndex(pulseIndex(latest.answers))} wobec średnio ${plIndex(baseline)} wcześniej.`,
     };
   }
 
@@ -119,7 +123,7 @@ export function pulseTrend(responses: readonly PulseResponse[]): TrendResult {
       kind: 'GRADUAL_DECLINE',
       delta,
       droppedQuestions,
-      description: `Stopniowy spadek: indeks maleje ${TREND.declineRun} razy z rzędu (z ${run[0]} do ${run.at(-1)}).`,
+      description: `Stopniowy spadek: indeks maleje ${TREND.declineRun} razy z rzędu (z ${plIndex(run[0])} do ${plIndex(run.at(-1))}).`,
     };
   }
 
@@ -128,14 +132,14 @@ export function pulseTrend(responses: readonly PulseResponse[]): TrendResult {
       kind: 'IMPROVING',
       delta,
       droppedQuestions,
-      description: `Poprawa: indeks ${pulseIndex(latest.answers)} wobec średnio ${round1(baseline)} wcześniej.`,
+      description: `Poprawa: indeks ${plIndex(pulseIndex(latest.answers))} wobec średnio ${plIndex(baseline)} wcześniej.`,
     };
   }
   return {
     kind: 'STABLE',
     delta,
     droppedQuestions,
-    description: `Stabilnie: indeks ${pulseIndex(latest.answers)}.`,
+    description: `Stabilnie: indeks ${plIndex(pulseIndex(latest.answers))}.`,
   };
 }
 

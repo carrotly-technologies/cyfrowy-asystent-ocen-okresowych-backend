@@ -6,7 +6,12 @@ import {
   type PartnerAction,
   type PartnerActionId,
 } from './data/partner-actions.data.js';
-import { pulseIndex, pulseTrend, type TrendResult } from './pulse.rules.js';
+import {
+  plIndex,
+  pulseIndex,
+  pulseTrend,
+  type TrendResult,
+} from './pulse.rules.js';
 import type { PulseResponse } from './pulse.types.js';
 
 /**
@@ -272,7 +277,7 @@ export function computeSignals(input: SignalInput): SignalsResult {
   if (stableHigh)
     appreciation.push({
       source: 'PULSE',
-      text: `Wysoki, stabilny puls w trzech ostatnich odpowiedziach (${last3.join(', ')}).`,
+      text: `Wysoki, stabilny puls w trzech ostatnich odpowiedziach (${last3.map(plIndex).join('; ')}).`,
     });
   if (appreciation.length > 0) {
     signals.push({
