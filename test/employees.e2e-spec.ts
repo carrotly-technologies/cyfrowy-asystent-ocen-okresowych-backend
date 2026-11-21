@@ -169,6 +169,17 @@ describe('HR register: employees, absences, history, statistics (e2e)', () => {
       await as(hr).delete('/api/employees/p-pietrzak').expect(204);
       await as(hr).get('/api/employees/p-pietrzak').expect(404);
     });
+
+    it('archives assessed people only after the retention of akta osobowe, or by ADMIN with a reason', async () => {
+      const res = await as(hr).delete('/api/employees/p-grabowski').expect(409);
+      expect(res.body.message).toContain('art. 94 pkt 9b');
+      await as(admin).delete('/api/employees/p-grabowski').expect(409);
+      await as(admin)
+        .delete('/api/employees/p-grabowski')
+        .query({ reason: 'Sprostowanie błędnie założonej kartoteki' })
+        .expect(204);
+      await as(hr).get('/api/employees/p-grabowski').expect(404);
+    });
   });
 
   describe('obligatory next grade', () => {

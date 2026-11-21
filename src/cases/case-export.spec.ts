@@ -14,6 +14,7 @@ const OFFICE: OfficeConfig = {
   city: 'Warszawa',
   logoUrl: null,
   objectionRecipient: null,
+  hasDirectorGeneral: true,
 };
 const AT = new Date('2026-11-21T10:00:00Z');
 const seed = (id: string): CaseRecord =>

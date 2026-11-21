@@ -54,6 +54,20 @@ export const patchCaseSchema = z.object({
   deviationNotes: z.record(z.string(), z.string().nullable()).optional(),
   justification: z.string().optional(),
   iprz: z.string().optional(),
+  /** Data przeprowadzenia rozmowy oceniającej (default: the day the talk is confirmed). */
+  assessmentTalkOn: isoDate.optional(),
+  /** Okres, w którym oceniany podlegał ocenie; null resets a side to its default. */
+  assessmentPeriod: z
+    .object({ from: isoDate.nullable(), to: isoDate.nullable() })
+    .partial()
+    .optional(),
+  /** Notatki robocze oceniającego: free text without legal effect, never on the sheet. */
+  workingNotes: z
+    .string()
+    .max(MOTIVATION_MAX, {
+      error: `Notatki robocze mogą mieć najwyżej ${MOTIVATION_MAX} znaków.`,
+    })
+    .optional(),
   /** Part II item 10 of the sheet; null clears it. */
   previousAssessment: z
     .object({

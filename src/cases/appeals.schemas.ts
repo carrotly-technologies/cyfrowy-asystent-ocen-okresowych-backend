@@ -37,6 +37,8 @@ export const objectionDecisionSchema = z.object({
   reason: text('uzasadnienie rozstrzygnięcia'),
   decisions: z.record(z.string(), z.number()).optional(),
   justification: z.string().max(TEXT_MAX).optional(),
+  /** Data doręczenia rozstrzygnięcia (art. 83 ust. 5); default: the decision date. */
+  deliveredOn: isoDate.optional(),
 });
 export type ObjectionDecisionBody = z.infer<typeof objectionDecisionSchema>;
 

@@ -396,7 +396,7 @@ function validateValue(
       const list = value as string[];
       if (list.length > 3) {
         errors.push(
-          'Można wybrać najwyżej 3 kryteria dodatkowe (§2 ust. 2 rozp. 2016).',
+          'Można wybrać najwyżej 3 kryteria dodatkowe (§5 ust. 2 rozp. 2016).',
         );
       }
       const mandatory = sheetOf(record)?.mandatoryCriteria ?? [];

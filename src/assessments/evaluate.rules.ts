@@ -62,7 +62,7 @@ export function validateEvaluation(
 
   if (additional.length > sheet.maxAdditionalCriteria) {
     errors.push(
-      `Można wybrać najwyżej ${sheet.maxAdditionalCriteria} kryteria dodatkowe (podano ${additional.length}; §2 ust. 2 ${RO_2016}).`,
+      `Można wybrać najwyżej ${sheet.maxAdditionalCriteria} kryteria dodatkowe (podano ${additional.length}; §5 ust. 2 ${RO_2016}).`,
     );
   }
 

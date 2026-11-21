@@ -41,7 +41,7 @@ export function objectionDecisionDeadline(filedOn: string): DeadlineSpec {
   return daysTerm(
     filedOn,
     OBJECTION_DECISION_DAYS,
-    'Termin rozpatrzenia sprzeciwu przez dyrektora generalnego',
+    'Termin rozpatrzenia sprzeciwu',
     `art. 83 ust. 3 ${USC}: 14 dni od dnia wniesienia sprzeciwu`,
   );
 }
@@ -58,8 +58,9 @@ export function courtAppealDeadline(
   const label = 'Termin na odwołanie do sądu pracy';
   const decision = objection.decision;
   if (decision?.outcome === 'DISMISS') {
+    // art. 83 ust. 5: from the delivery of the decision (default: its date).
     return daysTerm(
-      decision.decidedOn,
+      decision.deliveredOn ?? decision.decidedOn,
       COURT_APPEAL_DAYS,
       label,
       `art. 83 ust. 5 ${USC}: 14 dni od doręczenia rozstrzygnięcia o nieuwzględnieniu sprzeciwu`,

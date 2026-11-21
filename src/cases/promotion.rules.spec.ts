@@ -89,11 +89,14 @@ describe('previous assessment (part II item 10)', () => {
     ).toBeNull();
   });
 
-  it('is a draft before signing, locked after it and without a sheet', () => {
+  it('is editable at the assessment stage, locked before it and after signing', () => {
     expect(
-      applyPatch(seed('c-003'), { previousAssessment: null }, TODAY)
+      applyPatch(seed('c-001'), { previousAssessment: null }, TODAY)
         .previousAssessment,
     ).toBeNull();
+    expect(() =>
+      applyPatch(seed('c-003'), { previousAssessment: null }, TODAY),
+    ).toThrow(/od etapu/);
     expect(() =>
       applyPatch(seed('c-004'), { previousAssessment: null }, TODAY),
     ).toThrow(CaseRuleError);
@@ -208,5 +211,24 @@ describe('request for the next grade (part II item 11, part III)', () => {
       ok: false,
       message: expect.stringContaining('negatywna'),
     });
+  });
+});
+
+describe('default answer after a negative result (field schema A/B/C)', () => {
+  it('an urzędnik with a negative result and no answer: NIE', () => {
+    const r = {
+      ...seed('c-001'),
+      promotionRequest: { ...seed('c-001').promotionRequest, attached: null },
+    };
+    expect(
+      promotionRequestOf(r, { result: 'NEGATIVE' } as never).attached,
+    ).toBe('NO');
+    expect(
+      promotionRequestOf(r, { result: 'POSITIVE' } as never).attached,
+    ).toBeNull();
+    expect(
+      promotionRequestOf(seed('c-101'), { result: 'NEGATIVE' } as never)
+        .attached,
+    ).toBe('NOT_APPLICABLE');
   });
 });

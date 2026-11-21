@@ -14,6 +14,7 @@ describe('readOffice', () => {
       city: DEFAULT_OFFICE_CITY,
       logoUrl: null,
       objectionRecipient: null,
+      hasDirectorGeneral: true,
     });
   });
 
@@ -32,6 +33,14 @@ describe('readOffice', () => {
       city: 'Lublin',
       logoUrl: null,
       objectionRecipient: 'Prezesa Rady Ministrów',
+      hasDirectorGeneral: true,
     });
+  });
+
+  it('OFFICE_HAS_DIRECTOR_GENERAL=false: an office without a dyrektor generalny', () => {
+    expect(
+      readOffice(config({ OFFICE_HAS_DIRECTOR_GENERAL: 'false' }))
+        .hasDirectorGeneral,
+    ).toBe(false);
   });
 });

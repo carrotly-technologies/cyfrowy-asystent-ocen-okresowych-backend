@@ -1,4 +1,5 @@
 import type { CycleStart, PreviousAssessment } from '../cases/case.types.js';
+import { addMonths, formatDatePl } from '../cases/dates.js';
 import { USC } from '../cases/deadlines.rules.js';
 import { previousLevelLabels } from '../cases/promotion.rules.js';
 import type { Employee, Substitution } from './employees.types.js';
@@ -205,4 +206,37 @@ export function conflictingUnit(
         firstSegment(name) === unitKey(e),
     ) ?? null
   );
+}
+
+/**
+ * Retention of the personnel file (akta osobowe), which holds the periodic
+ * assessments (§6 ust. 3, §12 ust. 2 rozp. 2016): 10 years (art. 94 pkt 9b
+ * KP). The application counts it, conservatively, from the latest assessment
+ * of the person; before it ends the data is only archived/anonymised on an
+ * administrator's documented decision.
+ */
+export const PERSONNEL_FILE_RETENTION_YEARS = 10;
+export const RETENTION_BASIS =
+  'art. 94 pkt 9b Kodeksu pracy (akta osobowe: 10 lat)';
+
+/** The day the retention ends (null: no assessment on record). */
+export function retentionUntil(assessedOn: readonly string[]): string | null {
+  const latest = [...assessedOn].sort().at(-1);
+  return latest ? addMonths(latest, PERSONNEL_FILE_RETENTION_YEARS * 12) : null;
+}
+
+/**
+ * Why archiving (anonymisation) of a person's data is refused now, or null.
+ * Before the retention ends only an ADMIN may do it, with a reason.
+ */
+export function archiveBlocker(input: {
+  assessedOn: readonly string[];
+  today: string;
+  role: string;
+  reason?: string | null;
+}): string | null {
+  const until = retentionUntil(input.assessedOn);
+  if (!until || input.today >= until) return null;
+  if (input.role === 'ADMIN' && input.reason?.trim()) return null;
+  return `Oceny okresowe tej osoby są częścią akt osobowych i podlegają przechowywaniu do ${formatDatePl(until)} (${RETENTION_BASIS}). Przed upływem tego okresu dane może zarchiwizować i zanonimizować wyłącznie administrator, podając powód.`;
 }

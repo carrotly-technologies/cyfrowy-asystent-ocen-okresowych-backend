@@ -70,6 +70,8 @@ describe('formalCheck: periodic', () => {
   it('IPRZ is always required', () => {
     const r = decided([7, 7, 7, 7, 7, 7]);
     expect(item(r, 'IPRZ_REQUIRED')?.ok).toBe(false);
+    // the assessment itself contains the IPRZ conclusions (art. 81 ust. 5)
+    expect(item(r, 'IPRZ_REQUIRED')?.legalBasis).toMatch(/^art\. 81 ust\. 5/);
     expect(item({ ...r, iprz: 'Plan rozwoju.' }, 'IPRZ_REQUIRED')?.ok).toBe(
       true,
     );

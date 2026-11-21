@@ -20,13 +20,18 @@ import {
   USC,
 } from './deadlines.rules.js';
 import { appealNextDeadline, appealStatus } from './objection-terms.rules.js';
+import { redoPartIDeadline } from './due-date-change.rules.js';
+import {
+  type ObjectionAddressee,
+  objectionAddressee,
+} from './objection-addressee.rules.js';
 
 export const STAGE_LEGAL_BASIS: Record<StageId, string> = {
   SHEET_SELECTION: `§2 ust. 2, §3, §5 ust. 2–3 ${RO_2016}`,
   OPENING_TALK: `§5–§7 ${RO_2016}`,
   PART_I_ACK: `§6 ust. 2–3 ${RO_2016}`,
   OBSERVATION: `art. 81 ust. 1 ${USC}`,
-  ASSESSMENT: `§10, §11 ${RO_2016}; art. 108 ${USC}`,
+  ASSESSMENT: `§10, §11 ${RO_2016}; art. 81 ust. 3 i 5 ${USC}`,
   SIGNATURE: `§11 ust. 2, §12 ust. 1 ${RO_2016}`,
   ACKNOWLEDGEMENT: `§12 ${RO_2016}; art. 83 ust. 1 ${USC}`,
 };
@@ -46,10 +51,14 @@ function stageDeadlineSpec(
         label: 'Wybór arkusza i kryteriów przed rozmową rozpoczynającą, do',
       };
     case 'OPENING_TALK':
-      return openingTalkDeadline(record.cycleStart);
+      // §9 ust. 1: part I made again within 30 days of a change of position.
+      return (
+        redoPartIDeadline(record) ?? openingTalkDeadline(record.cycleStart)
+      );
     case 'PART_I_ACK':
       return {
-        ...openingTalkDeadline(record.cycleStart),
+        ...(redoPartIDeadline(record) ??
+          openingTalkDeadline(record.cycleStart)),
         label: 'Potwierdzenie części I przez ocenianego, do',
       };
     case 'OBSERVATION':
@@ -101,9 +110,13 @@ export function nextCycleStart(
 export function objectionDeadlineOf(
   record: CaseRecord,
   today: string,
+  addressee: ObjectionAddressee = objectionAddressee(record),
 ): Deadline | null {
   if (!record.acknowledgedOn) return null;
-  return toDeadline(objectionDeadline(record.acknowledgedOn), today);
+  return toDeadline(
+    objectionDeadline(record.acknowledgedOn, addressee.to),
+    today,
+  );
 }
 
 export function caseStatus(record: CaseRecord, today: string): CaseStatus {

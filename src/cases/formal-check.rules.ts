@@ -149,7 +149,9 @@ export function formalCheck(
       message: hasIprz
         ? 'Wnioski dotyczące indywidualnego programu rozwoju zawodowego są wpisane.'
         : 'Wpisz wnioski do IPRZ: są wymagane niezależnie od wyniku oceny.',
-      legalBasis: `§11 ust. 1 pkt 5 ${RO_2016}; art. 108 ${USC}`,
+      // art. 81 ust. 5: the assessment contains the IPRZ conclusions; art. 108 ust. 1 pkt 1:
+      // the IPRZ itself is then set taking them into account.
+      legalBasis: `art. 81 ust. 5 ${USC}; §11 ust. 1 pkt 5 ${RO_2016}; art. 108 ust. 1 pkt 1 ${USC}`,
     });
     items.push(promotionRequestCheck(record, evaluation));
   }

@@ -4,6 +4,7 @@ import type { EvaluateResult } from '../assessments/evaluate.rules.js';
 import type { SheetSuggestion } from '../sheets/sheet-suggestion.rules.js';
 import type { SheetId } from '../sheets/sheet.types.js';
 import type { AbsenceSpan } from './absences.rules.js';
+import type { ObjectionAddressee } from './objection-addressee.rules.js';
 
 /** Types of contract v2 (notatki/api-kontrakt-v2.md). */
 
@@ -55,6 +56,11 @@ export interface Person {
   officeHead: boolean;
   /** The work consists in directly managing employees (sheet B, §3 ust. 3). */
   managesPeople: boolean;
+  /**
+   * Data otrzymania ostatniego stopnia służbowego, from the HR record
+   * (src/employees); the start of the count of art. 89 ust. 2.
+   */
+  lastGradeGrantedOn?: string | null;
 }
 
 export interface Evaluator {
@@ -63,6 +69,8 @@ export interface Evaluator {
   lastName: string;
   position: string;
   unit: string;
+  /** The evaluator is the dyrektor generalny urzędu (art. 81 ust. 2 pkt 2, art. 83 ust. 2). */
+  directorGeneral?: boolean;
 }
 
 export interface Deadline {
@@ -176,6 +184,8 @@ export const CASE_EVENT_TYPES = [
   'DUE_DATE_CHANGE_REJECTED',
   'DUE_DATE_CHANGE_WITHDRAWN',
   'DUE_DATE_CHANGED',
+  /** The signed assessment contains the request for the next stopień (art. 89 ust. 1, part III). */
+  'PROMOTION_REQUESTED',
 ] as const;
 export type CaseEventType = (typeof CASE_EVENT_TYPES)[number];
 
@@ -210,6 +220,8 @@ export type ObjectionOutcome = 'DISMISS' | 'CHANGE' | 'REDO';
 export interface ObjectionDecision {
   outcome: ObjectionOutcome;
   decidedOn: string;
+  /** Day the decision was delivered to the assessed person (art. 83 ust. 5); default decidedOn. */
+  deliveredOn?: string;
   reason: string;
   decidedBy: ActorRef;
 }
@@ -316,6 +328,14 @@ export interface CaseDetail extends CaseSummary {
   absences?: AbsenceSpan[];
   /** Post-assessment actions the caller may take now (appeals.rules.ts). */
   legalActions?: string[];
+  /** „Okres, w którym oceniany podlegał ocenie” (stored or default, assessment-period.rules.ts). */
+  assessmentPeriod?: { from: string | null; to: string | null };
+  /** Notatki robocze oceniającego; empty for the assessed person. */
+  workingNotes?: string;
+  /** Stage from which part II is editable (field schema of sheets A/B/C). */
+  partIIEditableFrom?: StageId;
+  /** To whom the sprzeciw goes and who decides it (art. 83 ust. 1–2). */
+  objectionAddressee?: ObjectionAddressee;
 }
 
 export interface ObjectionView extends Objection {
@@ -359,6 +379,10 @@ export interface CaseRecord {
   history: HistoryEntry[];
   /** Audit of the administrator's „tryb korekty” (src/cases/correction.rules.ts). */
   corrections?: Correction[];
+  /** Notatki robocze oceniającego (no legal effect, not printed, hidden from the assessed). */
+  workingNotes?: string;
+  /** „Okres, w którym oceniany podlegał ocenie” set by the evaluator (null fields: default). */
+  assessmentPeriod?: { from: string | null; to: string | null };
   lastReminderOn: string | null;
   /** Set when a later cycle of the same person exists (this one is archived). */
   nextCaseId: string | null;

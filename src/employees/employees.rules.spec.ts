@@ -1,6 +1,8 @@
 import { openingTalkDeadline } from '../cases/deadlines.rules.js';
 import {
   conflictingUnit,
+  archiveBlocker,
+  retentionUntil,
   effectiveEvaluator,
   newCycleStart,
   obligatoryPromotion,
@@ -332,5 +334,37 @@ describe('obligatoryPromotionNextStep', () => {
     expect(obligatoryPromotionNextStep(null, '2026-11-21', fmt)).toContain(
       '30 dni od zapoznania',
     );
+  });
+});
+
+describe('archiveBlocker (akta osobowe, art. 94 pkt 9b KP)', () => {
+  it('no assessment or retention over: allowed', () => {
+    expect(
+      archiveBlocker({ assessedOn: [], today: '2026-11-21', role: 'HR' }),
+    ).toBeNull();
+    expect(
+      archiveBlocker({
+        assessedOn: ['2016-11-20'],
+        today: '2026-11-21',
+        role: 'HR',
+      }),
+    ).toBeNull();
+  });
+
+  it('within 10 years of the latest assessment: only ADMIN with a reason', () => {
+    const input = {
+      assessedOn: ['2016-01-01', '2024-11-29'],
+      today: '2026-11-21',
+    };
+    expect(retentionUntil(input.assessedOn)).toBe('2034-11-29');
+    expect(archiveBlocker({ ...input, role: 'HR', reason: 'x' })).toContain(
+      '29.11.2034',
+    );
+    expect(archiveBlocker({ ...input, role: 'ADMIN' })).toContain(
+      'administrator',
+    );
+    expect(
+      archiveBlocker({ ...input, role: 'ADMIN', reason: 'Błędna kartoteka' }),
+    ).toBeNull();
   });
 });

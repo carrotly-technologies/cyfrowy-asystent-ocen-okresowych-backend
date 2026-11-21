@@ -255,3 +255,65 @@ describe('objectionNextSteps ("Co dalej?")', () => {
     expect(steps[2].legalBasis).toContain('art. 83 ust. 5');
   });
 });
+
+describe('objection addressee in the post-assessment path', () => {
+  const sheetA = (): CaseRecord => ({ ...seed('c-006'), sheetId: 'A' });
+
+  it('sheet A: the evaluator decides, the DG does not; notify without DIRECTOR', () => {
+    const next = fileObjection(sheetA(), 'Nie zgadzam się.', TODAY);
+    expect(next.history.at(-1)?.text).toContain(
+      'do osoby, która dokonała oceny okresowej',
+    );
+    expect(next.history.at(-1)?.event?.notify).toEqual(['EVALUATOR', 'HR']);
+    expect(legalActions(next, TODAY, 'EVALUATOR')).toContain(
+      'DECIDE_OBJECTION',
+    );
+    expect(legalActions(next, TODAY, 'DIRECTOR')).not.toContain(
+      'DECIDE_OBJECTION',
+    );
+    const decided = decideObjection(
+      next,
+      { outcome: 'DISMISS', reason: 'Ocena zasadna' },
+      { name: 'Oceniający', role: 'oceniający' },
+      TODAY,
+    );
+    expect(decided.history.at(-1)?.text).toMatch(/^Oceniający \(osoba/);
+  });
+
+  it('court term counts from the delivery of the decision (art. 83 ust. 5)', () => {
+    const filed = fileObjection(seed('c-006'), 'Nie zgadzam się.', TODAY);
+    const decided = decideObjection(
+      filed,
+      {
+        outcome: 'DISMISS',
+        reason: 'Ocena zasadna',
+        deliveredOn: '2026-11-30',
+      },
+      DG,
+      TODAY,
+    );
+    const objection = decided.objections!.at(-1)!;
+    expect(objection.decision?.deliveredOn).toBe('2026-11-30');
+    // 30.11 + 14 days = 14.12.2026 (Monday)
+    expect(courtAppealDeadline(objection, TODAY)?.date).toBe('2026-12-14');
+    expect(decided.history.at(-1)?.text).toContain('doręczenie 30.11.2026');
+    // default: delivered on the decision day
+    const sameDay = decideObjection(
+      filed,
+      { outcome: 'DISMISS', reason: 'Ocena zasadna' },
+      DG,
+      TODAY,
+    ).objections!.at(-1)!;
+    expect(sameDay.decision?.deliveredOn).toBe(TODAY);
+    expect(
+      conflict(() =>
+        decideObjection(
+          filed,
+          { outcome: 'DISMISS', reason: 'x', deliveredOn: '2026-11-01' },
+          DG,
+          TODAY,
+        ),
+      ),
+    ).toContain('Data doręczenia');
+  });
+});

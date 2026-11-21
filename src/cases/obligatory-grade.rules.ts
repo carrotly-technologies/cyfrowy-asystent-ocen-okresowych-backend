@@ -114,10 +114,17 @@ export function obligatoryGradeFor(
     const { result, level, date } = record.previousAssessment;
     outcomes.push({ result, level, date });
   }
+  // The latest known date of the last grade: the HR record (employees
+  // module), part III of this or of the previous assessment.
   const lastGrade =
-    record.promotionRequest.gradeGrantedOn ??
-    previousCase?.promotionRequest.gradeGrantedOn ??
-    null;
+    [
+      record.person.lastGradeGrantedOn,
+      record.promotionRequest.gradeGrantedOn,
+      previousCase?.promotionRequest.gradeGrantedOn,
+    ]
+      .filter((d): d is string => !!d)
+      .sort()
+      .at(-1) ?? null;
   if (
     !obligatoryNextGrade({
       employment: record.person.employment,

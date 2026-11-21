@@ -9,6 +9,7 @@ import {
   caseReminders,
   dueSoonBucket,
   generateReminders,
+  historyEventDrafts,
 } from './reminders.rules.js';
 
 const TODAY = '2026-11-21';
@@ -71,10 +72,46 @@ describe('scheduler reminders', () => {
     expect(after).not.toContain('OBJECTION_PERIOD');
   });
 
-  it('obligatory next grade goes to HR (art. 89 ust. 2)', () => {
-    expect(caseReminders(seed('c-006'), TODAY)).toContainEqual(
-      expect.objectContaining({ type: 'OBLIGATORY_GRADE', audience: 'HR' }),
+  it('obligatory next grade goes to HR, the evaluator and the DG (art. 89 ust. 2)', () => {
+    const audiences = caseReminders(seed('c-006'), TODAY)
+      .filter((d) => d.type === 'OBLIGATORY_GRADE')
+      .map((d) => d.audience);
+    expect(audiences).toEqual(['HR', 'EVALUATOR', 'DIRECTOR']);
+  });
+
+  it('the objection reminder names the addressee (sheet A: the assessor)', () => {
+    const record = { ...seed('c-006'), sheetId: 'A' as const };
+    const draft = caseReminders(record, TODAY).find(
+      (d) => d.type === 'OBJECTION_PERIOD',
     );
+    expect(draft?.body).toContain('do osoby, która dokonała oceny okresowej');
+    expect(
+      caseReminders(seed('c-006'), TODAY).find(
+        (d) => d.type === 'OBJECTION_PERIOD',
+      )?.body,
+    ).toContain('do dyrektora generalnego urzędu');
+  });
+
+  it('PROMOTION_REQUESTED history events reach HR and the DG', () => {
+    const record = {
+      ...seed('c-006'),
+      history: [
+        {
+          date: TODAY,
+          text: 'Wniosek.',
+          event: {
+            type: 'PROMOTION_REQUESTED' as const,
+            notify: ['HR', 'DIRECTOR'] as ('HR' | 'DIRECTOR')[],
+          },
+        },
+      ],
+    };
+    expect(
+      historyEventDrafts(record, TODAY).map((d) => [d.type, d.audience]),
+    ).toEqual([
+      ['CASE_EVENT', 'HR'],
+      ['CASE_EVENT', 'DIRECTOR'],
+    ]);
   });
 
   it('archived cycles produce nothing', () => {

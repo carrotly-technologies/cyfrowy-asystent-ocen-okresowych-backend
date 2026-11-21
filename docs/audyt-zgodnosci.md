@@ -302,3 +302,21 @@ Kolejność według wpływu na ocenę jury. Żaden z tych tasków nie jest jeszc
 - `GET /api/team` lub osobny endpoint zwraca nieodczytane przypomnienia dla zalogowanego przełożonego.
 - Widok `/zespol` pokazuje je przy teczce, a przełożony może oznaczyć je jako przeczytane.
 - HR widzi w `/hr`, czy przypomnienie odczytano.
+
+## Poprawki po audycie zgodności (21.11.2026)
+
+| Ustalenie | Podstawa | Poprawka (backend) |
+| --- | --- | --- |
+| Domyślny termin oceny liczony od dnia akceptacji arkusza | ustawa art. 81 ust. 4 | 24 miesiące od zatrudnienia na czas nieokreślony / poprzedniej oceny: `cycleAnchor`, `defaultAssessmentDue(anchor)` w `deadlines.rules.ts`; dane demo przeliczone |
+| Komunikat o 3 kryteriach dodatkowych cytował § 2 ust. 2 | RO § 5 ust. 2 | `evaluate.rules.ts`, `patch.rules.ts`, `correction.rules.ts` |
+| Adresat sprzeciwu zawsze DG | ustawa art. 83 ust. 1–2; przypis 17 arkuszy B/C | `objection-addressee.rules.ts`; uprawnienie do rozstrzygnięcia wg adresata; `OFFICE_HAS_DIRECTOR_GENERAL` |
+| Brak powiadomienia o wniosku o kolejny stopień | przypadki użycia; ustawa art. 89 ust. 1 | zdarzenie `PROMOTION_REQUESTED` (HR + DIRECTOR) przy podpisaniu oceny z częścią III |
+| Nieobecności liczone od części I; podwójne przesunięcie na dzień roboczy | ustawa art. 81 ust. 7; art. 115 KC | `absences.rules.ts`: od początku okresu 24 miesięcy, przedłużenie surowej daty i jedno przesunięcie |
+| § 9 ust. 1 tylko komunikat | RO § 9 ust. 1 | `reopenPartI`, `redoPartIDeadline` w `due-date-change.rules.ts` |
+| Część II edytowalna od wyboru arkusza | schemat pól A/B/C | `PART_II_STAGES = [ASSESSMENT, SIGNATURE]`; `workingNotes` (notatki robocze bez skutków prawnych) |
+| Data rozmowy oceniającej i okres oceny niezmienne | schemat pól A/B/C | `assessmentTalkOn`, `assessmentPeriod` w PATCH (`assessment-period.rules.ts`) |
+| Domyślne „NIE” po ocenie negatywnej | schemat pól A/B/C | `promotionRequestOf(record, evaluation)` |
+| IPRZ: art. 108 zamiast art. 81 ust. 5 | ustawa art. 81 ust. 5 | `formal-check.rules.ts`, `stages.rules.ts` |
+| Art. 89 ust. 2 bez daty ostatniego stopnia z kartoteki; DG bez przypomnienia | ustawa art. 89 ust. 2 | `Person.lastGradeGrantedOn` z kartoteki; przypomnienie także do DIRECTOR |
+| Termin do sądu pracy od daty rozstrzygnięcia | ustawa art. 83 ust. 5 | `deliveredOn` (domyślnie data rozstrzygnięcia) |
+| „Usunięcie danych” jako natychmiastowe RODO | KP art. 94 pkt 9b | archiwizacja/anonimizacja po 10 latach; wcześniej tylko ADMIN z powodem (`archiveBlocker`) |

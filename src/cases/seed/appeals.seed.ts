@@ -31,7 +31,7 @@ function objectionAwaitingDirector(r: Rel): CaseRecord {
   const filed = r.days(-2);
   const cycleStart = {
     kind: 'PREVIOUS_POSITIVE' as const,
-    assessedOn: r.months(-25, 15),
+    assessedOn: r.months(-24),
   };
   return caseRecord({
     id: 'c-301',
@@ -63,7 +63,7 @@ function objectionAwaitingDirector(r: Rel): CaseRecord {
     },
     partI: {
       ...emptyPartI(),
-      assessmentDue: defaultAssessmentDue(confirmed),
+      assessmentDue: defaultAssessmentDue(cycleStart.assessedOn),
       confirmedByEvaluatorOn: confirmed,
       acknowledgedByEmployeeOn: confirmed,
     },
@@ -117,7 +117,7 @@ function dueDateRequestPending(r: Rel): CaseRecord {
     assessedOn: r.months(-14),
   };
   const confirmed = r.months(-14, 12);
-  const due = defaultAssessmentDue(confirmed);
+  const due = defaultAssessmentDue(cycleStart.assessedOn);
   const filed = r.days(-1);
   return caseRecord({
     id: 'c-302',
