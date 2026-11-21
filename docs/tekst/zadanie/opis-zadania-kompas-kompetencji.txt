@@ -1,0 +1,215 @@
+--- page 1 ---
+Kompas kompetencji 
+Krótki opis wyzwania (Kompas kompetencji to aplikacja wspierająca 
+przełożonych w świadomym i opartym na konkretnych zachowaniach 
+zarządzaniu kompetencjami pracowników służby cywilnej. Łączy model 
+kompetencji z cyfrowymi narzędziami, które pomagają podejmować bardziej 
+spójne i obiektywne decyzje oraz lepiej przygotować się do rozmowy z 
+pracownikiem. Wbudowany system AI dodatkowo prowadzi użytkownika przez 
+wymagania formalne i podpowiada jak skutecznie pracować z 
+kompetencjami.). 
+1. Wprowadzenie - opis organizacji, sytuacji i stanu aktualnego 
+Ministerstwo Cyfryzacji jest urzędem administracji rządowej odpowiedzialnym za obszary 
+związane m.in. z cyfryzacją państwa, sztuczną inteligencją, rozwojem usług cyfrowych, 
+cyberbezpieczeństwem, danymi oraz wykorzystaniem nowych technologii. Podobnie jak inne 
+urzędy administracji rządowej zatrudnia członków korpusu służby cywilnej. Jednym z 
+ważnych elementów zarządzania pracownikami jest system ocen pracowniczych, którego 
+zasady wynikają z przepisów prawa. Proces ten obejmuje m.in. wybór odpowiednich 
+kryteriów, ocenę kompetencji, pracownika, rozmowę oraz przygotowanie wymaganej 
+dokumentacji. 
+Obecnie przełożony musi połączyć kilka różnych perspektyw. Powinien znać zasady 
+formalne sporządzania oceny, prawidłowo posługiwać się kryteriami wynikającymi z 
+przepisów, przełożyć obserwowane zachowania pracownika na odpowiedni poziom 
+spełniania danego kryterium, a następnie przeprowadzić wartościową rozmowę i właściwie 
+udokumentować cały proces. Informacje potrzebne do wykonania większości tych czynności 
+znajdują się przepisach, formularzach, poradnikach i materiałach pomocniczych.   
+Szczególnym wyzwaniem jest ocena kompetencji. Pojęcie takie jak komunikacja, 
+współpraca, zarządzanie ludźmi czy myślenie analityczne są szerokie. Przełożony powinien 
+dokonać oceny na podstawie konkretnych, obserwowalnych zachowań pracownika, a nie 
+jedynie ogólnego wrażenia. W praktyce wymaga to zarówno dobrej znajomości modelu 
+kompetencyjnego, jak i umiejętności przełożenia obserwacji z całego okresu na odpowiedni 
+poziom oceny. Może to prowadzić do różnic w sposobie interpretowania, kryteriów oraz 
+sposobu ich spełnienia, przez różnych przełożonych.  
+Dodatkowym wyzwaniem jest przygotowanie samego przełożonego. Proces powinien być 
+nie tylko poprawny formalnie, ale również stanowić podstawę dobrej rozmowy o wynikach 
+pracy, mocnych stronach, obszarach wymagających rozwoju i dalszych oczekiwaniach. 
+Dziś brakuje jednego intuicyjnego narzędzia, które łączyłoby wszystkie te elementy i 
+prowadziło przełożonego krok po kroku przez cały proces. Wyzwaniem jest więc 
+wykorzystanie technologii, w tym sztucznej inteligencji, do stworzenia rozwiązania, które 
+uporządkuje proces, ułatwi korzystanie z modelu kompetencyjnego i przepisów oraz 
+wesprze przełożonego w podejmowaniu świadomych decyzji. Bez przejmowania za 
+przełożonego odpowiedzialności za ocenę pracownika. 
+--- page 2 ---
+ 
+2. Wyzwanie 
+Wyzwaniem jest stworzenie Kompasu Kompetencji, czyli narzędzia cyfrowego, które będzie 
+wspierać przełożonych w przeprowadzeniu procesu oceny pracowników.  
+Rozwiązane powinno prowadzić użytkownika krok po kroku, pomagać w doborze 
+właściwych kryteriów oraz umożliwiać ocenę kompetencji poprzez konkretne, obserwowalne 
+zachowania. Na podstawie wskazanych zachowań system powinien wspierać przełożonego 
+w określaniu poziomu spełniania danej kompetencji, pozostawiając ostateczną decyzję po 
+jego stronie.  
+Kompas powinien również wspierać przygotowanie wymaganej dokumentacji, zarządzanie 
+terminami oraz komunikację z przełożonymi. Ważnym elementem rozwiązania powinien być 
+asystent AI, który pomoże użytkownikowi poruszać się po wymaganiach formalnych, 
+odpowie na pytania dotyczące procesu oraz wesprze go w przygotowaniu do rozmowy z 
+pracownikiem. 
+Celem jest stworzenie rozwiązania, które połączy w jednym miejscu model kompetencyjny, 
+wymagania formalne, dokumentację i praktycznie wesprze przełożonego, czyniąc cały 
+proces prostym, spójnym i przyjaznym dla użytkownika. 
+System nie ma być dostępny na smartfonach. 
+ 
+3. Oczekiwany rezultat 
+Oczekiwanym rezultatem jest działające cyfrowe rozwiązanie „Kompas kompetencji”, 
+wspierające przełożonych w przygotowaniu i przeprowadzeniu procesu oceny pracownika. 
+Głównym użytkownikiem rozwiązania będzie przełożony dokonujący oceny, a dodatkowym 
+pracownik HR lub administrator odpowiedzialny za organizację i monitorowanie procesu. 
+Rozwiązanie powinno uwzględniać dwie odrębne ścieżki – pierwszą ocenę w służbie 
+cywilnej oraz ocenę okresową. Każda ścieżka powinna prowadzić użytkownika krok po 
+kroku zgodnie z zasadami właściwymi dla danego procesu oraz umożliwiać wypełnienie 
+właściwej części formularza. 
+Kluczowym elementem rozwiązania jest model kompetencyjny. System powinien zawierać 
+właściwe dla danego rodzaju oceny kompetencje wraz ze wskaźnikami behawioralnymi i 
+opisami poziomu ich spełniania. Przełożony powinien mieć możliwość oceny 
+poszczególnych wskaźników poprzez wybór zachowania najlepiej odpowiadającego temu, 
+co obserwował u pracownika. 
+Na podstawie dokonanych wyborów system powinien obliczać i prezentować sugerowany 
+poziom spełniania danej kompetencji. Rekomendacja ma pełnić funkcję pomocniczą – 
+ostateczny poziom oceny zawsze wybiera przełożony. 
+--- page 3 ---
+Rozwiązanie powinno również wspierać wybór kryteriów oceny, prowadzić użytkownika 
+przez kolejne etapy procesu oraz umożliwiać przygotowanie wymaganej dokumentacji w 
+oparciu o właściwe formularze.  
+Istotnym elementem Kompasu Kompetencji powinien być asystent AI, z którym przełożony 
+może prowadzić rozmowę. Asystent powinien: wspierać użytkownika w dwóch obszarach: 
+wyjaśniać zasady i wymagania formalne związane z procesem oraz pomagać przygotować 
+się do rozmowy z pracownikiem, np. poprzez proponowanie pytań, wskazywanie kwestii 
+wymagających omówienia czy pomoc w uporządkowaniu argumentów uzasadniających 
+ocenę. 
+Rozwiązanie powinno uwzględniać także perspektywę HR/administratora, umożliwiając 
+monitorowanie statusu procesów, terminów ich realizacji oraz wysyłanie przypomnień o 
+konieczności wykonania określonych czynności.  
+Rezultatem powinien być funkcjonalny prototyp możliwy do dalszego rozwoju i docelowego 
+wdrożenia w Ministerstwie Cyfryzacji, a w przyszłości także wykorzystany przez inne urzędy 
+administracji publicznej. 
+ 
+4. Wymagania formalne 
+Projekt zgłoszony do oceny powinien umożliwiać ocenę zarówno kompetencji jak i 
+praktycznego sposobu działania. 
+Zespół powinien dostarczyć: 
+• Działający prototyp rozwiązania, umożliwiający przejście przez najważniejsze etapy 
+procesu z perspektywy przełożonego; 
+• Krótki opis projektu przedstawiający przyjętą koncepcję, najważniejsze 
+funkcjonalności, 
+• Prezentację projektu – maksymalnie 10 slajdów, pokazującą logikę działania, 
+kluczowe funkcjonalności i możliwy kierunek dalszego rozwoju; 
+• Opis wykorzystania sztucznej inteligencji, wskazujący w których elementach została 
+wykorzystana, 
+• Krótką informację o zastosowanych technologiach oraz architekturze rozwiązania, 
+pozwalającą ocenić możliwości jego dalszego rozwoju i wdrożenia. 
+Działający prototyp powinien umożliwiać zaprezentowanie co najmniej jednej kompletnej 
+ścieżki procesu oraz sposobu wykorzystania modelu kompetencyjnego. Powinien również 
+prezentować działanie asystenta AI wspierającego przełożonego.  
+Dodatkowo zespół może przekazać repozytorium kodu źródłowego, dokumentację 
+techniczną, zrzuty ekranów, schemat architektury, materiały graficzne lub inne materiały 
+pozwalające lepiej ocenić rozwiązanie. 
+Wszystkie linki niezbędne do oceny projektu powinny być aktywne i dostępne dla 
+oceniających bez konieczności uzyskiwania dodatkowych uprawnień. 
+--- page 4 ---
+ 
+5. Wymagania techniczne 
+Rozwiązanie powinno zostać zaprojektowane w sposób umożliwiający jego dalszy rozwój i 
+potencjalne wdrożenie. Nie narzuca się konkretnych języków programowania, frameworków 
+ani architektury – zespół może dobrać technologie najlepiej odpowiadające 
+zaproponowanemu rozwiązaniu. 
+Zespoły przygotowujące rozwiązanie mogą korzystać na tym etapie wyłącznie z darmowych 
+narzędzi AI.  
+Projekt powinien jednak uwzględniać w szczególności: 
+• Architekturę umożliwiającą dalszy rozwój i skalowanie rozwiązania; 
+• Możliwość przyszłej integracji z systemami wykorzystywanymi w administracji, w 
+szczególności klasy EZD oraz systemami kadrowymi np. QNT; wykonanie tych 
+integracji nie jest wymagane w ramach prototypu; 
+• Możliwość bezpiecznej wymiany danych poprzez udokumentowane interfejsy, np. 
+API; 
+• Mechanizmy uwierzytelniania, autoryzacji oraz zarządzania rolami i uprawnieniami 
+użytkowników; 
+• Ochronę danych osobowych, poufność informacji dotyczących pracowników oraz 
+zasadę minimalizacji przetwarzanych danych; 
+• Możliwość generowania wymaganej dokumentacji w powszechnie stosowanym 
+formacie, w szczególności PDF; 
+• Czytelny i responsywny interfejs dostępny co najmniej z poziomu przeglądarki 
+internetowej. 
+Istotnym elementem rozwiązania powinien być wewnętrzny asystent AI wykorzystujący 
+wskazaną bazę wiedzy. Baza powinna w szczególności obejmować ustawę o służbie 
+cywilnej, właściwe rozporządzenia dotyczące pierwszej oraz okresowej oceny w służbie 
+cywilnej, model kompetencyjny, poradniki i materiały ze strony KPRM oraz przygotowany 
+zestaw pytań i odpowiedzi. 
+Asystent powinien udzielać odpowiedzi przede wszystkim na podstawie udostępnionych mu 
+źródeł oraz umożliwiać identyfikację źródła, na którym została oparta odpowiedź.  
+W przypadku braku wystarczających informacji w bazie wiedzy powinien jasno to 
+komunikować zamiast generować niezweryfikowaną odpowiedź. 
+AI powinno pełnić funkcję doradczą i wspierającą. Nie może samodzielnie podejmować 
+decyzji dotyczących poziomu oceny pracownika. Ostateczna decyzja zawsze należy do 
+przełożonego. 
+W ramach hackathonu dopuszczalne jest wykorzystanie gotowych modeli językowych, usług 
+chmurowych, bibliotek open source oraz zewnętrznych API. Zespół powinien wskazywać 
+zastosowane technologie oraz elementy wymagające dodatkowego zabezpieczenia lub 
+dostosowania przed wdrożeniem rozwiązania w środowisku produkcyjnym. 
+--- page 5 ---
+ 
+6. Sposób testowania i/lub walidacji 
+Rozwiązanie będzie oceniane przede wszystkim na podstawie działającego prototypu oraz 
+demonstracji jego wykorzystania w rzeczywistym scenariuszu pracy przełożonego. Sama 
+prezentacja koncepcji lub makiet ekranów nie będzie wystarczająca do pełnej walidacji 
+rozwiązania. 
+Podczas prezentacji zespół powinien zademonstrować co najmniej jedną kompletną ścieżkę 
+użytkownika, obejmującą rozpoczęcie procesu, pracę z kryteriami i kompetencjami, ocenę 
+wybranych wskaźników behawioralnych, przedstawienie przez system sugerowanego 
+poziomu kompetencji oraz pozostawienie przełożonemu ostatecznej decyzji. 
+Testowaniu powinno podlegać również działanie asystenta AI. Jurorzy mogą zadawać mu 
+przykładowe pytania dotyczące zasad pierwszej oceny lub oceny okresowej. Oceniana 
+będzie poprawność odpowiedzi. 
+Walidacja będzie uwzględniała przede wszystkim: 
+• Zgodność działania z założeniami wyzwania i zasadami obowiązującymi w służbie 
+cywilnej; 
+• Poprawność wykorzystania modelu kompetencyjnego; 
+• Użyteczność i intuicyjność rozwiązania z perspektywy przełożonego; 
+• Jakość, wiarygodność i bezpieczeństwo wykorzystania AI; 
+• Poprawność generowanych rezultatów i dokumentacji. 
+Podczas testowania mogą zostać wykorzystane przykładowe, fikcyjne dane pracownika oraz 
+przygotowane scenariusze oceny.  
+ 
+7. Dostępne zasoby 
+• Ustawa o służbie cywilnej – w zakresie niezbędnym do realizacji wyzwania, 
+• Rozporządzenie dotyczące pierwszej oceny w służbie cywilnej, 
+• Rozporządzenie dotyczące ocen okresowych członków korpusu służby cywilnej, 
+• Model kompetencyjny, 
+• Poradniki KPRM, 
+• Grafika pokazująca wstępną koncepcję narzędzia, 
+• 3 szablony opisów stanowiska pracy. 
+Materiały zostaną udostępnione w wersji elektronicznej na Discord. 
+ 
+ 
+8. Kryteria oceny 
+--- page 6 ---
+• zgodność merytoryczna i realizacja założeń wyzwania — 25% 
+• użyteczność i doświadczenie użytkownika – 25% 
+• jakość i użyteczność zastosowania AI – 20 % 
+• innowacyjność i jakość rozwiązania – 20% 
+• potencjał wdrożeniowy – 10% 
+ 
+9. Dodatkowe uwagi / kontekst wdrożeniowy 
+Najlepsze rozwiązanie wypracowane w ramach wyzwania ma szansę na dalszy rozwój i 
+rzeczywiste wdrożenie. Zwycięskiej drużynie zamierzamy zaproponować umowę na 
+realizację aplikacji „Kompas kompetencji”. Celem będzie rozwinięcie prototypu do 
+rozwiązania gotowego do wykorzystania w praktyce.  
+W dalszej perspektywie zakładamy możliwość rozwoju kolejnych funkcjonalności i integracji 
+z systemami wykorzystywanymi w MC. 
+Rozwiązanie może zostać także w przyszłości udostępnione innym urzędom administracji 
+publicznej. 
+ 
+10. Kontakt 
+W przypadku pytań lub potrzeby wsparcia technicznego lub merytorycznego, zapraszamy na 
+stoisko Ministerstwa Cyfryzacji, gdzie mentorzy (merytorycznie i techniczni) będą do 
+dyspozycji uczestników.  
+Mentorzy będą dostępni również na Discord, gdzie można zadawać im pytania.
