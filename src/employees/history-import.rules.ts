@@ -28,7 +28,7 @@ export interface ImportError {
 
 const REQUIRED = ['pracownik', 'data_sporzadzenia', 'ocena', 'poziom'] as const;
 
-function normalizeHeader(h: string): string {
+export function normalizeHeader(h: string): string {
   return h
     .trim()
     .toLocaleLowerCase('pl-PL')
@@ -39,7 +39,7 @@ function normalizeHeader(h: string): string {
 }
 
 /** Splits one CSV line; supports "quoted; values" and "" escapes. */
-function splitLine(line: string, sep: string): string[] {
+export function splitLine(line: string, sep: string): string[] {
   const out: string[] = [];
   let cur = '';
   let quoted = false;
@@ -61,7 +61,7 @@ function splitLine(line: string, sep: string): string[] {
   return out.map((v) => v.trim());
 }
 
-function parseDate(value: string): string | null {
+export function parseDate(value: string): string | null {
   const pl = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value);
   const iso = pl ? `${pl[3]}-${pl[2]}-${pl[1]}` : value;
   return isIsoDate(iso) ? iso : null;

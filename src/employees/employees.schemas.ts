@@ -81,3 +81,12 @@ export const historyImportSchema = z.object({
     }),
 });
 export type HistoryImportInput = z.infer<typeof historyImportSchema>;
+
+/** The HR register as CSV (docs/import/pracownicy-wzor.csv); dryRun = podgląd. */
+export const employeesImportSchema = z.object({
+  csv: historyImportSchema.shape.csv,
+  dryRun: z
+    .boolean({ error: 'dryRun musi mieć wartość true albo false.' })
+    .optional(),
+});
+export type EmployeesImportInput = z.infer<typeof employeesImportSchema>;

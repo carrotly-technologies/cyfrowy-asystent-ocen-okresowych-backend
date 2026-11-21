@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
 import { configureApp } from './../src/configure-app.js';
@@ -398,6 +400,114 @@ describe('HR register: employees, absences, history, statistics (e2e)', () => {
         res.body.cases.find((c: { caseId: string }) => c.caseId === 'c-000')
           .result,
       ).toBe('POSITIVE');
+    });
+  });
+
+  describe('employee list import (CSV)', () => {
+    const sample = readFileSync(
+      resolve(import.meta.dirname, '../docs/import/pracownicy-wzor.csv'),
+      'utf8',
+    );
+
+    it('previews without saving, then imports 25 people with evaluators and sheets', async () => {
+      const before = (await as(hr).get('/api/employees').expect(200)).body
+        .length;
+      const preview = await as(hr)
+        .post('/api/employees/import')
+        .send({ csv: sample, dryRun: true })
+        .expect(200);
+      expect(preview.body).toMatchObject({
+        dryRun: true,
+        created: 25,
+        updated: 0,
+        failed: 0,
+      });
+      expect((await as(hr).get('/api/employees').expect(200)).body.length).toBe(
+        before,
+      );
+
+      const res = await as(hr)
+        .post('/api/employees/import')
+        .send({ csv: sample })
+        .expect(200);
+      expect(res.body).toMatchObject({ dryRun: false, created: 25, failed: 0 });
+      const head = await as(hr).get('/api/employees/KAD-0001').expect(200);
+      expect(head.body).toMatchObject({
+        firstName: 'Zofia',
+        evaluatorId: 'ev-zawadzki',
+        sheetId: 'A',
+        grade: 'VI',
+      });
+      const manager = await as(hr).get('/api/employees/KAD-0002').expect(200);
+      expect(manager.body).toMatchObject({
+        evaluatorId: 'ev-kaminska',
+        sheetId: 'B',
+      });
+      const plain = await as(hr).get('/api/employees/KAD-0012').expect(200);
+      expect(plain.body).toMatchObject({
+        evaluatorId: 'ev-sikora',
+        sheetId: 'C',
+        employment: 'PRACOWNIK',
+      });
+
+      const again = await as(hr)
+        .post('/api/employees/import')
+        .send({ csv: sample })
+        .expect(200);
+      expect(again.body).toMatchObject({
+        created: 0,
+        updated: 0,
+        unchanged: 25,
+      });
+    });
+
+    it('updates by name and unit, keeps good rows when others are bad', async () => {
+      const csv = [
+        'imię;nazwisko;komórka;stanowisko;kieruje ludźmi;oceniający',
+        'Aleksandra;Król;Wydział Legislacji, Departament Prawny;Główny legislator;nie;a.pawlak',
+        'Nowa;Osoba;Wydział Legislacji, Departament Prawny;Referent;nie;a.pawlak',
+        'Zła;Osoba;Wydział Legislacji, Departament Prawny;Referent;może;ktoś',
+        'Nowa;Osoba;Wydział Legislacji, Departament Prawny;Referent;nie;a.pawlak',
+      ].join('\n');
+      const res = await as(hr)
+        .post('/api/employees/import')
+        .send({ csv })
+        .expect(200);
+      expect(res.body).toMatchObject({ created: 1, updated: 1, failed: 2 });
+      expect(res.body.rows[0]).toMatchObject({
+        line: 2,
+        action: 'UPDATE',
+        employeeId: 'p-krol',
+      });
+      expect(res.body.errors.map((e: { line: number }) => e.line)).toEqual([
+        4, 5,
+      ]);
+      expect(res.body.errors[0].message).toContain('Wiersz 4');
+      const krol = await as(hr).get('/api/employees/p-krol').expect(200);
+      expect(krol.body.position).toBe('Główny legislator');
+    });
+
+    it('is for HR only and rejects a file without the header', async () => {
+      await as(admin)
+        .post('/api/employees/import')
+        .send({ csv: sample })
+        .expect(403);
+      await as(supervisor)
+        .post('/api/employees/import')
+        .send({ csv: sample })
+        .expect(403);
+      const bad = await as(hr)
+        .post('/api/employees/import')
+        .send({ csv: 'a;b\n1;2' })
+        .expect(400);
+      expect(bad.body.message[0]).toContain('brak kolumn');
+    });
+
+    it('serves the sample CSV', async () => {
+      const res = await as(hr)
+        .get('/api/docs/import/pracownicy-wzor.csv')
+        .expect(200);
+      expect(res.headers['content-type']).toContain('text/csv');
     });
   });
 

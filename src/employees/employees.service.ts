@@ -58,10 +58,17 @@ import type {
   AbsenceInput,
   EmployeeInput,
   EmployeePatch,
+  EmployeesImportInput,
   HistoryImportInput,
   SubstitutionInput,
 } from './employees.schemas.js';
 import { buildEmployeesSeed } from './employees.seed.js';
+import {
+  employeeKey,
+  type ImportedEmployeeFields,
+  parseEmployeesCsv,
+} from './employees-import.rules.js';
+import { UsersRepository } from '../auth/users.repository.js';
 import type { Absence, Employee, Substitution } from './employees.types.js';
 import { parseHistoryCsv } from './history-import.rules.js';
 import {
@@ -98,6 +105,7 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
     private readonly auth: AuthenticationContext,
     private readonly demoReset: DemoReset,
     private readonly notifications: NotificationsService,
+    @Inject(UsersRepository) private readonly users: UsersRepository,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -833,6 +841,157 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
         level: r.level,
         skipped: !freshRows.has(r),
       })),
+    };
+  }
+
+  /**
+   * Imports the register from CSV (employees-import.rules.ts). A person is
+   * matched by the identyfikator (the register id) or else by first and last
+   * name and unit; matched people are updated (open cases follow, as in
+   * update()), the others created. Bad rows are reported and skipped. With
+   * dryRun nothing is saved: the same report is the preview.
+   */
+  async importEmployees(input: EmployeesImportInput) {
+    const dryRun = input.dryRun ?? false;
+    const stored = await this.repo.listEmployees();
+    const accounts = await this.users.list();
+    const lower = (v: string) =>
+      v.trim().replace(/\s+/g, ' ').toLocaleLowerCase('pl-PL');
+    const resolveEvaluator = (cell: string) => {
+      const value = lower(cell);
+      const byId = EVALUATORS.find((e) => e.id === cell.trim());
+      if (byId) return { id: byId.id };
+      const account = accounts.find(
+        (u) => u.evaluatorId && u.login.toLocaleLowerCase('pl-PL') === value,
+      );
+      if (account) return { id: account.evaluatorId! };
+      const byName = EVALUATORS.filter((e) => lower(fullName(e)) === value);
+      if (byName.length === 1) return { id: byName[0].id };
+      if (byName.length > 1)
+        return {
+          error: `jest kilku oceniających „${cell.trim()}”, podaj login`,
+        };
+      return {
+        error: `nie znaleziono oceniającego „${cell.trim()}” (podaj login konta albo imię i nazwisko)`,
+      };
+    };
+    const { rows, errors, fatal } = parseEmployeesCsv(
+      input.csv,
+      resolveEvaluator,
+      this.today,
+    );
+    if (fatal) throw new BadRequestException([fatal]);
+
+    const byId = new Map(stored.map((e) => [e.id, e]));
+    const byKey = new Map(stored.map((e) => [employeeKey(e), e]));
+    const units = await this.units();
+    const seenIds = new Set<string>();
+    const seenKeys = new Map<string, number>();
+    const evaluatorName = (id: string | null) => {
+      const e = id ? EVALUATORS.find((x) => x.id === id) : undefined;
+      return e ? fullName(e) : null;
+    };
+    type Planned = {
+      line: number;
+      action: 'CREATE' | 'UPDATE' | 'UNCHANGED';
+      id: string | null;
+      fields: ImportedEmployeeFields;
+    };
+    const planned: Planned[] = [];
+    for (const row of rows) {
+      const fail = (message: string) =>
+        errors.push({
+          line: row.line,
+          message: `Wiersz ${row.line}: ${message}.`,
+        });
+      // A unit written differently from a known one: take the known name
+      // when only case and spaces differ, otherwise ask (no duplicates in
+      // statistics, as in the form).
+      let unit = row.fields.unit;
+      const known = units.find((u) => lower(u) === lower(unit));
+      if (known) unit = known;
+      else {
+        const clash = conflictingUnit(unit, units);
+        if (clash) {
+          fail(
+            `komórka „${unit}” już jest w kartotece jako „${clash}”; wpisz ją tak samo`,
+          );
+          continue;
+        }
+        units.push(unit);
+      }
+      const fields = this.normalize({ ...row.fields, unit });
+      const key = employeeKey(fields);
+      const match =
+        (row.externalId ? byId.get(row.externalId) : undefined) ??
+        byKey.get(key);
+      const dupLine = seenKeys.get(key);
+      if (
+        (row.externalId && seenIds.has(row.externalId)) ||
+        (dupLine !== undefined && !row.externalId)
+      ) {
+        fail(
+          `ta osoba jest już w pliku${dupLine ? ` (wiersz ${dupLine})` : ''}; usuń powtórzony wiersz`,
+        );
+        continue;
+      }
+      if (row.externalId) seenIds.add(row.externalId);
+      seenKeys.set(key, row.line);
+      if (match) {
+        const same = (Object.keys(fields) as (keyof typeof fields)[]).every(
+          (k) => fields[k] === match[k],
+        );
+        planned.push({
+          line: row.line,
+          action: same ? 'UNCHANGED' : 'UPDATE',
+          id: match.id,
+          fields,
+        });
+      } else {
+        planned.push({
+          line: row.line,
+          action: 'CREATE',
+          id:
+            row.externalId ?? (dryRun ? null : `p-${randomUUID().slice(0, 8)}`),
+          fields,
+        });
+      }
+    }
+
+    if (!dryRun) {
+      const now = new Date().toISOString();
+      for (const p of planned) {
+        if (p.action === 'CREATE')
+          await this.repo.insertEmployee({
+            ...p.fields,
+            id: p.id!,
+            createdAt: now,
+            updatedAt: now,
+          });
+        else if (p.action === 'UPDATE') await this.update(p.id!, p.fields);
+      }
+      if (planned.some((p) => p.action === 'CREATE'))
+        void this.notifyObligatoryPromotions();
+    }
+
+    const count = (a: Planned['action']) =>
+      planned.filter((p) => p.action === a).length;
+    return {
+      dryRun,
+      created: count('CREATE'),
+      updated: count('UPDATE'),
+      unchanged: count('UNCHANGED'),
+      failed: errors.length,
+      rows: planned.map((p) => ({
+        line: p.line,
+        action: p.action,
+        employeeId: p.id,
+        name: `${p.fields.firstName} ${p.fields.lastName}`,
+        unit: p.fields.unit,
+        evaluatorName: evaluatorName(p.fields.evaluatorId),
+        sheetId: suggestSheet(p.fields).sheetId,
+      })),
+      errors: errors.sort((a, b) => a.line - b.line),
     };
   }
 
