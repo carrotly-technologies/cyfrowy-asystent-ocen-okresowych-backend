@@ -3,6 +3,7 @@ import {
   pulseIndex,
   pulseTrend,
   teamAggregate,
+  plIndex,
   toSupervisorPoint,
 } from './pulse.rules.js';
 import type { PulseResponse } from './pulse.types.js';
@@ -157,5 +158,12 @@ describe('teamAggregate', () => {
       index: 3,
     });
     expect(periods[0].respondents).toBe(1);
+  });
+});
+
+describe('plIndex', () => {
+  it('uses a decimal comma', () => {
+    expect(plIndex(3.75)).toBe('3,8');
+    expect(plIndex(4)).toBe('4');
   });
 });
