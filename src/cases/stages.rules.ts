@@ -1,3 +1,4 @@
+import { withAbsenceExtension } from './absences.rules.js';
 import { RO_2016 } from '../assessments/assessment.format.js';
 import { computeEvaluation, STAGE_NAMES } from './case.rules.js';
 import {
@@ -49,14 +50,10 @@ function stageDeadlineSpec(
       return openingTalkDeadline(record.cycleStart);
     case 'OBSERVATION':
     case 'ASSESSMENT':
-      return assessmentDueDeadline(
-        record.cycleStart,
-        record.partI.assessmentDue,
-      );
     case 'SIGNATURE':
-      return assessmentDueDeadline(
-        record.cycleStart,
-        record.partI.assessmentDue,
+      return withAbsenceExtension(
+        record,
+        assessmentDueDeadline(record.cycleStart, record.partI.assessmentDue),
       );
     case 'ACKNOWLEDGEMENT':
       return {

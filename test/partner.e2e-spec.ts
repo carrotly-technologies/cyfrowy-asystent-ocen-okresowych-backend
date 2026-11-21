@@ -145,7 +145,7 @@ describe('HR partner and pulse survey (e2e)', () => {
       expect(JSON.stringify(team.body)).not.toMatch(
         /pracuję po godzinach|gaszę pożary/,
       );
-      expect(team.body.members).toHaveLength(8);
+      expect(team.body.members).toHaveLength(9);
       expect(team.body.aggregate.at(-1).respondents).toBeGreaterThanOrEqual(3);
       const other = await as('r.sikora').get('/api/partner/team').expect(200);
       expect(
