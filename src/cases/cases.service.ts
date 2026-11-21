@@ -196,7 +196,9 @@ export class CasesService {
   async patch(id: string, patch: PatchCase): Promise<CaseDetail> {
     const record = this.record(id);
     await this.authorize('edit', record);
-    this.store.save(this.run(() => applyPatch(record, patch, this.today)));
+    await this.store.save(
+      this.run(() => applyPatch(record, patch, this.today)),
+    );
     return this.detail(id, 'EVALUATOR');
   }
 
@@ -214,7 +216,7 @@ export class CasesService {
         this.today,
       ),
     );
-    this.store.save(next);
+    await this.store.save(next);
     return this.detail(id);
   }
 
@@ -233,7 +235,9 @@ export class CasesService {
       record,
       action,
     );
-    this.store.save(this.run(() => applyAction(record, action, this.today)));
+    await this.store.save(
+      this.run(() => applyAction(record, action, this.today)),
+    );
     return this.detail(id, this.actorFor(record));
   }
 
@@ -274,8 +278,8 @@ export class CasesService {
     };
   }
 
-  reset(): void {
-    this.store.reset();
+  reset(): Promise<void> {
+    return this.store.reset();
   }
 
   record(id: string): CaseRecord {
@@ -285,8 +289,9 @@ export class CasesService {
     return record;
   }
 
-  save(record: CaseRecord): void {
-    this.store.save(record);
+  /** Persists the case (PostgreSQL with DATABASE_URL); await it. */
+  save(record: CaseRecord): Promise<void> {
+    return this.store.save(record);
   }
 
   /** Registers a listener called after every saved change of a case. */

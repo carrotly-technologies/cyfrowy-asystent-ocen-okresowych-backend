@@ -33,7 +33,7 @@ export class AppealsService {
     private readonly auth: AuthenticationContext,
   ) {}
 
-  ackFiction(id: string, input: AckFictionInput): CaseDetail {
+  async ackFiction(id: string, input: AckFictionInput): Promise<CaseDetail> {
     const record = this.cases.record(id);
     this.require(
       record,
@@ -45,7 +45,7 @@ export class AppealsService {
     );
   }
 
-  fileObjection(id: string, text: string): CaseDetail {
+  async fileObjection(id: string, text: string): Promise<CaseDetail> {
     const record = this.cases.record(id);
     this.require(
       record,
@@ -55,7 +55,10 @@ export class AppealsService {
     return this.save(record, (r) => fileObjection(r, text, this.cases.today));
   }
 
-  decideObjection(id: string, input: ObjectionDecisionBody): CaseDetail {
+  async decideObjection(
+    id: string,
+    input: ObjectionDecisionBody,
+  ): Promise<CaseDetail> {
     const record = this.cases.record(id);
     this.require(
       record,
@@ -67,7 +70,10 @@ export class AppealsService {
     );
   }
 
-  requestDueDateChange(id: string, input: DueDateRequestInput): CaseDetail {
+  async requestDueDateChange(
+    id: string,
+    input: DueDateRequestInput,
+  ): Promise<CaseDetail> {
     const record = this.cases.record(id);
     this.require(
       record,
@@ -79,7 +85,10 @@ export class AppealsService {
     );
   }
 
-  decideDueDateRequest(id: string, input: DueDateDecisionInput): CaseDetail {
+  async decideDueDateRequest(
+    id: string,
+    input: DueDateDecisionInput,
+  ): Promise<CaseDetail> {
     const record = this.cases.record(id);
     this.require(
       record,
@@ -131,11 +140,11 @@ export class AppealsService {
     return { name: fullName(user), role: ROLE_LABELS[user.role] };
   }
 
-  private save(
+  private async save(
     record: CaseRecord,
     change: (r: CaseRecord) => CaseRecord,
-  ): CaseDetail {
-    this.cases.save(this.cases.run(() => change(record)));
+  ): Promise<CaseDetail> {
+    await this.cases.save(this.cases.run(() => change(record)));
     const viewer = this.cases.viewerOf(record);
     const actor =
       viewer === 'EVALUATOR' || viewer === 'EMPLOYEE' ? viewer : null;

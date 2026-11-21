@@ -48,10 +48,10 @@ export class AppealsController {
   @ApiErrors(400, 409)
   @Can.Anyone()
   @HttpCode(200)
-  ackFiction(
+  async ackFiction(
     @Param('id') id: string,
     @Body({ schema: ackFictionSchema }) body: AckFictionInput,
-  ): CaseDetail {
+  ): Promise<CaseDetail> {
     return this.appeals.ackFiction(id, body);
   }
 
@@ -69,10 +69,10 @@ export class AppealsController {
   @ApiErrors(400, 409)
   @Can.Anyone()
   @HttpCode(200)
-  fileObjection(
+  async fileObjection(
     @Param('id') id: string,
     @Body({ schema: objectionSchema }) body: ObjectionInput,
-  ): CaseDetail {
+  ): Promise<CaseDetail> {
     return this.appeals.fileObjection(id, body.text);
   }
 
@@ -90,10 +90,10 @@ export class AppealsController {
   @ApiErrors(400, 409)
   @Can.Anyone()
   @HttpCode(200)
-  decideObjection(
+  async decideObjection(
     @Param('id') id: string,
     @Body({ schema: objectionDecisionSchema }) body: ObjectionDecisionBody,
-  ): CaseDetail {
+  ): Promise<CaseDetail> {
     return this.appeals.decideObjection(id, body);
   }
 
@@ -107,10 +107,10 @@ export class AppealsController {
   @ApiErrors(400, 409)
   @Can.Anyone()
   @HttpCode(200)
-  requestDueDateChange(
+  async requestDueDateChange(
     @Param('id') id: string,
     @Body({ schema: dueDateRequestSchema }) body: DueDateRequestInput,
-  ): CaseDetail {
+  ): Promise<CaseDetail> {
     return this.appeals.requestDueDateChange(id, body);
   }
 
@@ -124,10 +124,10 @@ export class AppealsController {
   @ApiErrors(400, 409)
   @Can.Anyone()
   @HttpCode(200)
-  decideDueDateRequest(
+  async decideDueDateRequest(
     @Param('id') id: string,
     @Body({ schema: dueDateDecisionSchema }) body: DueDateDecisionInput,
-  ): CaseDetail {
+  ): Promise<CaseDetail> {
     return this.appeals.decideDueDateRequest(id, body);
   }
 

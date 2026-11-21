@@ -88,7 +88,7 @@ export class DeadlinesService {
     const { record: next, change } = this.run(() =>
       changeDueDate(record, { newDate, reason, by, note }, this.cases.today),
     );
-    this.cases.save(next);
+    await this.cases.save(next);
     await this.reminders.deliverFor(next);
     return change;
   }
@@ -135,7 +135,7 @@ export class DeadlinesService {
       date: this.cases.today,
       text: `Zaproszono ocenianego na ${talkName(input.kind)}: ${formatDatePl(input.date)}, godz. ${input.time}, ${input.place}.`,
     });
-    this.cases.save(next);
+    await this.cases.save(next);
     await this.notify([
       talkInvitationDraft(next, invitation, this.cases.evaluatorName(next)),
     ]);
@@ -194,7 +194,7 @@ export class DeadlinesService {
       date: today,
       text: `Zmiana stanowiska pracy z istotną zmianą zakresu obowiązków od ${formatDatePl(input.date)}. ${effect.message} (${effect.legalBasis}).`,
     });
-    this.cases.save(next);
+    await this.cases.save(next);
     const drafts: NotificationDraft[] = (
       ['EVALUATOR', 'EMPLOYEE', 'HR'] as const
     ).map((audience) => ({
@@ -248,7 +248,7 @@ export class DeadlinesService {
         this.cases.today,
       ),
     );
-    this.cases.save(next);
+    await this.cases.save(next);
     await this.notify(
       (['EVALUATOR', 'EMPLOYEE'] as const).map((audience) => ({
         key: `${id}:EVALUATOR:${evaluator.id}:${this.cases.today}`,

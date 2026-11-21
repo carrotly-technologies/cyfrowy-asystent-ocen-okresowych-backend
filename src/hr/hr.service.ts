@@ -34,7 +34,7 @@ export class HrService {
   }
 
   /** Simulated: nothing is sent, the reminder is logged in the case history. */
-  remind(caseIds: string[]) {
+  async remind(caseIds: string[]) {
     const unknown = caseIds.filter((id) => {
       try {
         this.cases.record(id);
@@ -49,7 +49,8 @@ export class HrService {
       );
     }
     const today = this.cases.today;
-    const log = [...new Set(caseIds)].map((caseId) => {
+    const log: { caseId: string; date: string; text: string }[] = [];
+    for (const caseId of new Set(caseIds)) {
       const record = this.cases.record(caseId);
       const summary = this.cases.summary(record);
       const deadline = summary.nextDeadline;
@@ -57,13 +58,13 @@ export class HrService {
         ? `${deadline.label} ${formatDatePl(deadline.date)} (${describeDaysLeft(deadline.daysLeft!)})`
         : `etap „${summary.stages.find((s) => s.id === summary.currentStage)?.name}”`;
       const text = `Przypomnienie (symulacja) do: ${this.cases.evaluatorName(record)}. Ocena: ${fullName(record.person)}, ${what}.`;
-      this.cases.save({
+      await this.cases.save({
         ...record,
         lastReminderOn: today,
         history: [...record.history, { date: today, text }],
       });
-      return { caseId, date: today, text };
-    });
+      log.push({ caseId, date: today, text });
+    }
     return { sent: log.length, log };
   }
 }

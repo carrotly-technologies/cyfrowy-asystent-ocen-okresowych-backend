@@ -335,7 +335,7 @@ export class EmployeesService implements OnModuleInit {
         });
         evaluatorId = next.evaluatorId;
       }
-      this.cases.save({
+      await this.cases.save({
         ...record,
         person: { ...record.person, ...this.person(next) },
         evaluatorId,
@@ -376,7 +376,7 @@ export class EmployeesService implements OnModuleInit {
     }
     await this.repo.deleteEmployee(id);
     for (const record of records) {
-      this.cases.save({
+      await this.cases.save({
         ...record,
         person: {
           ...record.person,
@@ -436,9 +436,9 @@ export class EmployeesService implements OnModuleInit {
       ],
     });
     for (const old of records.filter((r) => !r.nextCaseId)) {
-      this.cases.save({ ...old, nextCaseId: caseId });
+      await this.cases.save({ ...old, nextCaseId: caseId });
     }
-    this.cases.save(record);
+    await this.cases.save(record);
     await this.syncAbsences();
     return {
       caseId,
@@ -496,7 +496,7 @@ export class EmployeesService implements OnModuleInit {
         .filter((a) => a.employeeId === record.person.id)
         .map((a) => ({ from: a.from, to: a.to, justified: a.justified }));
       if (absences.length || record.absences?.length)
-        this.cases.save({ ...record, absences });
+        await this.cases.save({ ...record, absences });
     }
   }
 
