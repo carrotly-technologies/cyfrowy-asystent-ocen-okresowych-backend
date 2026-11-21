@@ -21,6 +21,8 @@ export interface User {
   evaluatorId: string | null;
   /** The assessed person (`Person.id`) an EMPLOYEE account belongs to; null for others. */
   personId: string | null;
+  /** Optional e-mail for notifications (sent only when SMTP_* is configured). */
+  email?: string | null;
 }
 
 /** What the users API returns: the account without internal links. */

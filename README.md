@@ -23,6 +23,8 @@ cp .env.example .env   # optional, defaults work out of the box
 | `OFFICE_CITY`       | `Warszawa`              | „miejscowość” next to the signatures on the sheets              |
 | `OFFICE_LOGO_URL`   | (unset)                 | Optional logo URL shown on the on-screen sheet                  |
 | `OBJECTION_RECIPIENT_A` | (unset)             | Sheet A „Pouczenie”: whom the objection goes to (blank = dotted line) |
+| `REMINDERS_INTERVAL_MINUTES` | `60`          | Reminder scheduler interval (also runs at startup); `0` = startup and `POST /api/notifications/run` only |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | (unset) | Optional e-mail copy of notifications (nodemailer); unset `SMTP_HOST` = in-app inbox only |
 
 ### Database (optional)
 
@@ -172,6 +174,29 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
 | `GET /api/hr/overview`           | Counters and every case in the office, with evaluator and last reminder                 |
 | `POST /api/hr/reminders`         | Simulated reminders (`{ caseIds }`), logged in each case's history                       |
 | `POST /api/demo/reset`           | Restores the seed (cases, journal, pulse)                                                 |
+
+### Deadlines, scheduler and notifications
+
+Rules: `src/cases/absences.rules.ts` (continuous absences, art. 81 ust. 7; the scheduler announces the extended date), `src/cases/due-date-change.rules.ts`
+(`changeDueDate`, art. 81 ust. 6–9, §8–§9 rozp. 2016), `src/cases/obligatory-grade.rules.ts` (art. 89 ust. 2),
+`src/notifications/reminders.rules.ts` (what the scheduler reminds about; idempotent keys). Other modules change a
+due date only through `DeadlinesService.changeDueDate(caseId, newDate, reason, by, note?)`.
+
+| Route                                              | What it does                                                                 |
+| -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `GET /api/notifications`                           | The caller's own notifications `{ items, unread }`, newest first              |
+| `POST /api/notifications/:id/read`                 | Marks one as read (204; 404 for someone else's)                               |
+| `POST /api/notifications/read-all`                 | Marks all as read `{ marked }`                                               |
+| `POST /api/notifications/run`                      | HR, ADMIN: "Uruchom przypomnienia teraz" (one scheduler run for `DEMO_TODAY`) `{ today, created }` |
+| `GET /api/deadlines/rules`                         | Reasons of a due-date change (art. 81 ust. 7–8) and reminder thresholds      |
+| `POST /api/cases/:id/due-date`                     | Evaluator: `{ date, reason, note? }` (reason of art. 81 ust. 8 pkt 1–4); 409 within 6 months of the last assessment or after a negative one; records the §8 notice |
+| `POST /api/cases/:id/talk-invitations`             | Evaluator: `{ kind: OPENING\|ASSESSMENT, date, time, place, note? }` (201), notifies the evaluee |
+| `GET /api/cases/:id/talk-invitations/:invId/ics`   | Evaluator or evaluee: the invitation as an `.ics` calendar file               |
+| `POST /api/cases/:id/position-change`              | Evaluator or HR: `{ date }`; §9 ust. 1 (part I again in 30 days) or ust. 2 (assessment window, due date set) |
+| `POST /api/cases/:id/evaluator`                    | HR: `{ evaluatorId }`; change of evaluator, criteria kept (§9 ust. 3)         |
+| `GET /api/evaluators`                              | HR: evaluators to choose from                                                 |
+
+`CaseDetail` gained `dueDateChanges`, `dueDateChangeBlocker`, `talkInvitations`, `positionChanges`, `absences`.
 
 - Rules are pure functions with unit tests in `src/cases/*.rules.ts`: deadlines (`deadlines.rules.ts`, KC term rules
   incl. shifting from Saturdays, Sundays and holidays, each `Deadline` with `legalBasis`), stages

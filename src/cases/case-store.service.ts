@@ -15,6 +15,7 @@ export class CaseStore {
   readonly today: string;
   private cases = new Map<string, CaseRecord>();
   private observationSeq = 0;
+  private readonly saveListeners: ((record: CaseRecord) => void)[] = [];
 
   constructor(config: ConfigService) {
     const today = config.get<string>('DEMO_TODAY', DEFAULT_DEMO_TODAY);
@@ -40,6 +41,12 @@ export class CaseStore {
 
   save(record: CaseRecord): void {
     this.cases.set(record.id, record);
+    for (const listener of this.saveListeners) listener(record);
+  }
+
+  /** Called after every save (e.g. notifications about the change). */
+  onSave(listener: (record: CaseRecord) => void): void {
+    this.saveListeners.push(listener);
   }
 
   evaluator(id: string): Evaluator {

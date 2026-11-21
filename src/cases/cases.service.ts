@@ -289,6 +289,11 @@ export class CasesService {
     this.store.save(record);
   }
 
+  /** Registers a listener called after every saved change of a case. */
+  onSave(listener: (record: CaseRecord) => void): void {
+    this.store.onSave(listener);
+  }
+
   evaluatorName(record: CaseRecord): string {
     return fullName(this.store.evaluator(record.evaluatorId));
   }

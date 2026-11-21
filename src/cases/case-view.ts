@@ -12,6 +12,7 @@ import type {
 import type { OfficeConfig } from '../config/office.js';
 import { caseLocks } from './correction.rules.js';
 import { dueDateRequestRule } from './due-date.rules.js';
+import { dueChangeBlocker } from './due-date-change.rules.js';
 import { formalCheck } from './formal-check.rules.js';
 import { objectionViews } from './objection-terms.rules.js';
 import { promotionRequestOf } from './promotion.rules.js';
@@ -82,6 +83,10 @@ export function toDetail(
     dueDateRequests: record.dueDateRequests ?? [],
     dueDateChanges: record.dueDateChanges ?? [],
     dueDateRequestRule: dueDateRequestRule(record, today),
+    dueDateChangeBlocker: dueChangeBlocker(record, 'EVALUEE_REQUEST', today),
+    talkInvitations: record.talkInvitations ?? [],
+    positionChanges: record.positionChanges ?? [],
+    absences: record.absences ?? [],
     availableActions: actor ? availableActions(record, today, actor) : [],
   };
   if (actor !== 'EMPLOYEE') return detail;
