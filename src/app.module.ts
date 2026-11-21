@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AssistantModule } from './assistant/assistant.module.js';
 import { AssessmentsModule } from './assessments/assessments.module.js';
 import { CompetencyModelModule } from './competency-model/competency-model.module.js';
 import { CasesModule } from './cases/cases.module.js';
@@ -18,6 +19,7 @@ import { SheetsModule } from './sheets/sheets.module.js';
     OspModule,
     CasesModule,
     HrModule,
+    AssistantModule,
   ],
 })
 export class AppModule {}
