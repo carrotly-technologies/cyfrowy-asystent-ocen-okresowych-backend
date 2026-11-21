@@ -25,8 +25,8 @@ export function toSupervisorPoint(r: PulseResponse): PulsePoint {
     id: r.id,
     date: r.date,
     index: pulseIndex(r.answers),
+    // An unshared comment is not hinted at in any way (not even that it exists).
     sharedComment: hasComment && r.shareComment ? r.comment : null,
-    hasPrivateComment: hasComment && !r.shareComment,
   };
 }
 

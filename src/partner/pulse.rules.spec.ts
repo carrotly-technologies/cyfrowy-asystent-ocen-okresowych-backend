@@ -46,7 +46,8 @@ describe('pulseIndex / toSupervisorPoint', () => {
       pulse('2026-11-01', [3, 3, 3, 3, 3], { comment: 'prywatne' }),
     );
     expect(p.sharedComment).toBeNull();
-    expect(p.hasPrivateComment).toBe(true);
+    expect(p).not.toHaveProperty('hasPrivateComment');
+    expect(JSON.stringify(p)).not.toContain('prywatne');
     const shared = toSupervisorPoint(
       pulse('2026-11-01', [3, 3, 3, 3, 3], {
         comment: 'jawne',
@@ -55,7 +56,6 @@ describe('pulseIndex / toSupervisorPoint', () => {
     );
     expect(shared).toMatchObject({
       sharedComment: 'jawne',
-      hasPrivateComment: false,
     });
   });
 });

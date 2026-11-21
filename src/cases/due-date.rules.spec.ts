@@ -193,7 +193,12 @@ describe('wycofanie wniosku o zmianę terminu', () => {
     );
     expect(
       conflict(() =>
-        decideDueDateRequest(withdrawn, { approve: false, note: 'x' }, EV, TODAY),
+        decideDueDateRequest(
+          withdrawn,
+          { approve: false, note: 'x' },
+          EV,
+          TODAY,
+        ),
       ),
     ).toContain('czekającego');
   });

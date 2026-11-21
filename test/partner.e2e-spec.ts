@@ -146,10 +146,9 @@ describe('HR partner and pulse survey (e2e)', () => {
         .expect(200);
       const text = JSON.stringify(res.body);
       expect(text).not.toContain('pracuję po godzinach');
-      expect(res.body.points.at(-1)).toMatchObject({
-        sharedComment: null,
-        hasPrivateComment: true,
-      });
+      expect(res.body.points.at(-1)).toMatchObject({ sharedComment: null });
+      // Not even the existence of an unshared comment is revealed.
+      expect(text).not.toContain('hasPrivateComment');
       expect(res.body.points.every((p: object) => !('comment' in p))).toBe(
         true,
       );
