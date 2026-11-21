@@ -59,14 +59,18 @@ export function effectiveStage(record: CaseRecord): StageId {
   return record.stage;
 }
 
+/**
+ * The one set of stage names used on every screen (stepper, tables, messages);
+ * the frontend's STAGE_SHORT (src/lib/stages.ts) repeats it.
+ */
 export const STAGE_NAMES: Record<StageId, string> = {
-  SHEET_SELECTION: 'Wybór arkusza, kryteriów i terminu oceny',
-  OPENING_TALK: 'Rozmowa rozpoczynająca · część I',
-  PART_I_ACK: 'Potwierdzenie części I przez ocenianego',
-  OBSERVATION: 'Okres oceny · obserwacje',
+  SHEET_SELECTION: 'Arkusz i kryteria',
+  OPENING_TALK: 'Rozmowa rozpoczynająca',
+  PART_I_ACK: 'Potwierdzenie części I',
+  OBSERVATION: 'Okres obserwacji',
   ASSESSMENT: 'Rozmowa oceniająca i ocena',
-  SIGNATURE: 'Podpis oceniającego i przekazanie do zapoznania',
-  ACKNOWLEDGEMENT: 'Zapoznanie ocenianego z oceną',
+  SIGNATURE: 'Podpis i przekazanie',
+  ACKNOWLEDGEMENT: 'Zapoznanie z oceną',
 };
 
 export function fullName(person: { firstName: string; lastName: string }) {

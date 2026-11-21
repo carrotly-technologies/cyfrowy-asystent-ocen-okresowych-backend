@@ -282,6 +282,7 @@ export const LEGAL_ACTIONS = [
   'FILE_OBJECTION',
   'DECIDE_OBJECTION',
   'REQUEST_DUE_DATE_CHANGE',
+  'WITHDRAW_DUE_DATE_REQUEST',
   'DECIDE_DUE_DATE_REQUEST',
 ] as const;
 export type LegalAction = (typeof LEGAL_ACTIONS)[number];
@@ -310,6 +311,9 @@ export function legalActions(
   }
   if (viewer === 'EMPLOYEE' && dueDateRequestRule(record, today).eligible) {
     out.push('REQUEST_DUE_DATE_CHANGE');
+  }
+  if (viewer === 'EMPLOYEE' && pendingDueDateRequest(record)) {
+    out.push('WITHDRAW_DUE_DATE_REQUEST');
   }
   if (viewer === 'EVALUATOR' && pendingDueDateRequest(record)) {
     out.push('DECIDE_DUE_DATE_REQUEST');

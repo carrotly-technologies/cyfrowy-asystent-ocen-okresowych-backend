@@ -70,11 +70,12 @@ export const PULSE_QUESTIONS: readonly PulseQuestion[] = [
 export const PULSE_MIN = 1;
 export const PULSE_MAX = 5;
 
-/** How often the employee is invited to fill the pulse (product setting). */
+/**
+ * How often the employee fills the pulse (product setting). It is also the
+ * shortest gap between two responses, so the trend stays comparable and the
+ * screen text ("co 14 dni") matches what the API accepts.
+ */
 export const PULSE_INTERVAL_DAYS = 14;
-
-/** At most one response per this many days (keeps the trend comparable). */
-export const PULSE_MIN_GAP_DAYS = 7;
 
 /**
  * Team aggregates are shown only when at least this many people answered in

@@ -18,7 +18,11 @@ import type {
 import { fullName } from './case.rules.js';
 import type { ActorRef, CaseDetail, CaseRecord } from './case.types.js';
 import { CasesService } from './cases.service.js';
-import { decideDueDateRequest, fileDueDateRequest } from './due-date.rules.js';
+import {
+  decideDueDateRequest,
+  fileDueDateRequest,
+  withdrawDueDateRequest,
+} from './due-date.rules.js';
 
 /**
  * Post-assessment paths: fikcja zapoznania, sprzeciw and its decision by the
@@ -82,6 +86,18 @@ export class AppealsService {
     );
     return this.save(record, (r) =>
       fileDueDateRequest(r, input, this.cases.today),
+    );
+  }
+
+  async withdrawDueDateRequest(id: string): Promise<CaseDetail> {
+    const record = this.cases.record(id);
+    this.require(
+      record,
+      ['EMPLOYEE'],
+      'Wniosek o zmianę terminu oceny może wycofać tylko oceniany, który go złożył.',
+    );
+    return this.save(record, (r) =>
+      withdrawDueDateRequest(r, this.cases.today),
     );
   }
 

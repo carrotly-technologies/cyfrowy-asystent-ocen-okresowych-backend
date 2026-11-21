@@ -38,7 +38,7 @@ interface Pattern {
 const PATTERNS: Pattern[] = [
   {
     personId: 'p-nowak',
-    offset: 8,
+    offset: 14,
     rows: [
       [4, 4, 5, 4, 5],
       [4, 5, 5, 4, 5],
@@ -56,7 +56,7 @@ const PATTERNS: Pattern[] = [
   },
   {
     personId: 'p-wojcik',
-    offset: 8,
+    offset: 14,
     rows: [
       [4, 4, 4, 4, 5],
       [4, 4, 4, 4, 4],

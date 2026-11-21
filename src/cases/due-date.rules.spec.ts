@@ -8,6 +8,7 @@ import {
   dueDateRequestsView,
   fileDueDateRequest,
   pendingDueDateRequest,
+  withdrawDueDateRequest,
 } from './due-date.rules.js';
 import { buildSeed } from './seed/seed.data.js';
 
@@ -175,5 +176,25 @@ describe('wniosek o zmianę terminu po sporządzeniu oceny: bezprzedmiotowy', ()
       decidedOn: TODAY,
     });
     expect(next.history.at(-1)!.text).toContain('bezprzedmiotowy');
+  });
+});
+
+describe('wycofanie wniosku o zmianę terminu', () => {
+  it('withdraws the pending request, keeps the date and allows a new one', () => {
+    const r = seed('c-302');
+    const withdrawn = withdrawDueDateRequest(r, TODAY);
+    expect(withdrawn.dueDateRequests?.[0].status).toBe('WITHDRAWN');
+    expect(withdrawn.partI.assessmentDue).toBe(r.partI.assessmentDue);
+    expect(withdrawn.history.at(-1)?.event?.type).toBe(
+      'DUE_DATE_CHANGE_WITHDRAWN',
+    );
+    expect(conflict(() => withdrawDueDateRequest(withdrawn, TODAY))).toContain(
+      'nie ma czego wycofać',
+    );
+    expect(
+      conflict(() =>
+        decideDueDateRequest(withdrawn, { approve: false, note: 'x' }, EV, TODAY),
+      ),
+    ).toContain('czekającego');
   });
 });

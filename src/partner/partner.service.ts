@@ -14,7 +14,7 @@ import { LlmClient } from '../assistant/llm.client.js';
 import { caseCriteria, fullName, STAGE_NAMES } from '../cases/case.rules.js';
 import type { CaseRecord } from '../cases/case.types.js';
 import { CasesService } from '../cases/cases.service.js';
-import { daysBetween } from '../cases/dates.js';
+import { daysBetween, formatDatePl } from '../cases/dates.js';
 import { EVALUATORS, OFFICE_NAME } from '../cases/seed/seed.data.js';
 import { DemoReset } from '../demo/demo-reset.service.js';
 import { JournalRepository } from '../journal/journal.repository.js';
@@ -24,7 +24,6 @@ import {
   PULSE_INTERVAL_DAYS,
   PULSE_MAX,
   PULSE_MIN,
-  PULSE_MIN_GAP_DAYS,
   PULSE_PRIVACY,
   PULSE_QUESTIONS,
 } from './data/pulse.data.js';
@@ -107,7 +106,7 @@ export class PartnerService implements OnModuleInit {
       ...this.questions(),
       history: history.map((r) => ({ ...r, index: pulseIndex(r.answers) })),
       nextDue: nextPulseDue(history, today),
-      canSubmit: !last || daysBetween(last.date, today) >= PULSE_MIN_GAP_DAYS,
+      canSubmit: !last || daysBetween(last.date, today) >= PULSE_INTERVAL_DAYS,
     };
   }
 
@@ -116,9 +115,9 @@ export class PartnerService implements OnModuleInit {
     const history = await this.pulses.listByPeople([personId]);
     const last = history.at(-1);
     const today = this.cases.today;
-    if (last && daysBetween(last.date, today) < PULSE_MIN_GAP_DAYS)
+    if (last && daysBetween(last.date, today) < PULSE_INTERVAL_DAYS)
       throw new ConflictException(
-        `Puls wypełniono ${last.date}. Kolejny możesz wypełnić po ${PULSE_MIN_GAP_DAYS} dniach.`,
+        `Puls wypełniono ${formatDatePl(last.date)}. Puls wypełnia się co ${PULSE_INTERVAL_DAYS} dni, kolejny możesz wypełnić od ${formatDatePl(nextPulseDue(history, today))}.`,
       );
     return this.pulses.insert({
       id: randomUUID(),

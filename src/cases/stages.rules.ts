@@ -46,8 +46,12 @@ function stageDeadlineSpec(
         label: 'Wybór arkusza i kryteriów przed rozmową rozpoczynającą, do',
       };
     case 'OPENING_TALK':
-    case 'PART_I_ACK':
       return openingTalkDeadline(record.cycleStart);
+    case 'PART_I_ACK':
+      return {
+        ...openingTalkDeadline(record.cycleStart),
+        label: 'Potwierdzenie części I przez ocenianego, do',
+      };
     case 'OBSERVATION':
     case 'ASSESSMENT':
     case 'SIGNATURE':

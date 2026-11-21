@@ -253,6 +253,33 @@ export function decideDueDateRequest(
   return next;
 }
 
+/** The assessed person withdraws their pending request (before the evaluator decides). */
+export function withdrawDueDateRequest(
+  record: CaseRecord,
+  today: string,
+): CaseRecord {
+  const pending = pendingDueDateRequest(record);
+  if (!pending) {
+    throw new CaseRuleError(
+      'Nie masz wniosku o zmianę terminu oceny czekającego na rozpatrzenie, więc nie ma czego wycofać.',
+    );
+  }
+  const next = structuredClone(record);
+  setDecision(next, pending.id, {
+    status: 'WITHDRAWN',
+    decidedOn: today,
+    decisionNote: null,
+    newDate: null,
+    decidedBy: null,
+  });
+  next.history.push({
+    date: today,
+    text: `Oceniany wycofał wniosek o zmianę terminu oceny z ${formatDatePl(pending.filedOn)}. Termin bez zmian: ${next.partI.assessmentDue ? formatDatePl(next.partI.assessmentDue) : '—'}.`,
+    event: { type: 'DUE_DATE_CHANGE_WITHDRAWN', notify: ['EVALUATOR'] },
+  });
+  return next;
+}
+
 function setDecision(
   record: CaseRecord,
   id: string,

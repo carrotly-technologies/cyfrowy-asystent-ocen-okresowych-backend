@@ -86,7 +86,7 @@ function objectionAwaitingDirector(r: Rel): CaseRecord {
         id: 'c-301-obj-1',
         round: 1,
         filedOn: filed,
-        text: 'Nie zgadzam się z oceną kryteriów „Rzetelność i terminowość” oraz „Organizacja pracy”. Opóźnienia wynikały z późnego przekazania opisów przedmiotu zamówienia przez komórki merytoryczne, co zgłaszałem na bieżąco (notatki służbowe z marca i czerwca).',
+        text: 'Nie zgadzam się z oceną kryteriów „Rzetelność” oraz „Organizacja pracy i orientacja na osiąganie celów”. Opóźnienia wynikały z późnego przekazania opisów przedmiotu zamówienia przez komórki merytoryczne, co zgłaszałem na bieżąco (notatki służbowe z marca i czerwca).',
         decision: null,
       },
     ],

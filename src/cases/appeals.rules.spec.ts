@@ -1,3 +1,4 @@
+import { objectionNextSteps } from './objection-guide.rules.js';
 import { applyAction } from './actions.rules.js';
 import {
   courtAppealDeadline,
@@ -240,5 +241,17 @@ describe('history text', () => {
     expect(next.history.at(-1)?.text).toContain(
       'Uzasadnienie: Ocena zasadna. Oceniany',
     );
+  });
+});
+
+describe('objectionNextSteps ("Co dalej?")', () => {
+  it('lists the 7-day, 14-day and labour-court steps with legal basis', () => {
+    const steps = objectionNextSteps('dyrektora generalnego urzędu');
+    expect(steps).toHaveLength(3);
+    expect(steps[0].text).toContain('7 dni');
+    expect(steps[0].text).toContain('dyrektora generalnego urzędu');
+    expect(steps[1].text).toContain('14 dni');
+    expect(steps[2].text).toContain('sądu pracy');
+    expect(steps[2].legalBasis).toContain('art. 83 ust. 5');
   });
 });
