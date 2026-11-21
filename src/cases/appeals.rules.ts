@@ -76,7 +76,7 @@ export function recordAckFiction(
   const objection = objectionDeadline(input.date);
   next.history.push({
     date: today,
-    text: `Stwierdzono fikcję zapoznania z oceną (${by.name}, ${by.role}): ocena dotarła do ocenianego ${formatDatePl(input.date)}, ale nie mógł lub nie chciał potwierdzić zapoznania. Powód: ${input.reason}. Termin na sprzeciw biegnie do ${formatDatePl(objection.date!)} (art. 83 ust. 1 ${USC}).`,
+    text: `Stwierdzono fikcję zapoznania z oceną (${by.name}, ${by.role}): ocena dotarła do ocenianego ${formatDatePl(input.date)}, ale nie mógł lub nie chciał potwierdzić zapoznania. Powód: ${sentence(input.reason)} Termin na sprzeciw biegnie do ${formatDatePl(objection.date!)} (art. 83 ust. 1 ${USC}).`,
     event: {
       type: 'ACK_FICTION_RECORDED',
       notify: ['EMPLOYEE', 'EVALUATOR', 'HR'],
@@ -207,7 +207,7 @@ export function decideObjection(
       const court = daysTerm(today, COURT_APPEAL_DAYS, '', '').date!;
       next.history.push({
         date: today,
-        text: `Dyrektor generalny urzędu nie uwzględnił sprzeciwu (oddalenie). Uzasadnienie: ${input.reason}.${late} Oceniany może odwołać się do sądu pracy w terminie 14 dni od doręczenia rozstrzygnięcia (do ${formatDatePl(court)}, art. 83 ust. 5 ${USC}).`,
+        text: `Dyrektor generalny urzędu nie uwzględnił sprzeciwu (oddalenie). Uzasadnienie: ${sentence(input.reason)}${late} Oceniany może odwołać się do sądu pracy w terminie 14 dni od doręczenia rozstrzygnięcia (do ${formatDatePl(court)}, art. 83 ust. 5 ${USC}).`,
         event: {
           type: 'OBJECTION_DISMISSED',
           notify: ['EMPLOYEE', 'EVALUATOR', 'HR'],
@@ -235,7 +235,7 @@ export function decideObjection(
       }
       next.history.push({
         date: today,
-        text: `Dyrektor generalny urzędu uwzględnił sprzeciw i zmienił ocenę (art. 83 ust. 4 ${USC}). Uzasadnienie: ${input.reason}.${late} Zmienioną ocenę oceniający podpisuje i ponownie przekazuje ocenianemu do zapoznania.`,
+        text: `Dyrektor generalny urzędu uwzględnił sprzeciw i zmienił ocenę (art. 83 ust. 4 ${USC}). Uzasadnienie: ${sentence(input.reason)}${late} Zmienioną ocenę oceniający podpisuje i ponownie przekazuje ocenianemu do zapoznania.`,
         event: {
           type: 'OBJECTION_ASSESSMENT_CHANGE',
           notify: ['EMPLOYEE', 'EVALUATOR', 'HR'],
@@ -253,7 +253,7 @@ export function decideObjection(
       delete next.completedOn.ASSESSMENT;
       next.history.push({
         date: today,
-        text: `Dyrektor generalny urzędu uwzględnił sprzeciw i polecił ponowne sporządzenie oceny (art. 83 ust. 4 ${USC}). Uzasadnienie: ${input.reason}.${late} Dotychczasowa ocena została anulowana; sprawa wraca do etapu „Rozmowa oceniająca i ocena” (§10–§11 ${RO_2016}). Od oceny sporządzonej po raz drugi przysługuje sprzeciw.`,
+        text: `Dyrektor generalny urzędu uwzględnił sprzeciw i polecił ponowne sporządzenie oceny (art. 83 ust. 4 ${USC}). Uzasadnienie: ${sentence(input.reason)}${late} Dotychczasowa ocena została anulowana; sprawa wraca do etapu „Rozmowa oceniająca i ocena” (§10–§11 ${RO_2016}). Od oceny sporządzonej po raz drugi przysługuje sprzeciw.`,
         event: {
           type: 'OBJECTION_ASSESSMENT_REDO',
           notify: ['EMPLOYEE', 'EVALUATOR', 'HR'],
@@ -315,4 +315,9 @@ export function legalActions(
     out.push('DECIDE_DUE_DATE_REQUEST');
   }
   return out;
+}
+
+/** Free text written into a history sentence, ending with exactly one full stop. */
+function sentence(text: string): string {
+  return `${text.trim().replace(/[.\s]+$/, '')}.`;
 }

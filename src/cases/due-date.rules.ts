@@ -219,7 +219,7 @@ export function decideDueDateRequest(
     });
     next.history.push({
       date: today,
-      text: `Oceniający nie uwzględnił wniosku ocenianego o zmianę terminu oceny. Uzasadnienie: ${note}. Termin bez zmian: ${formatDatePl(next.partI.assessmentDue!)}.`,
+      text: `Oceniający nie uwzględnił wniosku ocenianego o zmianę terminu oceny. Uzasadnienie: ${sentence(note)} Termin bez zmian: ${formatDatePl(next.partI.assessmentDue!)}.`,
       event: { type: 'DUE_DATE_CHANGE_REJECTED', notify: ['EMPLOYEE'] },
     });
   }
@@ -234,4 +234,9 @@ function setDecision(
   record.dueDateRequests = (record.dueDateRequests ?? []).map((r) =>
     r.id === id ? { ...r, ...decision } : r,
   );
+}
+
+/** Free text written into a history sentence, ending with exactly one full stop. */
+function sentence(text: string): string {
+  return `${text.trim().replace(/[.\s]+$/, '')}.`;
 }
