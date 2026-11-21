@@ -22,5 +22,7 @@ import { PostgresJournalRepository } from './postgres-journal.repository.js';
     },
     JournalService,
   ],
+  // Read by the HR partner (src/partner) for risk signals and hints.
+  exports: [JournalRepository],
 })
 export class JournalModule {}
