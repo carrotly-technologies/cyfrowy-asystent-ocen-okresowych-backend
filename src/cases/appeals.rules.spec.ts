@@ -227,3 +227,18 @@ describe('sprzeciw and the decision of the dyrektor generalny', () => {
     expect(caseStatus(next, TODAY)).toBe('SPRZECIW_W_ROZPATRZENIU');
   });
 });
+
+describe('history text', () => {
+  it('does not double the full stop after a reason', () => {
+    const filed = fileObjection(seed('c-006'), 'x', TODAY);
+    const next = decideObjection(
+      filed,
+      { outcome: 'DISMISS', reason: 'Ocena zasadna.' },
+      DG,
+      TODAY,
+    );
+    expect(next.history.at(-1)?.text).toContain(
+      'Uzasadnienie: Ocena zasadna. Oceniany',
+    );
+  });
+});
