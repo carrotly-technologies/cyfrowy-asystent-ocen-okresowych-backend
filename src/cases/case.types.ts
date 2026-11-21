@@ -3,6 +3,7 @@ import type { Correction } from './correction.rules.js';
 import type { EvaluateResult } from '../assessments/evaluate.rules.js';
 import type { SheetSuggestion } from '../sheets/sheet-suggestion.rules.js';
 import type { SheetId } from '../sheets/sheet.types.js';
+import type { AbsenceSpan } from './absences.rules.js';
 
 /** Types of contract v2 (notatki/api-kontrakt-v2.md). */
 
@@ -257,8 +258,19 @@ export interface DueDateChange {
   changedOn: string;
   from: string | null;
   to: string;
+  /** Human-readable reason. */
   reason: string;
   by: ActorRef;
+  // Set by src/cases/due-date-change.rules.ts (art. 81 ust. 6–8, §8 rozp. 2016):
+  id?: string;
+  /** Which statutory case it is. */
+  reasonCode?: DueChangeReason;
+  legalBasis?: string;
+  note?: string;
+  /** For ABSENCE_EXTENSION: the continuous absence and its length. */
+  absence?: { from: string; to: string; days: number };
+  /** The written notice to the assessed person (§8: a copy goes with the sheet). */
+  notice?: { sentOn: string; text: string };
 }
 
 export interface CaseDetail extends CaseSummary {
@@ -293,6 +305,11 @@ export interface CaseDetail extends CaseSummary {
   dueDateRequests: DueDateRequest[];
   dueDateChanges: DueDateChange[];
   dueDateRequestRule: { eligible: boolean; reason: string; legalBasis: string };
+  /** null when the evaluator may change the due date now, else why not (art. 81 ust. 8). */
+  dueDateChangeBlocker?: string | null;
+  talkInvitations?: TalkInvitation[];
+  positionChanges?: PositionChange[];
+  absences?: AbsenceSpan[];
   /** Post-assessment actions the caller may take now (appeals.rules.ts). */
   legalActions?: string[];
 }
@@ -352,6 +369,50 @@ export interface CaseRecord {
    * into the case; they extend the assessment due date (art. 81 ust. 7).
    */
   absences?: { from: string; to: string; justified: boolean }[];
+  /** Invitations to the opening / assessment talk sent to the assessed person. */
+  talkInvitations?: TalkInvitation[];
+  /** Changes of position with a significant change of duties (§9 rozp. 2016). */
+  positionChanges?: PositionChange[];
+}
+
+/**
+ * Why the due date changed: the four cases of art. 81 ust. 8 ustawy (chosen
+ * by the evaluator), the automatic extension by a long absence (ust. 7) and a
+ * change of position (art. 81 ust. 6, §9 ust. 2 rozp. 2016).
+ */
+export type DueChangeReason =
+  | 'EVALUATOR_CHANGE'
+  | 'EVALUEE_ABSENCE_EXPECTED'
+  | 'EVALUATOR_ABSENCE_EXPECTED'
+  | 'EVALUEE_REQUEST'
+  | 'ABSENCE_EXTENSION'
+  | 'POSITION_CHANGE';
+
+export type TalkKind = 'OPENING' | 'ASSESSMENT';
+
+export interface TalkInvitation {
+  id: string;
+  kind: TalkKind;
+  date: string;
+  /** HH:MM */
+  time: string;
+  place: string;
+  note: string;
+  createdOn: string;
+}
+
+export interface PositionChange {
+  id: string;
+  date: string;
+  recordedOn: string;
+  /** REDO_PART_I: §9 ust. 1; ASSESSMENT: art. 81 ust. 6 + §9 ust. 2. */
+  effect: 'REDO_PART_I' | 'ASSESSMENT';
+  /** REDO_PART_I: part I again by this date; ASSESSMENT: the latest date. */
+  deadline: string;
+  /** ASSESSMENT: not earlier than this date. */
+  earliest: string | null;
+  message: string;
+  legalBasis: string;
 }
 
 export const CASE_ACTIONS = [

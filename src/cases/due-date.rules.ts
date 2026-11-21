@@ -1,7 +1,8 @@
 import { CaseRuleError } from './case-rule.error.js';
 import type { ActorRef, CaseRecord, DueDateRequest } from './case.types.js';
-import { addMonths, formatDatePl, isIsoDate } from './dates.js';
+import { addMonths, formatDatePl } from './dates.js';
 import { USC } from './deadlines.rules.js';
+import { changeDueDate as changeDueDateByRule } from './due-date-change.rules.js';
 
 /**
  * Change of the assessment due date ("termin oceny", art. 81 ust. 8 ustawy)
@@ -89,9 +90,9 @@ export function pendingDueDateRequest(
 }
 
 /**
- * The single place that moves "termin sporządzenia oceny" (part I). Used by
- * the request workflow below; other paths of art. 81 ust. 8 (evaluator's own
- * change, absences) should call it too.
+ * Moves "termin sporządzenia oceny" on the assessed person's request (art. 81
+ * ust. 8 pkt 4) through the single changeDueDate of due-date-change.rules.ts
+ * (6-month condition, §8 notice, history event).
  */
 export function changeDueDate(
   record: CaseRecord,
@@ -100,35 +101,11 @@ export function changeDueDate(
   by: ActorRef,
   today: string,
 ): CaseRecord {
-  const blocked = changeBlocker(record);
-  if (blocked)
-    throw new CaseRuleError(`Nie można zmienić terminu oceny. ${blocked}`);
-  if (!isIsoDate(newDate)) {
-    throw new CaseRuleError(
-      'Nowy termin oceny musi być datą w formacie RRRR-MM-DD.',
-    );
-  }
-  if (newDate < today) {
-    throw new CaseRuleError(
-      `Nowy termin oceny (${formatDatePl(newDate)}) nie może być wcześniejszy niż dziś (${formatDatePl(today)}).`,
-    );
-  }
-  const next = structuredClone(record);
-  const from = next.partI.assessmentDue;
-  next.partI.assessmentDue = newDate;
-  next.dueDateChanges = [
-    ...(next.dueDateChanges ?? []),
-    { changedOn: today, from, to: newDate, reason, by },
-  ];
-  next.history.push({
-    date: today,
-    text: `Zmieniono termin oceny${from ? ` z ${formatDatePl(from)}` : ''} na ${formatDatePl(newDate)} (${by.name}, ${by.role}). Powód: ${reason} (art. 81 ust. 8 ${USC}).`,
-    event: {
-      type: 'DUE_DATE_CHANGED',
-      notify: ['EMPLOYEE', 'EVALUATOR', 'HR'],
-    },
-  });
-  return next;
+  return changeDueDateByRule(
+    record,
+    { newDate, reason: 'EVALUEE_REQUEST', by, note: reason },
+    today,
+  ).record;
 }
 
 export function fileDueDateRequest(

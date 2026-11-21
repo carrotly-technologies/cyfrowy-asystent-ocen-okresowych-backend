@@ -174,6 +174,17 @@ function mainCase(r: Rel): CaseRecord {
       { kind: 'PREVIOUS_POSITIVE', assessedOn: previous },
       'powyżej oczekiwań',
     ),
+    talkInvitations: [
+      {
+        id: `${id}-talk-1`,
+        kind: 'ASSESSMENT',
+        date: r.workday(addDays(r.days(0), 6)),
+        time: '10:00',
+        place: 'Pokój 204 (sala narad wydziału)',
+        note: 'Proszę o przygotowanie krótkiej samooceny realizacji celów z części I.',
+        createdOn: r.days(-1),
+      },
+    ],
     stage: 'ASSESSMENT',
     completedOn: {
       SHEET_SELECTION: r.workday(confirmed.replace(/-\d\d$/, '-02')),
@@ -339,6 +350,17 @@ function partIAckCase(r: Rel): CaseRecord {
     evaluatorId: SUPERVISOR_ID,
     sheetId: 'C',
     cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: previous },
+    talkInvitations: [
+      {
+        id: 'c-002-talk-1',
+        kind: 'OPENING',
+        date: confirmed,
+        time: '13:00',
+        place: 'Pokój 210',
+        note: '',
+        createdOn: r.days(-3),
+      },
+    ],
     stage: 'PART_I_ACK',
     completedOn: { SHEET_SELECTION: r.days(-3), OPENING_TALK: confirmed },
     partI: {
@@ -582,7 +604,7 @@ function objectionPeriodCase(r: Rel): CaseRecord {
     cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25, 20) },
     previousAssessment: previousAssessment(
       { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25, 20) },
-      'na poziomie oczekiwań',
+      'powyżej oczekiwań',
     ),
     promotionRequest: { ...emptyPromotionRequest('URZEDNIK'), attached: 'NO' },
     stage: 'ACKNOWLEDGEMENT',
