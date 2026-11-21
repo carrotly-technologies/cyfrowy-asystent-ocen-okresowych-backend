@@ -109,8 +109,9 @@ export function buildCaseHints(input: HintsInput): CaseHints {
     const developments = obs.length - strengths;
     const score = input.decisions[id] ?? null;
     const basis: string[] = [];
-    if (strengths) basis.push(`${strengths} obserwacji mocnych stron`);
-    if (developments) basis.push(`${developments} obserwacji do rozwoju`);
+    if (strengths) basis.push(`${countObservations(strengths)} mocnych stron`);
+    if (developments)
+      basis.push(`${countObservations(developments)} do rozwoju`);
     if (score != null) basis.push(`ocena cząstkowa (wersja robocza): ${score}`);
     return {
       criterionId: id,
@@ -197,4 +198,17 @@ export function buildCaseHints(input: HintsInput): CaseHints {
     development,
     management,
   };
+}
+
+/** „1 obserwacja”, „2 obserwacje”, „5 obserwacji” (Polish plural). */
+export function countObservations(n: number): string {
+  const lastTwo = n % 100;
+  const last = n % 10;
+  const word =
+    n === 1
+      ? 'obserwacja'
+      : last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)
+        ? 'obserwacje'
+        : 'obserwacji';
+  return `${n} ${word}`;
 }

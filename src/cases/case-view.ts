@@ -11,7 +11,7 @@ import type {
 } from './case.types.js';
 import type { OfficeConfig } from '../config/office.js';
 import { caseLocks } from './correction.rules.js';
-import { dueDateRequestRule } from './due-date.rules.js';
+import { dueDateRequestRule, dueDateRequestsView } from './due-date.rules.js';
 import { dueChangeBlocker } from './due-date-change.rules.js';
 import { formalCheck } from './formal-check.rules.js';
 import { objectionViews } from './objection-terms.rules.js';
@@ -80,7 +80,7 @@ export function toDetail(
     ackFiction: record.ackFiction ?? null,
     objections: objectionViews(record, today),
     assessmentVersions: record.assessmentVersions ?? [],
-    dueDateRequests: record.dueDateRequests ?? [],
+    dueDateRequests: dueDateRequestsView(record),
     dueDateChanges: record.dueDateChanges ?? [],
     dueDateRequestRule: dueDateRequestRule(record, today),
     dueDateChangeBlocker: dueChangeBlocker(record, 'EVALUEE_REQUEST', today),

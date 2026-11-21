@@ -17,10 +17,10 @@ export interface PulseResponse {
 }
 
 /** What a supervisor gets: no comment unless the employee shared it. */
+/** What a supervisor gets: one overall index, no single answers, no comment unless the employee shared it. */
 export interface PulsePoint {
   id: string;
   date: string;
-  answers: PulseAnswers;
   /** Average of the answers, 1–5, rounded to 0.1. */
   index: number;
   sharedComment: string | null;

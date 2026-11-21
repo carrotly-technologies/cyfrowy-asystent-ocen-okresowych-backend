@@ -49,6 +49,12 @@ import type {
 /** Length of a talk in the calendar file. */
 const TALK_MINUTES = 60;
 
+/** Calendar titles (nominative), e.g. „Rozmowa oceniająca: Anna Nowak (ocena okresowa)”. */
+const TALK_TITLE: Record<'OPENING' | 'ASSESSMENT', string> = {
+  OPENING: 'Rozmowa rozpoczynająca',
+  ASSESSMENT: 'Rozmowa oceniająca',
+};
+
 /**
  * Due-date changes, talk invitations, position and evaluator changes. Legal
  * rules live in src/cases/due-date-change.rules.ts; this service checks who
@@ -156,7 +162,7 @@ export class DeadlinesService {
       date: inv.date,
       time: inv.time,
       durationMinutes: TALK_MINUTES,
-      summary: `Ocena okresowa: ${talkName(inv.kind)}`,
+      summary: `${TALK_TITLE[inv.kind]}: ${fullName(record.person)} (ocena okresowa)`,
       location: inv.place,
       description: `Oceniający: ${this.cases.evaluatorName(record)}. Oceniany: ${fullName(record.person)}.${inv.note ? ` ${inv.note}` : ''}`,
       stamp: new Date().toISOString(),

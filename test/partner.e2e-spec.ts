@@ -118,6 +118,28 @@ describe('HR partner and pulse survey (e2e)', () => {
   });
 
   describe('privacy (supervisor)', () => {
+    it('per person: flags and one overall index only, no answers to single questions', async () => {
+      for (const id of ['p-lewandowski', 'p-wojcik', 'p-nowak']) {
+        const card = await as('j.kaminska')
+          .get(`/api/partner/people/${id}`)
+          .expect(200);
+        expect(card.body.points.length).toBeGreaterThan(0);
+        for (const p of card.body.points) {
+          expect(p).not.toHaveProperty('answers');
+          expect(typeof p.index).toBe('number');
+        }
+        expect(card.body.trend).not.toHaveProperty('droppedQuestions');
+        expect(JSON.stringify(card.body)).not.toMatch(
+          /\d\/5|"workload"|"energy"/,
+        );
+      }
+      const team = await as('j.kaminska').get('/api/partner/team').expect(200);
+      const text = JSON.stringify(team.body.members);
+      expect(text).not.toMatch(/answers|\d\/5/);
+      for (const period of team.body.aggregate)
+        if (period.respondents < 3) expect(period.averages).toBeNull();
+    });
+
     it('the card shows shared comments only; private ones are just marked', async () => {
       const res = await as('j.kaminska')
         .get('/api/partner/people/p-lewandowski')

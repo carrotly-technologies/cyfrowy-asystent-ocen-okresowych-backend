@@ -22,7 +22,7 @@ describe('answer rules', () => {
       const r = retrieve(kb, q);
       expect(r.grounded).toBe(false);
       expect(r.hits).toEqual([]);
-      expect(extractiveAnswer(q, r, [])).toBe(NOT_FOUND);
+      expect(extractiveAnswer(q, r, []).answer).toBe(NOT_FOUND);
     }
   });
 
@@ -32,9 +32,11 @@ describe('answer rules', () => {
     expect(r.grounded).toBe(true);
     const sources = toSources(r.hits, q);
     expect(sources.map((s) => s.n)).toEqual(sources.map((_, i) => i + 1));
-    const answer = extractiveAnswer(q, r, sources);
+    const { answer, summary } = extractiveAnswer(q, r, sources);
     expect(answer).toContain('[1]');
     expect(answer).toContain('24 miesiące');
+    expect(answer.startsWith(summary!)).toBe(true);
+    expect(answer).not.toContain('wyciągowa');
   });
 
   it('puts a well matching Q&A entry first', () => {
@@ -52,7 +54,7 @@ describe('answer rules', () => {
     expect(asksForRatingDecision('Jaka jest skala ocen?')).toBe(false);
     const q = 'Ile punktów przyznać pracownikowi za komunikację?';
     const r = retrieve(kb, `${q} skala ocen cząstkowych`);
-    expect(extractiveAnswer(q, r, toSources(r.hits, q))).toMatch(
+    expect(extractiveAnswer(q, r, toSources(r.hits, q)).answer).toMatch(
       /^Nie mogę rozstrzygnąć/,
     );
   });

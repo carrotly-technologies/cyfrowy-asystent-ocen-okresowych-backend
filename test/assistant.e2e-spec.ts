@@ -47,6 +47,17 @@ describe('Assistant (e2e, no LLM configured)', () => {
     expect(res.body.disclaimer).toMatch(/decyzja należy do oceniającego/);
   });
 
+  it('gives a short answer first, then sources: the 6-month rule after a negative assessment', async () => {
+    const res = await ask({
+      question: 'Kiedy zaczyna się kolejny cykl oceny?',
+      assistant: 'FORMAL',
+    }).expect(200);
+    expect(res.body.summary).toContain('6 miesięcy od dnia zapoznania');
+    expect(res.body.answer.startsWith(res.body.summary)).toBe(true);
+    expect(res.body.answer).not.toContain('wyciągowa');
+    expect(res.body.sources.length).toBeGreaterThan(0);
+  });
+
   it('says when the knowledge base does not cover the question', async () => {
     const res = await ask({
       question: 'Jaka jest stolica Francji?',

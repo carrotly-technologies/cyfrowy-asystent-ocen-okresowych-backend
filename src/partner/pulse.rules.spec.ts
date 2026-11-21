@@ -35,6 +35,12 @@ describe('pulseIndex / toSupervisorPoint', () => {
     expect(pulseIndex(pulse('2026-11-01', [4, 4, 5, 4, 5]).answers)).toBe(4.4);
   });
 
+  it('gives the supervisor one overall index, no single answers', () => {
+    const p = toSupervisorPoint(pulse('2026-11-01', [1, 5, 5, 5, 5]));
+    expect(p).not.toHaveProperty('answers');
+    expect(p.index).toBe(4.2);
+  });
+
   it('hides a comment that was not shared', () => {
     const p = toSupervisorPoint(
       pulse('2026-11-01', [3, 3, 3, 3, 3], { comment: 'prywatne' }),

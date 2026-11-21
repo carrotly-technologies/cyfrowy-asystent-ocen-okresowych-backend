@@ -301,7 +301,7 @@ answer comes from the rules.
 | `POST /api/pulse`                  | EMPLOYEE: `{ answers, comment?, shareComment? }` → response (201); 409 within 7 days of the last |
 | `PATCH /api/pulse/:id/share`       | EMPLOYEE: `{ shareComment }` on own response (404 otherwise)                                     |
 | `GET /api/partner/team`            | SUPERVISOR: own team with pulse series, flags, team aggregate (hidden below 3 respondents)       |
-| `GET /api/partner/people/:personId`| SUPERVISOR: card with pulse points (shared comments only), trend, flags with reasons and actions, work data |
+| `GET /api/partner/people/:personId`| SUPERVISOR: card with pulse points (one overall `index` per response, no single answers; shared comments only), trend, flags with reasons and actions, work data. Per-question averages only in the team aggregate (≥ 3 respondents) |
 | `GET /api/partner/cases/:caseId/hints` | SUPERVISOR (the case's evaluator): strengths, areas, feedback phrasing, development forms, management tips |
 | `POST /api/partner/ask`            | SUPERVISOR: `{ question, personId?, caseId? }` → `{ answer, mode: LLM\|RULES, anonymizedPrompt, … }` |
 
@@ -360,7 +360,10 @@ person data, evaluator and absences in step.
 - Retrieval: local BM25 (`bm25.ts`, `text-normalize.ts`: no diacritics, light Polish stemming, bigrams); below a
   score/coverage threshold the answer is "Nie znalazłem tego w bazie wiedzy" with `grounded: false`.
 - Generation: optional, any OpenAI-compatible endpoint via `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` (see
-  `.env.example`). Without it, or when the call fails, answers are extractive (`mode: "EXTRACTIVE"`).
+  `.env.example`). Without it, or when the call fails, answers are extractive (`mode: "EXTRACTIVE"`): a short answer
+  first (`summary`: the matching Q&A answer or the opening of the best excerpt), then the quoted excerpts.
+- Quick answers (`quick-answers.rules.ts`): rule-based short answers where retrieval alone is weak, e.g. when the next
+  assessment is due (24 months; 6 months after acknowledging a negative one, art. 81 ust. 9), using the case if given.
 - Feature flag: `FEATURE_ASSISTANT=false` (Coolify env + restart) turns the chat off without a frontend rebuild.
   `GET /api/config` returns `{ "features": { "assistant": boolean } }` and the frontend reads it on start; with the
   flag off every `/api/assistant/*` route returns 404.

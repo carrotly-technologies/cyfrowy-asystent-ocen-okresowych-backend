@@ -3,8 +3,11 @@ import type { CaseRecord } from './case.types.js';
 import {
   changeDueDate,
   decideDueDateRequest,
+  closeMootDueDateRequests,
   dueDateRequestRule,
+  dueDateRequestsView,
   fileDueDateRequest,
+  pendingDueDateRequest,
 } from './due-date.rules.js';
 import { buildSeed } from './seed/seed.data.js';
 
@@ -132,5 +135,45 @@ describe('request and decision', () => {
         changeDueDate(seed('c-006'), '2027-01-15', 'x', EV, TODAY),
       ),
     ).toContain('sporządzona');
+  });
+});
+
+describe('wniosek o zmianę terminu po sporządzeniu oceny: bezprzedmiotowy', () => {
+  const withPending = (signed: string | null): CaseRecord => ({
+    ...seed('c-003'),
+    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: '2025-11-21' },
+    signedByEvaluatorOn: signed,
+    dueDateRequests: [
+      {
+        id: 'r1',
+        filedOn: '2026-11-20',
+        reason: 'nieobecność',
+        proposedDate: '2027-01-15',
+        status: 'PENDING',
+        decidedOn: null,
+        decisionNote: null,
+        newDate: null,
+        decidedBy: null,
+      },
+    ],
+  });
+
+  it('stays pending until the assessment is signed', () => {
+    const r = withPending(null);
+    expect(pendingDueDateRequest(r)?.id).toBe('r1');
+    expect(dueDateRequestsView(r)[0].status).toBe('PENDING');
+  });
+
+  it('after signing: no decision possible, shown and closed as moot with a history line', () => {
+    const r = withPending('2026-11-21');
+    expect(pendingDueDateRequest(r)).toBeUndefined();
+    expect(dueDateRequestsView(r)[0]).toMatchObject({ status: 'MOOT' });
+    const next = structuredClone(r);
+    closeMootDueDateRequests(next, TODAY);
+    expect(next.dueDateRequests![0]).toMatchObject({
+      status: 'MOOT',
+      decidedOn: TODAY,
+    });
+    expect(next.history.at(-1)!.text).toContain('bezprzedmiotowy');
   });
 });
