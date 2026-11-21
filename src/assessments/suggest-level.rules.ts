@@ -154,7 +154,10 @@ export function suggestLevel(
   if (sheet.kind === 'PERIODIC') {
     const ones = rated
       .filter((r) => r.points === 1)
-      .map((r) => `„${r.indicatorId}”`);
+      .map(
+        (r) =>
+          `W${competency.indicators.findIndex((i) => i.id === r.indicatorId) + 1}`,
+      );
     if (ones.length > 0) {
       warnings.push(
         `Wskaźniki ocenione na 1 pkt: ${ones.join(', ')}. Ocena cząstkowa kryterium równa 1 pkt oznacza negatywną ocenę okresową niezależnie od średniej (§11 ust. 1 pkt 4 ${RO_2016}).`,
