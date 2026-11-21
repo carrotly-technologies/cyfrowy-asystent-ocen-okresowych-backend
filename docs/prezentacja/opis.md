@@ -49,7 +49,8 @@ Dwa moduły wspierają przełożonego poza samą procedurą:
   komentarz tylko za zgodą pracownika, średnie zespołu dopiero od 3 odpowiedzi; kadry nie mają wglądu.
 
 Kadry mają panel monitoringu wszystkich ocen w urzędzie (w toku, termin ≤ 14 dni, po terminie, do zapoznania,
-w okresie sprzeciwu) z przypomnieniami do przełożonych.
+w okresie sprzeciwu) z przypomnieniami do przełożonych oraz kartotekę: pracownicy, podległość, zastępstwa oceniających,
+nieobecności dłuższe niż miesiąc wydłużające termin oceny (art. 81 ust. 7), import historii ocen i statystyki z CSV.
 
 **AI jest wyłącznie doradcze.** Ani asystent, ani HR partner nie wystawiają punktów i nie zapisują decyzji. Ocenę
 cząstkową zawsze wybiera przełożony, co widać w interfejsie i w API.
@@ -58,7 +59,8 @@ cząstkową zawsze wybiera przełożony, co widać w interfejsie i w API.
 same przy starcie). Dwa obrazy Docker, konfiguracja wyłącznie przez zmienne środowiskowe, zależności tylko open source
 na licencjach permisywnych. Model językowy jest opcjonalny: dowolny endpoint zgodny z OpenAI, także lokalny (Ollama);
 bez niego asystent odpowiada cytatami z dokumentów, więc aplikacja działa bez internetu i bez płatnych usług.
-Integracja z EZD i systemami kadrowymi (np. QNT) przez udokumentowane REST API, nigdy jako warunek działania.
+Integracja z EZD i systemami kadrowymi (np. QNT) przez REST API opisane w OpenAPI 3 (eksport arkusza w wersjonowanym
+JSON, PDF z serwera, import historii ocen z CSV), nigdy jako warunek działania.
 Reguły wynikające z przepisów są w osobnych plikach z testami, więc zmiana przepisu to zmiana jednego pliku.
 
 **Ochrona danych.** Przetwarzamy tylko pola potrzebne do oceny (bez PESEL i adresu). Dostęp wynika z roli:
@@ -99,6 +101,6 @@ na papierowych lub edytowalnych wzorach arkuszy:
 | Dokumentacja                    | Arkusz A/B/C wypełniany z decyzji w teczce i pobierany jako PDF zgodny ze wzorem                        |
 | Wdrożenie w różnych urzędach    | Docker, open source, opcjonalny lokalny model AI, działanie bez internetu, integracje przez REST API     |
 
-**Kierunki rozwoju:** konektory do EZD (przekazanie podpisanego arkusza) i systemów kadrowych (pracownicy, podległość,
-nieobecności), powiadomienia e-mail według harmonogramu terminów, ścieżka pierwszej oceny na tym samym silniku reguł,
+**Kierunki rozwoju:** gotowe konektory do konkretnych systemów EZD i kadrowych na bazie eksportu i OpenAPI, podpis
+profilem zaufanym lub kwalifikowanym, powiadomienia e-mail według harmonogramu terminów, ścieżka pierwszej oceny na tym samym silniku reguł,
 lokalny otwarty model językowy z ewaluacją na zestawie pytań i odpowiedzi KPRM, pilotaż w jednym departamencie.

@@ -353,6 +353,8 @@ z <span class="hl">[OSOBA_1]</span> o jej obciążeniu pracą?</pre>
         <li>Filtry po komórce, arkuszu, wyszukiwanie pracownika i oceniającego.</li>
         <li>Przypomnienia do przełożonych z zapisem w historii teczki.</li>
         <li>Lista sprzeciwów dla dyrektora generalnego z terminem decyzji.</li>
+        <li>Kartoteka: pracownicy, podległość, zastępstwa, nieobecności ponad miesiąc wydłużające termin oceny
+          (art. 81 ust. 7), statystyki wyników z eksportem CSV.</li>
         <li>Kadry widzą status i terminy, ale nie edytują ocen i nie widzą notatek przełożonego ani pulsu.</li>
       </ul>
     </div>
@@ -382,8 +384,8 @@ z <span class="hl">[OSOBA_1]</span> o jej obciążeniu pracą?</pre>
       <li>Linux, Windows, macOS; dowolny serwer lub chmura bez vendor lock-in.</li>
       <li>Nazwa urzędu, miejscowość i adresat sprzeciwu ustawiane w env.</li></ul></div>
     <div class="card"><h2>Integracje</h2><ul class="small">
-      <li>Udokumentowane REST API: import pracowników i podległości z systemu kadrowego (np. QNT).</li>
-      <li>PDF arkusza z serwera (<code>GET /api/cases/:id/sheet.pdf</code>) do EZD.</li>
+      <li>REST API opisane w OpenAPI 3 (Swagger po polsku) dla systemów kadrowych (np. QNT) i EZD.</li>
+      <li>Eksport arkusza w wersjonowanym JSON i PDF z serwera; import historii ocen z CSV.</li>
       <li>Aplikacja działa samodzielnie: integracja nie jest warunkiem startu.</li></ul></div>
     <div class="card"><h2>Utrzymanie</h2><ul class="small">
       <li>Aktualizacja = nowy obraz; bez ręcznych zmian na serwerze.</li>
@@ -427,16 +429,16 @@ z <span class="hl">[OSOBA_1]</span> o jej obciążeniu pracą?</pre>
   <h1>Od prototypu do wdrożenia w urzędzie</h1>
   <div class="cols c2">
     <div class="stack">
-      <div class="card"><h2>Integracje</h2><p>Konektory do EZD (przekazanie podpisanego arkusza, podpis kwalifikowany
-        lub profil zaufany) i do systemów kadrowych (pracownicy, podległość, nieobecności, zastępstwa).</p></div>
+      <div class="card"><h2>Konektory</h2><p>Gotowe połączenia z konkretnymi systemami EZD i kadrowymi na bazie
+        istniejącego eksportu JSON i OpenAPI: synchronizacja pracowników, podległości i nieobecności.</p></div>
       <div class="card"><h2>Powiadomienia</h2><p>Harmonogram przypomnień o terminach i e-mail do przełożonego,
         ocenianego i kadr; zdarzenia są już zapisywane w historii teczki z listą odbiorców.</p></div>
-      <div class="card"><h2>Kartoteka kadrowa i statystyki</h2><p>Nieobecności dłuższe niż miesiąc przesuwające termin oceny,
-        historia ocen z poprzednich lat, raporty dla dyrektora generalnego.</p></div>
+      <div class="card"><h2>Podpis elektroniczny</h2><p>Potwierdzenia i podpis oceny profilem zaufanym lub podpisem
+        kwalifikowanym zamiast potwierdzenia w aplikacji.</p></div>
     </div>
     <div class="stack">
-      <div class="card"><h2>Pierwsza ocena i kolejne procesy</h2><p>Ścieżka pierwszej oceny (rozp. z 2015 r.) i obowiązkowe
-        przyznanie stopnia służbowego jako kolejne moduły na tym samym silniku reguł.</p></div>
+      <div class="card"><h2>Pierwsza ocena</h2><p>Ścieżka pierwszej oceny (rozp. PRM z 23.07.2015) jako kolejny moduł na tym samym
+        silniku reguł, terminów i kontroli formalnej.</p></div>
       <div class="card"><h2>Model językowy w urzędzie</h2><p>Otwarty model uruchomiony lokalnie, ewaluacja odpowiedzi na
         zestawie pytań i odpowiedzi KPRM, rozbudowa bazy wiedzy o interpretacje departamentu służby cywilnej.</p></div>
       <div class="card"><h2>Pilotaż</h2><p>Jeden departament przez pełny cykl, szkolenie przełożonych w 30 minut,
