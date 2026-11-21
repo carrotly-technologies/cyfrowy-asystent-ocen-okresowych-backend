@@ -99,4 +99,43 @@ export const USER_SEED: readonly (User & { passwordHash: string })[] = [
     passwordHash:
       '$scrypt$ln=17,r=8,p=1$N5iar5+gwIjUfj+g1T/E6w$XNndSd8FzKNvPtZef861AioCJVJDF7eKBA0H6ift2bo',
   },
+  {
+    id: 'u-wisniewska',
+    login: 'b.wisniewska',
+    firstName: 'Barbara',
+    lastName: 'Wiśniewska',
+    role: 'DIRECTOR',
+    position: 'Dyrektor generalny urzędu',
+    unit: 'Biuro Dyrektora Generalnego',
+    evaluatorId: null,
+    personId: null,
+    passwordHash:
+      '$scrypt$ln=17,r=8,p=1$W9VdOzNWeN/XOTLLejSCAg$1lh/ZDKhBuhyxhQn+TrGQxChfnjlQZX+JAtWrn3fvWc',
+  },
+  {
+    id: 'u-dabrowska',
+    login: 'e.dabrowska',
+    firstName: 'Ewa',
+    lastName: 'Dąbrowska',
+    role: 'EMPLOYEE',
+    position: 'Główny specjalista do spraw opiniowania aktów prawnych',
+    unit: 'Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych',
+    evaluatorId: null,
+    personId: 'p-dabrowska',
+    passwordHash:
+      '$scrypt$ln=17,r=8,p=1$JpiAnRtWrrjtyhaJ0BbYPg$zjf2LhZkblyl1cjGIVQoSSes7DVvD+f/hPE+v+RxX1M',
+  },
+  {
+    id: 'u-jankowski',
+    login: 't.jankowski',
+    firstName: 'Tadeusz',
+    lastName: 'Jankowski',
+    role: 'EMPLOYEE',
+    position: 'Specjalista do spraw zamówień publicznych',
+    unit: 'Wydział Budżetu i Finansów, Biuro Dyrektora Generalnego',
+    evaluatorId: null,
+    personId: 'p-jankowski',
+    passwordHash:
+      '$scrypt$ln=17,r=8,p=1$UIkbhF06+yyEc5rD2KTxRw$1kaE05GKFI2pStrCgcd/iMbs0rJLGD68OQsT7CXYmCA',
+  },
 ];

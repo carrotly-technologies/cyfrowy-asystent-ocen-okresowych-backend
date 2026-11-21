@@ -18,6 +18,7 @@ import {
   toDeadline,
   USC,
 } from './deadlines.rules.js';
+import { appealNextDeadline, appealStatus } from './objection-terms.rules.js';
 
 export const STAGE_LEGAL_BASIS: Record<StageId, string> = {
   SHEET_SELECTION: `§2 ust. 2, §3, §5 ust. 2–3 ${RO_2016}`,
@@ -105,6 +106,8 @@ export function objectionDeadlineOf(
 }
 
 export function caseStatus(record: CaseRecord, today: string): CaseStatus {
+  const appeal = appealStatus(record);
+  if (appeal) return appeal;
   if (record.acknowledgedOn) {
     const objection = objectionDeadlineOf(record, today);
     return objection && objection.daysLeft !== null && objection.daysLeft >= 0
@@ -148,6 +151,8 @@ export function nextDeadline(
   record: CaseRecord,
   today: string,
 ): Deadline | null {
+  const appeal = appealNextDeadline(record, today);
+  if (appeal) return appeal;
   if (record.acknowledgedOn) {
     const objection = objectionDeadlineOf(record, today);
     if (objection && objection.daysLeft !== null && objection.daysLeft >= 0) {

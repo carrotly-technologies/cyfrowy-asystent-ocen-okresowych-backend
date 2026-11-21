@@ -9,6 +9,7 @@ import {
   previousAssessment,
   relative,
 } from './seed-helpers.js';
+import { appealsSeed } from './appeals.seed.js';
 
 /**
  * Demo data (notatki/ux-koncepcja.md, "Dane demonstracyjne"). Every person,
@@ -67,6 +68,7 @@ export function buildSeed(today: string): CaseRecord[] {
     negativeSignatureCase(r),
     teamLeaderDraftCase(r),
     ...otherUnitCases(r),
+    ...appealsSeed(r),
   ];
 }
 

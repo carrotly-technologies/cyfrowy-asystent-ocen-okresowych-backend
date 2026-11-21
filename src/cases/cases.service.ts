@@ -9,8 +9,10 @@ import { AuthorizationService } from '@nestjs/authorization';
 import {
   CasePolicy,
   isAssessedIn,
+  isDirectorFor,
   isEvaluatorOf,
 } from '../auth/case.policy.js';
+import { legalActions, type Viewer } from './appeals.rules.js';
 import { applyAction } from './actions.rules.js';
 import { fullName } from './case.rules.js';
 import { CaseRuleError, CaseValidationError } from './case-rule.error.js';
@@ -27,7 +29,11 @@ import type {
 import { toDetail, toSummary } from './case-view.js';
 import type { ObservationInput, PatchCase } from './cases.schemas.js';
 import { formatDatePl } from './dates.js';
-import { describeDaysLeft } from './deadlines.rules.js';
+import { describeDaysLeft, toDeadline } from './deadlines.rules.js';
+import {
+  DUE_DATE_REQUEST_BASIS,
+  pendingDueDateRequest,
+} from './due-date.rules.js';
 import { addObservation, applyPatch } from './patch.rules.js';
 import { ConfigService } from '@nestjs/config';
 import { type OfficeConfig, readOffice } from '../config/office.js';
@@ -91,7 +97,10 @@ export class CasesService {
       .all()
       .filter(
         (r) =>
-          user.role === 'HR' || isEvaluatorOf(user, r) || isAssessedIn(user, r),
+          user.role === 'HR' ||
+          isEvaluatorOf(user, r) ||
+          isAssessedIn(user, r) ||
+          isDirectorFor(user, r),
       )
       .map((r) => toSummary(r, this.today));
   }
@@ -108,7 +117,9 @@ export class CasesService {
         if (!deadline?.date) return [];
         const name = fullName(c.person);
         let text: string;
-        if (c.status === 'OKRES_SPRZECIWU') {
+        if (c.status === 'SPRZECIW_W_ROZPATRZENIU') {
+          text = `${name}: sprzeciw od oceny czeka na rozstrzygnięcie dyrektora generalnego`;
+        } else if (c.status === 'OKRES_SPRZECIWU') {
           text = `${name}: biegnie termin na sprzeciw od oceny`;
         } else if (c.status === 'ZAKONCZONA') {
           text = `${name}: przeprowadź rozmowę rozpoczynającą nowego cyklu`;
@@ -120,8 +131,33 @@ export class CasesService {
         text += ` do ${formatDatePl(deadline.date)} (${describeDaysLeft(deadline.daysLeft!)}) · ${deadline.legalBasis.split(/[:;(]/)[0].trim()}`;
         return [{ caseId: c.id, stageId: c.currentStage, text, deadline }];
       })
+      .concat(this.dueDateRequestTodos(records))
       .sort((a, b) => a.deadline.date!.localeCompare(b.deadline.date!));
     return { cases, todo };
+  }
+
+  /** Pending requests of the assessed people to change the date (art. 81 ust. 8 pkt 4). */
+  private dueDateRequestTodos(records: CaseRecord[]): TodoItem[] {
+    return records.flatMap((r): TodoItem[] => {
+      const request = pendingDueDateRequest(r);
+      if (!request) return [];
+      const deadline = toDeadline(
+        {
+          date: r.partI.assessmentDue,
+          label: 'Wniosek o zmianę terminu oceny',
+          legalBasis: DUE_DATE_REQUEST_BASIS,
+        },
+        this.today,
+      );
+      return [
+        {
+          caseId: r.id,
+          stageId: r.stage,
+          text: `${fullName(r.person)}: rozpatrz wniosek o zmianę terminu oceny z ${formatDatePl(request.filedOn)} · ${DUE_DATE_REQUEST_BASIS}`,
+          deadline,
+        },
+      ];
+    });
   }
 
   all(): CaseRecord[] {
@@ -200,16 +236,32 @@ export class CasesService {
     );
   }
 
+  /** The caller's part in a case, for the post-assessment actions. */
+  viewerOf(record: CaseRecord): Viewer {
+    const user = this.auth.requireUser();
+    if (isEvaluatorOf(user, record)) return 'EVALUATOR';
+    if (isAssessedIn(user, record)) return 'EMPLOYEE';
+    if (user.role === 'HR') return 'HR';
+    if (user.role === 'DIRECTOR') return 'DIRECTOR';
+    return null;
+  }
+
   /** Unscoped: for internal use. Routes go through view(). */
   detail(id: string, actor: Actor | null = 'EVALUATOR'): CaseDetail {
     const record = this.record(id);
-    return toDetail(
-      record,
-      this.today,
-      this.store.evaluator(record.evaluatorId),
-      this.office,
-      actor,
-    );
+    const user = this.auth.user;
+    return {
+      ...toDetail(
+        record,
+        this.today,
+        this.store.evaluator(record.evaluatorId),
+        this.office,
+        actor,
+      ),
+      legalActions: user
+        ? legalActions(record, this.today, this.viewerOf(record))
+        : [],
+    };
   }
 
   reset(): void {
@@ -232,7 +284,7 @@ export class CasesService {
   }
 
   /** Domain errors -> HTTP: 409 for rules and locks, 400 for bad values. */
-  private run<T>(fn: () => T): T {
+  run<T>(fn: () => T): T {
     try {
       return fn();
     } catch (error) {
