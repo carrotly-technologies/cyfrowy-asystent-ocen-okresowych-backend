@@ -5,9 +5,16 @@ import {
 } from './case-export.schema.js';
 import type { CaseRecord } from './case.types.js';
 import { toDetail } from './case-view.js';
+import type { OfficeConfig } from '../config/office.js';
 import { buildSeed, EVALUATORS, OFFICE_NAME } from './seed/seed.data.js';
 
 const TODAY = '2026-11-21';
+const OFFICE: OfficeConfig = {
+  name: OFFICE_NAME,
+  city: 'Warszawa',
+  logoUrl: null,
+  objectionRecipient: null,
+};
 const AT = new Date('2026-11-21T10:00:00Z');
 const seed = (id: string): CaseRecord =>
   buildSeed(TODAY).find((c) => c.id === id)!;
@@ -16,7 +23,7 @@ const evaluatorOf = (r: CaseRecord) =>
 const detail = (
   r: CaseRecord,
   actor: 'EVALUATOR' | 'EMPLOYEE' | null = 'EVALUATOR',
-) => toDetail(r, TODAY, evaluatorOf(r), OFFICE_NAME, actor);
+) => toDetail(r, TODAY, evaluatorOf(r), OFFICE, actor);
 
 describe('toExport', () => {
   it('exports every seed case in the documented format', () => {

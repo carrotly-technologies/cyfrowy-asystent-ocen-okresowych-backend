@@ -40,7 +40,7 @@ export function toExport(detail: CaseDetail, exportedAt: Date): CaseExport {
       status: detail.status,
       currentStage: detail.currentStage,
     },
-    office: { name: detail.officeName },
+    office: { name: detail.office.name, city: detail.office.city },
     sheet: sheet
       ? {
           id: sheet.id,

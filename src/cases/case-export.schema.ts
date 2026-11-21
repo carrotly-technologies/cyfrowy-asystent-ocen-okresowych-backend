@@ -63,7 +63,13 @@ export const caseExportSchema = z
         id: z.string().meta({ description: 'Identyfikator teczki oceny.' }),
         cycleLabel: z.string().meta({ description: 'Opis cyklu oceny.' }),
         status: z
-          .enum(['W_TOKU', 'DO_ZAPOZNANIA', 'OKRES_SPRZECIWU', 'ZAKONCZONA'])
+          .enum([
+            'W_TOKU',
+            'DO_ZAPOZNANIA',
+            'OKRES_SPRZECIWU',
+            'SPRZECIW_W_ROZPATRZENIU',
+            'ZAKONCZONA',
+          ])
           .meta({ description: 'Status oceny.' }),
         currentStage: z
           .enum(STAGES)
@@ -71,7 +77,10 @@ export const caseExportSchema = z
       })
       .meta({ description: 'Teczka oceny.' }),
     office: z
-      .object({ name: z.string().meta({ description: 'Nazwa urzędu.' }) })
+      .object({
+        name: z.string().meta({ description: 'Nazwa urzędu.' }),
+        city: z.string().meta({ description: 'Miejscowość.' }),
+      })
       .meta({ description: 'Urząd.' }),
     sheet: z
       .object({

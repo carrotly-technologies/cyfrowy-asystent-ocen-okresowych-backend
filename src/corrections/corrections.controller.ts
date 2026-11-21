@@ -1,4 +1,13 @@
 import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ApiErrors } from '../openapi/api-docs.decorators.js';
+import {
   BadRequestException,
   Body,
   ConflictException,
@@ -32,12 +41,20 @@ import {
  * changes a field locked after a confirmation, with a mandatory reason; every
  * change is audited in `corrections` and in the case history.
  */
+@ApiTags('Administracja')
+@ApiBearerAuth()
+@ApiErrors(401, 403)
 @Controller('admin/cases')
 @Roles('ADMIN')
 export class CorrectionsController {
   constructor(private readonly cases: CasesService) {}
 
   @Get()
+  @ApiOperation({
+    summary: 'Oceny do korekty',
+    description: 'Tylko ADMIN: wszystkie oceny z liczbą korekt.',
+  })
+  @ApiOkResponse({ description: 'Lista ocen.' })
   list(): (CaseSummary & { evaluatorName: string; corrections: number })[] {
     return this.cases.all().map((r) => ({
       ...this.cases.summary(r),
@@ -48,6 +65,13 @@ export class CorrectionsController {
 
   /** The case (read only, as HR sees it) and its correctable fields. */
   @Get(':id')
+  @ApiParam({
+    name: 'id',
+    description: 'Identyfikator teczki oceny, np. `c-001`.',
+  })
+  @ApiOperation({ summary: 'Ocena i pola do korekty' })
+  @ApiOkResponse({ description: '`{ case, fields }`.' })
+  @ApiErrors(404)
   get(@Param('id') id: string) {
     const record = this.cases.record(id);
     return {
@@ -57,6 +81,17 @@ export class CorrectionsController {
   }
 
   @Post(':id/corrections')
+  @ApiParam({
+    name: 'id',
+    description: 'Identyfikator teczki oceny, np. `c-001`.',
+  })
+  @ApiOperation({
+    summary: 'Korekta błędu w ocenie',
+    description:
+      'Zmiana zablokowanego pola z obowiązkowym uzasadnieniem; zapisywana w historii oceny.',
+  })
+  @ApiCreatedResponse({ description: '`{ correction, case, fields }`.' })
+  @ApiErrors(400, 404, 409)
   correct(
     @CurrentUser() me: User,
     @Param('id') id: string,

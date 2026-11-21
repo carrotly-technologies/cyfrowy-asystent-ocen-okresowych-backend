@@ -310,7 +310,7 @@ pobierać z niego gotowe oceny przez udokumentowane API. Konkretne EZD nie jest 
 
 1. Załóż konto techniczne z rolą `HR` (widzi wszystkie oceny w urzędzie) albo używaj konta osoby, która przekazuje
    ocenę. Konto loguje się przez `POST /api/auth/login` i dostaje token JWT ważny 8 godzin.
-2. `GET /api/cases` zwraca listę ocen ze statusem (`status`: `W_TOKU`, `DO_ZAPOZNANIA`, `OKRES_SPRZECIWU`,
+2. `GET /api/cases` zwraca listę ocen ze statusem (`status`: `W_TOKU`, `DO_ZAPOZNANIA`, `OKRES_SPRZECIWU`, `SPRZECIW_W_ROZPATRZENIU`,
    `ZAKONCZONA`). Do EZD zwykle trafia ocena po zapoznaniu się ocenianego (`acknowledgedOn` w eksporcie).
 3. `GET /api/cases/:id/export?format=json` zwraca komplet pól arkusza A, B albo C:
    - `schemaVersion` (teraz `1.0`) i `format` (`caoo.ocena-okresowa`): integracja sprawdza wersję przed odczytem.
