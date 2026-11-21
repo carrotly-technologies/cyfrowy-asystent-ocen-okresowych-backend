@@ -169,7 +169,8 @@ describe('Notifications, scheduler and due-date changes (e2e)', () => {
       .get(`/api/cases/c-001/talk-invitations/${inv.id}/ics`)
       .expect(200);
     expect(ics.headers['content-type']).toContain('text/calendar');
-    expect(ics.text).toContain('DTSTART:20261201T100000');
+    expect(ics.text).toContain('DTSTART;TZID=Europe/Warsaw:20261201T100000');
+    expect(ics.text).toMatch(/SUMMARY:Rozmowa \S+: .+ \(ocena okresowa\)/);
     await as('p.wojcik')
       .get(`/api/cases/c-001/talk-invitations/${inv.id}/ics`)
       .expect(403);

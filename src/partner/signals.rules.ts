@@ -6,7 +6,6 @@ import {
   type PartnerAction,
   type PartnerActionId,
 } from './data/partner-actions.data.js';
-import { PULSE_QUESTIONS } from './data/pulse.data.js';
 import { pulseIndex, pulseTrend, type TrendResult } from './pulse.rules.js';
 import type { PulseResponse } from './pulse.types.js';
 
@@ -90,9 +89,6 @@ const TITLES: Record<SignalKind, string> = {
 const actions = (...ids: PartnerActionId[]) =>
   ids.map((id) => PARTNER_ACTIONS[id]);
 
-const label = (id: string) =>
-  PULSE_QUESTIONS.find((q) => q.id === id)?.label ?? id;
-
 /** Distinct sources make a flag stronger than many reasons of one source. */
 function level(reasons: SignalReason[], alertSources = 2): SignalLevel {
   return new Set(reasons.map((r) => r.source)).size >= alertSources
@@ -101,6 +97,9 @@ function level(reasons: SignalReason[], alertSources = 2): SignalLevel {
 }
 
 /**
+ * Privacy (decision 7 of the UX review): the supervisor sees flags and one overall wellbeing index per person, never
+ * the answer to a single pulse question. Reason texts therefore name the area of a flag but carry no answer values.
+ *
  * Explainable flags about an employee's condition, from pulse trends,
  * journal and case observations and work data. Each flag lists the data
  * that triggered it and suggested actions. Advisory only: the supervisor
@@ -151,11 +150,9 @@ export function computeSignals(input: SignalInput): SignalsResult {
   // Overload: the pulse or the task list says so; a recent change of duties adds to it.
   const overload: SignalReason[] = [];
   if (low('workload'))
-    overload.push(
-      pulseReason(`obciążenie ocenione na ${latest!.answers.workload}/5.`),
-    );
+    overload.push(pulseReason('pracownik sygnalizuje zbyt duże obciążenie.'));
   else if (trend.droppedQuestions.includes('workload'))
-    overload.push(pulseReason('wyraźny spadek oceny obciążenia.'));
+    overload.push(pulseReason('wyraźny spadek w obszarze obciążenia.'));
   if (work && work.overdueTasks >= R.overdueTasks)
     overload.push({
       source: 'TASKS',
@@ -187,13 +184,8 @@ export function computeSignals(input: SignalInput): SignalsResult {
   if (trend.kind === 'GRADUAL_DECLINE')
     motivation.push({ source: 'PULSE', text: trend.description });
   if (low('satisfaction'))
-    motivation.push(
-      pulseReason(`satysfakcja ${latest!.answers.satisfaction}/5.`),
-    );
-  if (low('clarity'))
-    motivation.push(
-      pulseReason(`jasność priorytetów ${latest!.answers.clarity}/5.`),
-    );
+    motivation.push(pulseReason('niska satysfakcja z pracy.'));
+  if (low('clarity')) motivation.push(pulseReason('niejasne priorytety.'));
   const motivationFires = motivation.length > 0;
   if (
     developments.length >= 2 &&
@@ -231,19 +223,12 @@ export function computeSignals(input: SignalInput): SignalsResult {
   if (lowEnergyTwice)
     burnout.push({
       source: 'PULSE',
-      text: `Niska energia w dwóch kolejnych pulsach (${previous!.answers.energy}/5 i ${latest!.answers.energy}/5).`,
+      text: 'Niska energia w dwóch kolejnych pulsach.',
     });
   if (trend.kind === 'SUDDEN_DROP') {
-    const dropped = trend.droppedQuestions.map(label).join(', ');
-    burnout.push({
-      source: 'PULSE',
-      text: trend.description + (dropped ? ` Najbardziej: ${dropped}.` : ''),
-    });
+    burnout.push({ source: 'PULSE', text: trend.description });
   }
-  if (low('support'))
-    burnout.push(
-      pulseReason(`poczucie wsparcia ${latest!.answers.support}/5.`),
-    );
+  if (low('support')) burnout.push(pulseReason('niskie poczucie wsparcia.'));
   const burnoutFires =
     lowEnergyTwice ||
     (trend.kind === 'SUDDEN_DROP' && (overloadFires || low('energy')));

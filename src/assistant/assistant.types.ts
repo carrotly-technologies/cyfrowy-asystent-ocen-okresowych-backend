@@ -14,7 +14,10 @@ export interface AnswerSource {
 }
 
 export interface AskResponse {
+  /** The full text: the short answer first, then the quoted excerpts (in the extractive mode). */
   answer: string;
+  /** One or two sentences that answer the question directly (shown first; the excerpts follow). */
+  summary?: string;
   grounded: boolean;
   mode: AssistantMode;
   sources: AnswerSource[];

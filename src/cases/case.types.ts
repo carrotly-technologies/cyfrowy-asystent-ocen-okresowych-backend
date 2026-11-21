@@ -246,7 +246,8 @@ export interface DueDateRequest {
   filedOn: string;
   reason: string;
   proposedDate: string | null;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  /** MOOT: closed without a decision because the assessment was drawn up (the term can no longer change). */
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'MOOT';
   decidedOn: string | null;
   decisionNote: string | null;
   newDate: string | null;

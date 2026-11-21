@@ -134,30 +134,45 @@ export const asksForRatingDecision = (question: string): boolean =>
 export const RATING_REFUSAL =
   'Nie mogę rozstrzygnąć, jaką ocenę lub poziom przyznać pracownikowi – to decyzja oceniającego. Mogę natomiast wyjaśnić zasady oceniania i wskazać przepisy.';
 
-/** Answer without a language model: quotes of the best excerpts. */
+/** The first one or two sentences of a text (at most `max` characters), as a direct short answer. */
+export function shortAnswer(text: string, max = 320): string {
+  const flat = text
+    .replace(/^…\s*/, '')
+    .replace(/\s*\(Źródło:[\s\S]*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const sentences = flat.split(/(?<=[.!?])\s+(?=[\p{Lu}\d„])/u);
+  let out = sentences[0] ?? flat;
+  if (sentences[1] && out.length + sentences[1].length < max)
+    out = `${out} ${sentences[1]}`;
+  if (out.length > max) {
+    const cut = out.slice(0, max);
+    out = `${cut.slice(0, cut.lastIndexOf(' ')).trimEnd()}…`;
+  }
+  return out;
+}
+
+/** The quoted excerpts listed under the short answer. */
+export function excerptLines(sources: AnswerSource[], from = 0): string[] {
+  return sources
+    .slice(from, from + 3)
+    .map((s) => `[${s.n}] ${s.ref}: „${s.quote}”`);
+}
+
+/**
+ * Answer without a language model: a short answer first (the matching Q&A answer, or the opening of the best
+ * excerpt), then the excerpts it comes from.
+ */
 export function extractiveAnswer(
   question: string,
   retrieval: Retrieval,
   sources: AnswerSource[],
-): string {
-  if (!retrieval.grounded) return NOT_FOUND;
+): { answer: string; summary: string | undefined } {
+  if (!retrieval.grounded) return { answer: NOT_FOUND, summary: undefined };
   const lead = asksForRatingDecision(question) ? `${RATING_REFUSAL}\n\n` : '';
-  const [first] = retrieval.hits;
-  const lines: string[] = [];
-  if (first?.chunk.qa) {
-    lines.push(
-      `Według zestawu pytań i odpowiedzi [1]: ${sources[0].quote}`,
-      '',
-      'Odpowiednie przepisy i fragmenty poradników:',
-      ...sources.slice(1, 4).map((s) => `[${s.n}] ${s.ref}: „${s.quote}”`),
-    );
-  } else {
-    lines.push(
-      'Najtrafniejsze fragmenty źródeł (odpowiedź wyciągowa, bez modelu językowego):',
-      ...sources.slice(0, 3).map((s) => `[${s.n}] ${s.ref}: „${s.quote}”`),
-    );
-  }
-  return lead + lines.join('\n');
+  const summary = lead.trim() || `${shortAnswer(sources[0].quote)} [1]`;
+  const lines = [summary, '', 'Na podstawie:', ...excerptLines(sources)];
+  return { answer: lines.join('\n'), summary };
 }
 
 export const SYSTEM_PROMPT = `Jesteś wewnętrznym asystentem AI urzędu administracji rządowej, który pomaga przełożonym i pracownikom w ocenach okresowych w służbie cywilnej oraz w zarządzaniu ludźmi w zespole.
@@ -167,7 +182,8 @@ Zasady, których musisz przestrzegać:
 3. Jeżeli fragmenty nie zawierają odpowiedzi, napisz dokładnie: "Nie znalazłem tego w bazie wiedzy." i nie zgaduj. Jeżeli źródła mówią, że dana kwestia nie jest uregulowana, powiedz to wprost.
 4. Pełnisz funkcję doradczą. Nigdy nie rozstrzygaj, jaką ocenę, poziom ani liczbę punktów ma otrzymać konkretny pracownik – to decyzja oceniającego. Możesz wyjaśnić zasady i wskazać, co wziąć pod uwagę. Wspominaj o tym tylko wtedy, gdy pytanie dotyczy oceny konkretnej osoby — w pozostałych odpowiedziach nie dopisuj tego zastrzeżenia.
 5. Przepis aktu prawnego ma pierwszeństwo przed poradnikiem; zestaw Q&A to opracowanie źródeł.
-6. Pisz zwięźle i konkretnie (do ok. 200 słów), podawaj liczby dni i miesięcy dokładnie tak, jak w źródłach.`;
+6. Pisz zwięźle i konkretnie (do ok. 200 słów), podawaj liczby dni i miesięcy dokładnie tak, jak w źródłach.
+7. Zacznij od jednego–dwóch zdań, które wprost odpowiadają na pytanie; szczegóły i wyjątki podaj dopiero potem.`;
 
 export function buildMessages(
   question: string,

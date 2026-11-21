@@ -83,10 +83,60 @@ function addOneDay(iso: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * The request waiting for the evaluator's decision. A request that can no longer be granted (the assessment is
+ * already drawn up, or the term follows from the law) is moot, not pending.
+ */
 export function pendingDueDateRequest(
   record: CaseRecord,
 ): DueDateRequest | undefined {
+  if (changeBlocker(record)) return undefined;
   return (record.dueDateRequests ?? []).find((r) => r.status === 'PENDING');
+}
+
+/** Requests as shown in the case: a pending one that can no longer be granted is shown as moot (bezprzedmiotowy). */
+export function dueDateRequestsView(record: CaseRecord): DueDateRequest[] {
+  const blocked = changeBlocker(record);
+  return (record.dueDateRequests ?? []).map((r) =>
+    r.status === 'PENDING' && blocked
+      ? {
+          ...r,
+          status: 'MOOT',
+          decisionNote: `Wniosek bezprzedmiotowy. ${blocked}`,
+        }
+      : r,
+  );
+}
+
+/**
+ * Closes pending requests as moot once the assessment is signed (called by SIGN_ASSESSMENT on the record being
+ * changed). Adds a history line for each.
+ */
+export function closeMootDueDateRequests(
+  record: CaseRecord,
+  today: string,
+): void {
+  const pending = (record.dueDateRequests ?? []).filter(
+    (r) => r.status === 'PENDING',
+  );
+  if (pending.length === 0) return;
+  const blocked = changeBlocker(record);
+  if (!blocked) return;
+  record.dueDateRequests = (record.dueDateRequests ?? []).map((r) =>
+    r.status === 'PENDING'
+      ? {
+          ...r,
+          status: 'MOOT',
+          decidedOn: today,
+          decisionNote: `Wniosek bezprzedmiotowy. ${blocked}`,
+        }
+      : r,
+  );
+  for (const r of pending)
+    record.history.push({
+      date: today,
+      text: `Wniosek ocenianego o zmianę terminu oceny z ${formatDatePl(r.filedOn)} stał się bezprzedmiotowy: ocena została sporządzona.`,
+    });
 }
 
 /**

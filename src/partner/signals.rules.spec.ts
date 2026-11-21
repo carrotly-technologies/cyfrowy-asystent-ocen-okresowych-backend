@@ -92,7 +92,9 @@ describe('computeSignals', () => {
     );
     const m = r.signals.find((s) => s.kind === 'MOTIVATION_DROP')!;
     expect(r.trend.kind).toBe('GRADUAL_DECLINE');
-    expect(m.reasons.map((x) => x.text).join(' ')).toContain('satysfakcja 2/5');
+    expect(m.reasons.map((x) => x.text).join(' ')).toContain(
+      'niska satysfakcja',
+    );
     expect(m.actions.map((a) => a.id)).toContain('CLARIFY_GOALS');
   });
 
@@ -156,5 +158,21 @@ describe('computeSignals', () => {
       'SUCCESS_VISIBILITY',
       'GROWTH_OPPORTUNITY',
     ]);
+  });
+
+  it('privacy: reasons never carry answers to single pulse questions', () => {
+    const r = computeSignals(
+      input({
+        pulses: [
+          pulse('2026-10-24', [4, 4, 4, 4, 4]),
+          pulse('2026-11-07', [2, 2, 2, 2, 2]),
+          pulse('2026-11-13', [1, 1, 1, 1, 1]),
+        ],
+      }),
+    );
+    expect(r.signals.length).toBeGreaterThan(0);
+    const text = JSON.stringify(r.signals);
+    expect(text).not.toMatch(/\d\/5/);
+    expect(text).not.toMatch(/Najbardziej/);
   });
 });

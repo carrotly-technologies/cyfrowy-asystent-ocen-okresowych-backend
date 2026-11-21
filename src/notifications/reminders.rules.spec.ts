@@ -138,8 +138,9 @@ describe('ics', () => {
       description: 'a',
       stamp: '2026-11-21T10:00:00.000Z',
     });
-    expect(ics).toContain('DTSTART:20261201T093000');
-    expect(ics).toContain('DTEND:20261201T103000');
+    expect(ics).toContain('DTSTART;TZID=Europe/Warsaw:20261201T093000');
+    expect(ics).toContain('DTEND;TZID=Europe/Warsaw:20261201T103000');
+    expect(ics).toContain('TZID:Europe/Warsaw');
     expect(ics).toContain('SUMMARY:Rozmowa\\; oceniająca');
     expect(ics).toContain('LOCATION:Pokój 101\\, II piętro');
   });

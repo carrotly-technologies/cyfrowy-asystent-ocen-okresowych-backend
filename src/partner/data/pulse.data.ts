@@ -89,8 +89,8 @@ export const PULSE_COMMENT_MAX = 1000;
 /** Privacy rules shown on the pulse screens (the same text for both roles). */
 export const PULSE_PRIVACY: readonly string[] = [
   'Puls jest dobrowolny i nie jest częścią oceny okresowej. Nie wpływa na oceny cząstkowe.',
-  'Przełożony widzi trendy i sygnały (np. spadek energii), ale nie widzi Twojego komentarza, chyba że sam(-a) zdecydujesz się go udostępnić.',
-  `Wyniki zespołu są pokazywane tylko wtedy, gdy w danym okresie odpowiedziały co najmniej ${MIN_GROUP_SIZE} osoby.`,
+  'Przełożony widzi tylko sygnały (np. możliwe przeciążenie) i Twój ogólny wskaźnik dobrostanu z trendem. Nie widzi odpowiedzi na poszczególne pytania ani Twojego komentarza, chyba że sam(-a) go udostępnisz.',
+  `Średnie dla poszczególnych pytań przełożony widzi tylko dla całego zespołu i tylko gdy odpowiedziały co najmniej ${MIN_GROUP_SIZE} osoby.`,
   'Kadry (HR) nie mają wglądu w indywidualne odpowiedzi.',
   'Możesz w każdej chwili cofnąć udostępnienie komentarza.',
 ];

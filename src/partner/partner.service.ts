@@ -41,6 +41,7 @@ import {
   pulseIndex,
   teamAggregate,
   toSupervisorPoint,
+  toSupervisorTrend,
 } from './pulse.rules.js';
 import { PulseRepository } from './pulse.repository.js';
 import type { PulseResponse } from './pulse.types.js';
@@ -189,7 +190,7 @@ export class PartnerService implements OnModuleInit {
     };
   }
 
-  /** Employee card: trend, flags with their reasons, work data. */
+  /** Employee card: overall index and trend, flags with their reasons, work data; no answers to single questions. */
   async person(personId: string) {
     const record = this.assertSupervisorOf(personId);
     const own = await this.pulses.listByPeople([personId]);
@@ -200,8 +201,7 @@ export class PartnerService implements OnModuleInit {
       position: record.person.position,
       caseId: record.id,
       points: own.map(toSupervisorPoint),
-      questions: PULSE_QUESTIONS.map((q) => ({ id: q.id, label: q.label })),
-      trend: result.trend,
+      trend: toSupervisorTrend(result.trend),
       signals: result.signals,
       notes: result.notes,
       work: this.work[personId] ?? null,

@@ -16,15 +16,14 @@ export function pulseIndex(answers: PulseAnswers): number {
 }
 
 /**
- * The supervisor's view of a response: the comment only when the employee
- * chose to share it (privacy by design).
+ * The supervisor's view of a response (privacy by design): one overall index, no answers to single questions, the
+ * comment only when the employee chose to share it.
  */
 export function toSupervisorPoint(r: PulseResponse): PulsePoint {
   const hasComment = !!r.comment?.trim();
   return {
     id: r.id,
     date: r.date,
-    answers: { ...r.answers },
     index: pulseIndex(r.answers),
     sharedComment: hasComment && r.shareComment ? r.comment : null,
     hasPrivateComment: hasComment && !r.shareComment,
@@ -44,6 +43,13 @@ export function nextPulseDue(
 
 export type TrendKind =
   'NO_DATA' | 'STABLE' | 'IMPROVING' | 'GRADUAL_DECLINE' | 'SUDDEN_DROP';
+
+/** The trend as the supervisor sees it: without the questions that dropped (they would reveal single answers). */
+export function toSupervisorTrend(
+  t: TrendResult,
+): Omit<TrendResult, 'droppedQuestions'> {
+  return { kind: t.kind, delta: t.delta, description: t.description };
+}
 
 export interface TrendResult {
   kind: TrendKind;

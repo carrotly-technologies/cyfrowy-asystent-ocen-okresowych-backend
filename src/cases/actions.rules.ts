@@ -16,6 +16,7 @@ import {
   reassessmentAfterNegativeDue,
   USC,
 } from './deadlines.rules.js';
+import { closeMootDueDateRequests } from './due-date.rules.js';
 import { formalCheck } from './formal-check.rules.js';
 import { nextCycleStart } from './stages.rules.js';
 
@@ -205,6 +206,7 @@ export function applyAction(
       }
       next.signedByEvaluatorOn = today;
       log('Oceniający podpisał ocenę na piśmie. Pola oceny są zablokowane.');
+      closeMootDueDateRequests(next, today);
       break;
     }
     case 'SEND_FOR_ACK':

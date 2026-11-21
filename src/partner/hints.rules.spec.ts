@@ -4,6 +4,7 @@ import {
   feedbackPhrase,
   type HintObservation,
 } from './hints.rules.js';
+import { countObservations } from './hints.rules.js';
 
 const obs = (o: Partial<HintObservation>): HintObservation => ({
   date: '2026-10-01',
@@ -64,5 +65,15 @@ describe('feedbackPhrase', () => {
     expect(feedbackPhrase(obs({}))).toBe(
       'W sytuacji z 01.10.2026 (spotkanie z interesantami) zauważyłam/-em, że: odpowiadała językiem przepisów. Skutek: dwie osoby prosiły o ponowne wyjaśnienie. Jak to widzisz? Ustalmy, co następnym razem zrobimy inaczej w obszarze „Komunikacja”.',
     );
+  });
+});
+
+describe('countObservations', () => {
+  it('uses the Polish plural forms', () => {
+    expect(countObservations(1)).toBe('1 obserwacja');
+    expect(countObservations(3)).toBe('3 obserwacje');
+    expect(countObservations(5)).toBe('5 obserwacji');
+    expect(countObservations(12)).toBe('12 obserwacji');
+    expect(countObservations(22)).toBe('22 obserwacje');
   });
 });

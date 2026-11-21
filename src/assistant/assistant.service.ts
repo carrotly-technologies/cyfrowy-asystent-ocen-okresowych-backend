@@ -5,6 +5,7 @@ import {
   asksForRatingDecision,
   buildMessages,
   RATING_REFUSAL,
+  excerptLines,
   extractiveAnswer,
   retrieve,
   type Retrieval,
@@ -22,6 +23,7 @@ import {
   STAGE_SUGGESTIONS,
 } from './conversation.rules.js';
 import { KnowledgeBase } from './knowledge-base.js';
+import { quickAnswer } from './quick-answers.rules.js';
 import { LlmClient } from './llm.client.js';
 
 @Injectable()
@@ -40,10 +42,29 @@ export class AssistantService {
   async ask(input: AskInput): Promise<AskResponse> {
     // Scoped: only a case the caller may open (403 otherwise).
     const detail = input.caseId ? await this.cases.view(input.caseId) : null;
+    const quick = quickAnswer(input.question, detail);
+    if (quick) return this.quick(quick.text, quick.rule.sourceQuery);
     if (input.assistant === 'CONVERSATION' && detail) {
       return this.conversation(input, detail);
     }
     return this.formal(input.question);
+  }
+
+  /** A rule-based short answer (quick-answers.rules.ts) with the excerpts it rests on. */
+  private quick(summary: string, sourceQuery: string): AskResponse {
+    const retrieval = retrieve(this.kb, sourceQuery);
+    const sources = toSources(retrieval.hits, sourceQuery);
+    const lines = sources.length
+      ? ['', 'Na podstawie:', ...excerptLines(sources)]
+      : [];
+    return {
+      answer: [summary, ...lines].join('\n'),
+      summary,
+      grounded: true,
+      mode: 'EXTRACTIVE',
+      sources,
+      disclaimer: DISCLAIMER,
+    };
   }
 
   private async formal(question: string): Promise<AskResponse> {
@@ -79,7 +100,7 @@ export class AssistantService {
       };
     }
     return {
-      answer: extractiveAnswer(question, retrieval, sources),
+      ...extractiveAnswer(question, retrieval, sources),
       grounded: true,
       mode: 'EXTRACTIVE',
       sources,
@@ -113,9 +134,7 @@ export class AssistantService {
         disclaimer: DISCLAIMER,
       };
     }
-    const rules = sources
-      .slice(0, 3)
-      .map((s) => `[${s.n}] ${s.ref}: „${s.quote}”`);
+    const rules = excerptLines(sources);
     return {
       answer: [
         conversationTemplate(detail, stage),
