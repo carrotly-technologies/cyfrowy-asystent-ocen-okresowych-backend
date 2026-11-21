@@ -66,4 +66,6 @@ Opis zadania wymienia też materiały ze strony KPRM poza dwoma poradnikami; nie
 
 ## Pokaz dla jury
 
+Gotowy pakiet do formularza HackTribe (wszystkie pola, linki, konta demo): [`zgloszenie/hacktribe.md`](zgloszenie/hacktribe.md).
+
 Scenariusz pokazu (≤ 2 min), konta demo i link do nagrania: [`demo/scenariusz.md`](demo/scenariusz.md).
