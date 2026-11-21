@@ -33,7 +33,12 @@ export type StageId = (typeof STAGES)[number];
 export type StageStatus = 'DONE' | 'CURRENT' | 'UPCOMING' | 'LOCKED';
 export type DeadlineState = 'OK' | 'SOON' | 'OVERDUE' | 'NONE';
 export type CaseStatus =
-  'W_TOKU' | 'DO_ZAPOZNANIA' | 'OKRES_SPRZECIWU' | 'ZAKONCZONA';
+  | 'W_TOKU'
+  | 'DO_ZAPOZNANIA'
+  | 'OKRES_SPRZECIWU'
+  /** A sprzeciw (art. 83) waits for the decision of the dyrektor generalny. */
+  | 'SPRZECIW_W_ROZPATRZENIU'
+  | 'ZAKONCZONA';
 
 export type Employment = 'URZEDNIK' | 'PRACOWNIK';
 
@@ -152,6 +157,108 @@ export interface FormalCheckItem {
 export interface HistoryEntry {
   date: string;
   text: string;
+  /**
+   * Domain event behind the entry, for notifications: whom to tell what
+   * happened. Only set on entries that someone should be notified about.
+   */
+  event?: CaseEvent;
+}
+
+export const CASE_EVENT_TYPES = [
+  'ACK_FICTION_RECORDED',
+  'OBJECTION_FILED',
+  'OBJECTION_DISMISSED',
+  'OBJECTION_ASSESSMENT_CHANGE',
+  'OBJECTION_ASSESSMENT_REDO',
+  'DUE_DATE_CHANGE_REQUESTED',
+  'DUE_DATE_CHANGE_APPROVED',
+  'DUE_DATE_CHANGE_REJECTED',
+  'DUE_DATE_CHANGED',
+] as const;
+export type CaseEventType = (typeof CASE_EVENT_TYPES)[number];
+
+/** Who should hear about an event (roles within the case). */
+export type CaseParty = 'EVALUATOR' | 'EMPLOYEE' | 'HR' | 'DIRECTOR';
+
+export interface CaseEvent {
+  type: CaseEventType;
+  notify: CaseParty[];
+}
+
+/** Who did something in the post-assessment paths (name and role, for the record). */
+export interface ActorRef {
+  name: string;
+  role: string;
+}
+
+/**
+ * "Fikcja zapoznania": the assessed person received the assessment but could
+ * not or would not confirm it. Closes the acknowledgement like a confirmation.
+ */
+export interface AckFiction {
+  /** Day the assessment reached the assessed person (acknowledgement date). */
+  date: string;
+  reason: string;
+  recordedOn: string;
+  recordedBy: ActorRef;
+}
+
+export type ObjectionOutcome = 'DISMISS' | 'CHANGE' | 'REDO';
+
+export interface ObjectionDecision {
+  outcome: ObjectionOutcome;
+  decidedOn: string;
+  reason: string;
+  decidedBy: ActorRef;
+}
+
+/** Sprzeciw od oceny okresowej (art. 83 ustawy). */
+export interface Objection {
+  id: string;
+  /** Which assessment (1 = first, 2 = made again / changed) it is against. */
+  round: number;
+  filedOn: string;
+  text: string;
+  decision: ObjectionDecision | null;
+}
+
+/** An earlier version of the assessment, replaced after an objection. */
+export interface AssessmentVersion {
+  round: number;
+  /** CANCELLED: ponowne sporządzenie; CHANGED: zmiana oceny. */
+  status: 'CANCELLED' | 'CHANGED';
+  closedOn: string;
+  reason: string;
+  decisions: Record<string, number>;
+  justification: string;
+  iprz: string;
+  result: 'POSITIVE' | 'NEGATIVE' | null;
+  average: number | null;
+  signedByEvaluatorOn: string | null;
+  acknowledgedOn: string | null;
+  ackFiction: AckFiction | null;
+}
+
+/** Wniosek ocenianego o zmianę terminu oceny (art. 81 ust. 8 pkt 4 ustawy). */
+export interface DueDateRequest {
+  id: string;
+  filedOn: string;
+  reason: string;
+  proposedDate: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  decidedOn: string | null;
+  decisionNote: string | null;
+  newDate: string | null;
+  decidedBy: ActorRef | null;
+}
+
+/** A change of the assessment due date written in part I. */
+export interface DueDateChange {
+  changedOn: string;
+  from: string | null;
+  to: string;
+  reason: string;
+  by: ActorRef;
 }
 
 export interface CaseDetail extends CaseSummary {
@@ -180,6 +287,21 @@ export interface CaseDetail extends CaseSummary {
   corrections: Correction[];
   /** Why part I / parts II–III are locked now (null = editable). */
   locks: { partI: string | null; partII: string | null };
+  ackFiction: AckFiction | null;
+  objections: ObjectionView[];
+  assessmentVersions: AssessmentVersion[];
+  dueDateRequests: DueDateRequest[];
+  dueDateChanges: DueDateChange[];
+  dueDateRequestRule: { eligible: boolean; reason: string; legalBasis: string };
+  /** Post-assessment actions the caller may take now (appeals.rules.ts). */
+  legalActions?: string[];
+}
+
+export interface ObjectionView extends Objection {
+  /** 14 days from filing (art. 83 ust. 3). */
+  decisionDeadline: Deadline;
+  /** 14 days to the labour court (art. 83 ust. 5), after a dismissal or a missed decision term. */
+  courtAppealDeadline: Deadline | null;
 }
 
 /**
@@ -219,6 +341,12 @@ export interface CaseRecord {
   lastReminderOn: string | null;
   /** Set when a later cycle of the same person exists (this one is archived). */
   nextCaseId: string | null;
+  // Post-assessment paths (optional, so older records and seeds stay valid).
+  ackFiction?: AckFiction | null;
+  objections?: Objection[];
+  assessmentVersions?: AssessmentVersion[];
+  dueDateRequests?: DueDateRequest[];
+  dueDateChanges?: DueDateChange[];
 }
 
 export const CASE_ACTIONS = [

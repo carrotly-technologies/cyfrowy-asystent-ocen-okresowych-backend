@@ -1,4 +1,11 @@
-export const ROLES = ['SUPERVISOR', 'EMPLOYEE', 'HR', 'ADMIN'] as const;
+/** DIRECTOR: dyrektor generalny urzędu, decides objections (art. 83 ustawy). */
+export const ROLES = [
+  'SUPERVISOR',
+  'EMPLOYEE',
+  'HR',
+  'ADMIN',
+  'DIRECTOR',
+] as const;
 export type Role = (typeof ROLES)[number];
 
 /** A signed-in account. Never carries the password hash. */

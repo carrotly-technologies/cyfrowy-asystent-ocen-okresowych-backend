@@ -12,6 +12,7 @@ export class CasePolicy {
    */
   view(user: User | null, record: CaseRecord): boolean {
     if (user?.role === 'HR') return true;
+    if (isDirectorFor(user, record)) return true;
     return isEvaluatorOf(user, record) || isAssessedIn(user, record);
   }
 
@@ -45,4 +46,12 @@ export function isAssessedIn(user: User | null, record: CaseRecord): boolean {
     !!user.personId &&
     record.person.id === user.personId
   );
+}
+
+/**
+ * The dyrektor generalny reads the cases with an objection (sprzeciw) filed,
+ * since he decides them (art. 83 ust. 1 ustawy).
+ */
+export function isDirectorFor(user: User | null, record: CaseRecord): boolean {
+  return user?.role === 'DIRECTOR' && (record.objections ?? []).length > 0;
 }

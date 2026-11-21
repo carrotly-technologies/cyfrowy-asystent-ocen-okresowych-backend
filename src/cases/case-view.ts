@@ -11,7 +11,9 @@ import type {
 } from './case.types.js';
 import type { OfficeConfig } from '../config/office.js';
 import { caseLocks } from './correction.rules.js';
+import { dueDateRequestRule } from './due-date.rules.js';
 import { formalCheck } from './formal-check.rules.js';
+import { objectionViews } from './objection-terms.rules.js';
 import { promotionRequestOf } from './promotion.rules.js';
 import {
   buildStages,
@@ -74,6 +76,12 @@ export function toDetail(
     history: record.history,
     corrections: record.corrections ?? [],
     locks: caseLocks(record),
+    ackFiction: record.ackFiction ?? null,
+    objections: objectionViews(record, today),
+    assessmentVersions: record.assessmentVersions ?? [],
+    dueDateRequests: record.dueDateRequests ?? [],
+    dueDateChanges: record.dueDateChanges ?? [],
+    dueDateRequestRule: dueDateRequestRule(record, today),
     availableActions: actor ? availableActions(record, today, actor) : [],
   };
   if (actor !== 'EMPLOYEE') return detail;

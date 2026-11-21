@@ -140,14 +140,16 @@ describe('Authentication, roles and permissions (e2e)', () => {
         'c-006',
         'c-007',
         'c-008',
+        'c-302',
       ]);
       const theirs = await as(sikora).get('/api/cases').expect(200);
       expect(theirs.body.map((c: { id: string }) => c.id)).toEqual([
         'c-101',
         'c-102',
+        'c-301',
       ]);
       const team = await as(sikora).get('/api/team').expect(200);
-      expect(team.body.cases).toHaveLength(2);
+      expect(team.body.cases).toHaveLength(3);
     });
 
     it("403 on another supervisor's case: read, edit, observe, act", async () => {
@@ -195,7 +197,7 @@ describe('Authentication, roles and permissions (e2e)', () => {
     it('sees the HR panel and every case', async () => {
       await as(hr).get('/api/hr/overview').expect(200);
       const all = await as(hr).get('/api/cases').expect(200);
-      expect(all.body).toHaveLength(14);
+      expect(all.body).toHaveLength(16);
       const detail = await as(hr).get('/api/cases/c-001').expect(200);
       expect(detail.body.status).toBe('W_TOKU');
     });
@@ -232,6 +234,9 @@ describe('Authentication, roles and permissions (e2e)', () => {
         'admin',
         'a.nowak',
         'p.wojcik',
+        'b.wisniewska',
+        'e.dabrowska',
+        't.jankowski',
       ]);
       expect(JSON.stringify(res.body)).not.toContain('scrypt');
     });

@@ -1,0 +1,229 @@
+import { applyAction } from './actions.rules.js';
+import {
+  courtAppealDeadline,
+  decideObjection,
+  fileObjection,
+  legalActions,
+  objectionBlocker,
+  objectionDecisionDeadline,
+  recordAckFiction,
+} from './appeals.rules.js';
+import { CaseRuleError } from './case-rule.error.js';
+import type { CaseRecord } from './case.types.js';
+import { buildSeed } from './seed/seed.data.js';
+import { caseStatus, nextDeadline } from './stages.rules.js';
+
+const TODAY = '2026-11-21';
+const seed = (id: string): CaseRecord =>
+  buildSeed(TODAY).find((c) => c.id === id)!;
+const DG = { name: 'Barbara Wiśniewska', role: 'dyrektor generalny urzędu' };
+const HR = { name: 'Agnieszka Lis', role: 'kadry' };
+
+const conflict = (fn: () => unknown): string => {
+  try {
+    fn();
+  } catch (error) {
+    expect(error).toBeInstanceOf(CaseRuleError);
+    return (error as Error).message;
+  }
+  throw new Error('expected CaseRuleError');
+};
+
+/** c-006 acknowledged on `ackOn`. */
+const acknowledged = (ackOn: string): CaseRecord => ({
+  ...seed('c-006'),
+  acknowledgedOn: ackOn,
+});
+
+describe('objection terms (art. 83, KC term rules)', () => {
+  it('decision term: 14 days from filing, on a working day', () => {
+    expect(objectionDecisionDeadline('2026-11-20').date).toBe('2026-12-04');
+    // 05.12.2026 is a Saturday -> Monday 07.12.2026
+    const shifted = objectionDecisionDeadline('2026-11-21');
+    expect(shifted.date).toBe('2026-12-07');
+    expect(shifted.legalBasis).toContain('art. 115 KC');
+    // 26.12 (holiday, Saturday), 27.12 Sunday -> 28.12.2026
+    expect(objectionDecisionDeadline('2026-12-12').date).toBe('2026-12-28');
+  });
+
+  it('objection window: 7 days from acknowledgement, last day included', () => {
+    const r = acknowledged('2026-11-13');
+    expect(objectionBlocker(r, '2026-11-20')).toBeNull();
+    expect(objectionBlocker(r, '2026-11-21')).toContain('upłynął 20.11.2026');
+  });
+
+  it('objection window ending on a Saturday runs to Monday', () => {
+    const r = acknowledged('2026-11-14');
+    expect(objectionBlocker(r, '2026-11-23')).toBeNull();
+    expect(objectionBlocker(r, '2026-11-24')).toContain('upłynął 23.11.2026');
+  });
+
+  it('court appeal: 14 days from a dismissal or from the missed decision term', () => {
+    const filed = { id: 'o', round: 1, filedOn: '2026-11-20', text: 'x' };
+    expect(
+      courtAppealDeadline({ ...filed, decision: null }, '2026-12-04'),
+    ).toBeNull();
+    expect(
+      courtAppealDeadline({ ...filed, decision: null }, '2026-12-05')?.date,
+    ).toBe('2026-12-18');
+    expect(
+      courtAppealDeadline(
+        {
+          ...filed,
+          decision: {
+            outcome: 'DISMISS',
+            decidedOn: '2026-11-27',
+            reason: 'r',
+            decidedBy: DG,
+          },
+        },
+        '2026-11-27',
+      )?.date,
+    ).toBe('2026-12-11');
+  });
+});
+
+describe('fikcja zapoznania', () => {
+  const handedOver = () => seed('c-101'); // signed and sent, not acknowledged
+
+  it('closes the acknowledgement and starts the objection term from the given date', () => {
+    const next = recordAckFiction(
+      handedOver(),
+      { date: '2026-11-20', reason: 'Odmowa podpisu' },
+      HR,
+      TODAY,
+    );
+    expect(next.acknowledgedOn).toBe('2026-11-20');
+    expect(next.ackFiction).toMatchObject({
+      date: '2026-11-20',
+      recordedBy: HR,
+    });
+    expect(caseStatus(next, TODAY)).toBe('OKRES_SPRZECIWU');
+    expect(next.history.at(-1)?.event?.type).toBe('ACK_FICTION_RECORDED');
+    expect(objectionBlocker(next, '2026-11-27')).toBeNull();
+  });
+
+  it('is refused before the hand-over, after acknowledgement and for dates out of range', () => {
+    expect(
+      conflict(() =>
+        recordAckFiction(
+          seed('c-001'),
+          { date: TODAY, reason: 'x' },
+          HR,
+          TODAY,
+        ),
+      ),
+    ).toContain('po podpisaniu oceny');
+    expect(
+      conflict(() =>
+        recordAckFiction(
+          seed('c-006'),
+          { date: TODAY, reason: 'x' },
+          HR,
+          TODAY,
+        ),
+      ),
+    ).toContain('już odnotowane');
+    expect(
+      conflict(() =>
+        recordAckFiction(
+          handedOver(),
+          { date: '2026-11-22', reason: 'x' },
+          HR,
+          TODAY,
+        ),
+      ),
+    ).toContain('musi przypadać');
+  });
+});
+
+describe('sprzeciw and the decision of the dyrektor generalny', () => {
+  const filed = () => fileObjection(seed('c-006'), 'Nie zgadzam się.', TODAY);
+
+  it('filing puts the case under review with the 14-day decision term', () => {
+    const next = filed();
+    expect(caseStatus(next, TODAY)).toBe('SPRZECIW_W_ROZPATRZENIU');
+    expect(nextDeadline(next, TODAY)?.date).toBe('2026-12-07');
+    expect(next.history.at(-1)?.event).toEqual({
+      type: 'OBJECTION_FILED',
+      notify: ['DIRECTOR', 'EVALUATOR', 'HR'],
+    });
+    expect(conflict(() => fileObjection(next, 'again', TODAY))).toContain(
+      'już wniesiony',
+    );
+    expect(legalActions(next, TODAY, 'DIRECTOR')).toContain('DECIDE_OBJECTION');
+    expect(legalActions(next, TODAY, 'EMPLOYEE')).not.toContain(
+      'FILE_OBJECTION',
+    );
+  });
+
+  it('dismissal closes the case and points to the labour court', () => {
+    const next = decideObjection(
+      filed(),
+      { outcome: 'DISMISS', reason: 'Ocena zasadna' },
+      DG,
+      TODAY,
+    );
+    expect(caseStatus(next, TODAY)).toBe('ZAKONCZONA');
+    expect(next.history.at(-1)?.text).toContain('sądu pracy w terminie 14 dni');
+    expect(
+      conflict(() =>
+        decideObjection(next, { outcome: 'REDO', reason: 'x' }, DG, TODAY),
+      ),
+    ).toContain('nie ma sprzeciwu');
+  });
+
+  it('change: new scores, back to signature, re-acknowledgement, no second objection', () => {
+    let next = decideObjection(
+      filed(),
+      {
+        outcome: 'CHANGE',
+        reason: 'Zawyżono wymagania',
+        decisions: { organizacja_pracy: 7 },
+      },
+      DG,
+      TODAY,
+    );
+    expect(next.stage).toBe('SIGNATURE');
+    expect(next.signedByEvaluatorOn).toBeNull();
+    expect(next.decisions.organizacja_pracy).toBe(7);
+    expect(next.assessmentVersions?.[0]).toMatchObject({
+      status: 'CHANGED',
+      round: 1,
+    });
+    expect(caseStatus(next, TODAY)).toBe('W_TOKU');
+    next = [
+      'SIGN_ASSESSMENT',
+      'SEND_FOR_ACK',
+      'EMPLOYEE_ACK_ASSESSMENT',
+    ].reduce((r, a) => applyAction(r, a as never, TODAY), next);
+    expect(next.acknowledgedOn).toBe(TODAY);
+    expect(objectionBlocker(next, TODAY)).toContain('zmieniona');
+  });
+
+  it('ponowne sporządzenie: cancels the assessment, back to ASSESSMENT, may be objected again', () => {
+    let next = decideObjection(
+      filed(),
+      { outcome: 'REDO', reason: 'Brak rozmowy oceniającej' },
+      DG,
+      TODAY,
+    );
+    expect(next.stage).toBe('ASSESSMENT');
+    expect(next.assessmentTalkOn).toBeNull();
+    expect(next.acknowledgedOn).toBeNull();
+    expect(next.assessmentVersions?.[0]).toMatchObject({
+      status: 'CANCELLED',
+      result: 'POSITIVE',
+    });
+    next = [
+      'COMPLETE_ASSESSMENT_TALK',
+      'SIGN_ASSESSMENT',
+      'SEND_FOR_ACK',
+      'EMPLOYEE_ACK_ASSESSMENT',
+    ].reduce((r, a) => applyAction(r, a as never, TODAY), next);
+    expect(objectionBlocker(next, TODAY)).toBeNull();
+    next = fileObjection(next, 'Druga ocena też błędna.', TODAY);
+    expect(next.objections?.map((o) => o.round)).toEqual([1, 2]);
+    expect(caseStatus(next, TODAY)).toBe('SPRZECIW_W_ROZPATRZENIU');
+  });
+});

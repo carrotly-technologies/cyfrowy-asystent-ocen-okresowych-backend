@@ -41,13 +41,13 @@ export class CasesController {
   }
 
   @Get('cases')
-  @Roles('SUPERVISOR', 'EMPLOYEE', 'HR')
+  @Roles('SUPERVISOR', 'EMPLOYEE', 'HR', 'DIRECTOR')
   list(): CaseSummary[] {
     return this.cases.visibleCases();
   }
 
   @Get('cases/:id')
-  @Roles('SUPERVISOR', 'EMPLOYEE', 'HR')
+  @Roles('SUPERVISOR', 'EMPLOYEE', 'HR', 'DIRECTOR')
   findOne(@Param('id') id: string): Promise<CaseDetail> {
     return this.cases.view(id);
   }

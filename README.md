@@ -88,6 +88,7 @@ only by an ADMIN in correction mode. Every correction is audited in `CaseDetail.
 | `EMPLOYEE`   | the assessed person: `GET /api/cases` and `GET /api/cases/:id` of own cases only (read only; no observations, part II only after hand-over), actions `EMPLOYEE_ACK_PART_I` and `EMPLOYEE_ACK_ASSESSMENT` | other cases, PATCH, observations, other actions, `/api/team`, `/api/hr/*`, `/api/admin/*`, journal |
 | `HR`         | `/api/hr/*`, `GET /api/cases` (all), `GET /api/cases/:id` (read only)                                 | PATCH, observations, actions, `/api/team`, `/api/admin/*`, journal |
 | `ADMIN`      | `/api/admin/*`                                                                                        | cases, `/api/team`, `/api/hr/*`, journal                  |
+| `DIRECTOR`   | dyrektor generalny urzędu: `GET /api/objections`, `GET /api/cases(/:id)` of cases with a sprzeciw (read only), `POST /api/cases/:id/objection/decision` | other cases, PATCH, actions, `/api/team`, `/api/hr/*`, `/api/admin/*`, journal |
 | every role   | `/api/me`, assistant, `/api/docs`, criteria, sheets, assessments, `POST /api/demo/reset` | —                                                         |
 
 - The role is read from the account on every request, never from the token: a role changed by an ADMIN applies to
@@ -107,12 +108,15 @@ Every demo account has the password `Ocena2026!`.
 
 | Login        | Role         | Who                                                            |
 | ------------ | ------------ | -------------------------------------------------------------- |
-| `j.kaminska` | `SUPERVISOR` | Joanna Kamińska, cases c-000…c-008 (team view hides archived c-000) |
-| `r.sikora`   | `SUPERVISOR` | Robert Sikora, cases c-101, c-102                              |
+| `j.kaminska` | `SUPERVISOR` | Joanna Kamińska, cases c-000…c-008 and c-302 (pending termin-change request; team view hides archived c-000) |
+| `r.sikora`   | `SUPERVISOR` | Robert Sikora, cases c-101 (handed over, for "fikcja zapoznania"), c-102, c-301 |
 | `a.pawlak`   | `SUPERVISOR` | Agnieszka Pawlak, cases c-103, c-104                           |
 | `a.nowak`    | `EMPLOYEE`   | Anna Nowak (assessed), cases c-000 (previous cycle) and c-001  |
 | `p.wojcik`   | `EMPLOYEE`   | Piotr Wójcik (assessed), case c-002 waiting for his part I confirmation |
-| `a.lis`      | `HR`         | Agnieszka Lis, HR (kadry), all 14 cases                        |
+| `e.dabrowska` | `EMPLOYEE`  | Ewa Dąbrowska (assessed), case c-006 in the 7-day objection period: may file a sprzeciw |
+| `t.jankowski` | `EMPLOYEE`  | Tadeusz Jankowski (assessed), case c-301 with a sprzeciw waiting for the dyrektor generalny |
+| `b.wisniewska` | `DIRECTOR` | Barbara Wiśniewska, dyrektor generalny urzędu: decides objections (c-301) |
+| `a.lis`      | `HR`         | Agnieszka Lis, HR (kadry), all 16 cases                        |
 | `admin`      | `ADMIN`      | Marek Zając, administrator                                     |
 
 ## API
@@ -190,6 +194,30 @@ Stages (`STAGES` in `src/cases/case.types.ts`) and actions (`src/cases/actions.r
 | 5 | `ASSESSMENT`      | `COMPLETE_ASSESSMENT_TALK` (scores, justification, IPRZ, part III are drafted from stage 1 until the signature) | evaluator |
 | 6 | `SIGNATURE`       | `SIGN_ASSESSMENT` (formal check), then `SEND_FOR_ACK` | evaluator |
 | 7 | `ACKNOWLEDGEMENT` | `EMPLOYEE_ACK_ASSESSMENT` (starts the 7-day objection term) | employee  |
+
+### After the assessment: fikcja zapoznania, sprzeciw, zmiana terminu na wniosek
+
+Rules: `src/cases/appeals.rules.ts` (+ `objection-terms.rules.ts`) and `src/cases/due-date.rules.ts`, with tests. Who may
+act is checked per case; a wrong person gets 403 with a Polish `message` ("Brak uprawnień. …"), an illegal moment 409.
+
+| Route                                       | Who                        | What it does |
+| ------------------------------------------- | -------------------------- | ------------ |
+| `POST /api/cases/:id/ack-fiction`           | the case's evaluator, HR   | `{ date, reason }`: the assessed person received the assessment but could not/would not confirm. Closes the acknowledgement like `EMPLOYEE_ACK_ASSESSMENT` dated `date` (between hand-over and today) and starts the 7-day objection term |
+| `POST /api/cases/:id/objection`             | the assessed person        | `{ text }`: sprzeciw (art. 83 ust. 1) within 7 days of acknowledgement (KC rules: last day on a working day); one per assessment; status `SPRZECIW_W_ROZPATRZENIU` |
+| `GET /api/objections`                       | DIRECTOR, HR               | `[{ caseId, person, evaluatorName, sheetId, status, objection }]`, pending first |
+| `POST /api/cases/:id/objection/decision`    | DIRECTOR                   | `{ outcome: DISMISS\|CHANGE\|REDO, reason, decisions?, justification? }` (14-day term, art. 83 ust. 3). DISMISS closes the case (14 days to the labour court, ust. 5). CHANGE keeps the old version (`assessmentVersions`, `CHANGED`), applies new scores, sends the case back to `SIGNATURE` for re-signing and re-acknowledgement. REDO cancels the assessment (`CANCELLED`) and returns to `ASSESSMENT`; the re-made one can be objected again (ust. 4) |
+| `POST /api/cases/:id/due-date-request`      | the assessed person        | `{ reason, proposedDate? }` (art. 81 ust. 8 pkt 4): only if more than 6 months passed since the last assessment was made (first assessment: since the cycle start); never after a negative one (ust. 9) or after signing |
+| `POST /api/cases/:id/due-date-request/decision` | the case's evaluator   | `{ approve, newDate?, note? }`: approval moves the date through `changeDueDate()`; a rejection needs `note`. Pending requests appear in `GET /api/team` `todo` |
+
+- `changeDueDate(record, newDate, reason, by, today)` in `src/cases/due-date.rules.ts` is the one function that moves
+  "termin sporządzenia oceny" (records `dueDateChanges` and a history entry).
+- New `CaseDetail` fields: `ackFiction`, `objections` (with `decisionDeadline`, `courtAppealDeadline`),
+  `assessmentVersions`, `dueDateRequests`, `dueDateChanges`, `dueDateRequestRule { eligible, reason, legalBasis }`,
+  `legalActions` (what the caller may do: `RECORD_ACK_FICTION`, `FILE_OBJECTION`, `DECIDE_OBJECTION`,
+  `REQUEST_DUE_DATE_CHANGE`, `DECIDE_DUE_DATE_REQUEST`).
+- Notifications hook: history entries of these paths carry `event: { type, notify }` (`OBJECTION_FILED`,
+  `OBJECTION_DISMISSED`, `OBJECTION_ASSESSMENT_CHANGE`, `OBJECTION_ASSESSMENT_REDO`, `ACK_FICTION_RECORDED`,
+  `DUE_DATE_CHANGE_REQUESTED|APPROVED|REJECTED`, `DUE_DATE_CHANGED`; `notify` ⊆ EVALUATOR, EMPLOYEE, HR, DIRECTOR).
 
 ### Journal: notes and observations about an employee
 

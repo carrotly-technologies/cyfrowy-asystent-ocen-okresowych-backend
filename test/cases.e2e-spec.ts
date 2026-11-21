@@ -74,6 +74,7 @@ describe('Cases, team, employee and HR (e2e)', () => {
       'c-006',
       'c-007',
       'c-008',
+      'c-302',
     ]);
     const dates = res.body.todo.map(
       (t: { deadline: { date: string } }) => t.deadline.date,
@@ -241,7 +242,7 @@ describe('Cases, team, employee and HR (e2e)', () => {
 
   it('HR overview counts and simulated reminders', async () => {
     let res = await asHr().get('/api/hr/overview').expect(200);
-    expect(res.body.cases).toHaveLength(14);
+    expect(res.body.cases).toHaveLength(16);
     expect(res.body.counters).toMatchObject({
       awaitingAck: 1,
       objectionPeriod: 1,
