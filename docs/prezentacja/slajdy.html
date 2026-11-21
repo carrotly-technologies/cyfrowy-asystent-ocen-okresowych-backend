@@ -1,0 +1,470 @@
+<!doctype html>
+<!--
+  Źródło prezentacji dla jury KPRM (HackNation 2026). PDF: prezentacja.pdf w tym katalogu.
+  Generowanie PDF (Chrome lub Chromium, bez dodatkowych zależności), z katalogu docs/prezentacja:
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --no-pdf-header-footer \
+      --print-to-pdf=prezentacja.pdf slajdy.html
+  Zrzuty ekranu w zrzuty/ pochodzą z https://cyfrowy.rabbithole.carrotly.tech (dane fikcyjne z seeda, 21.11.2026).
+-->
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Cyfrowy Asystent Ocen Okresowych – prezentacja</title>
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  :root {
+    --navy: #0b2a5b; --blue: #0050a8; --blue-2: #e8f0fb; --ink: #16202e; --muted: #5a6577;
+    --line: #d9e0ea; --green: #1d7a3a; --green-2: #e9f6ec; --amber: #8a5a00; --amber-2: #fdf3e1;
+    --red: #b42318; --bg: #f5f7fa;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body { font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; color: var(--ink);
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .slide { width: 1280px; height: 720px; position: relative; overflow: hidden; page-break-after: always;
+           break-after: page; padding: 48px 64px 40px; background: #fff; display: flex; flex-direction: column; }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+  .kicker { font-size: 15px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); margin: 0 0 8px; }
+  h1 { font-size: 40px; line-height: 1.15; margin: 0 0 20px; color: var(--navy); letter-spacing: -.01em; }
+  h2 { font-size: 21px; margin: 0 0 8px; color: var(--navy); }
+  p, li { font-size: 18px; line-height: 1.45; }
+  p { margin: 0 0 10px; }
+  ul { margin: 0; padding-left: 22px; }
+  li { margin: 0 0 7px; }
+  .muted { color: var(--muted); }
+  .small, .small li, .small p { font-size: 15px; }
+  .foot { position: absolute; left: 64px; right: 64px; bottom: 18px; display: flex; justify-content: space-between;
+          font-size: 12px; color: var(--muted); }
+  .cols { display: grid; gap: 32px; flex: 1; min-height: 0; }
+  .c2 { grid-template-columns: 1fr 1fr; }
+  .c-text-shot { grid-template-columns: 400px 1fr; }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; background: #fff; }
+  .card.blue { background: var(--blue-2); border-color: #c9dbf3; }
+  .card.green { background: var(--green-2); border-color: #cfe8d6; }
+  .card.amber { background: var(--amber-2); border-color: #f0dcb4; }
+  .card h2 { font-size: 19px; }
+  .card p, .card li { font-size: 16px; }
+  .shot { border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 24px rgba(11,42,91,.12);
+          background-repeat: no-repeat; background-color: #fff; min-height: 0; }
+  .shot-img { display: block; width: 100%; border: 1px solid var(--line); border-radius: 10px;
+              box-shadow: 0 6px 24px rgba(11,42,91,.12); }
+  .cap { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .tag { display: inline-block; font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+         background: var(--blue-2); color: var(--blue); margin: 0 6px 6px 0; }
+  .law { font-size: 13px; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 15px; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .9em; background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+  pre { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.45; white-space: pre-wrap;
+        background: #0f1b2d; color: #dfe7f3; border-radius: 10px; padding: 14px 16px; margin: 0; }
+  pre .hl { color: #ffd479; font-weight: 700; }
+
+  /* title */
+  .title { background: linear-gradient(135deg, #0b2a5b 0%, #0050a8 100%); color: #fff; padding: 72px 80px; }
+  .title h1 { color: #fff; font-size: 56px; margin-bottom: 18px; }
+  .title .lead { font-size: 24px; line-height: 1.4; max-width: 900px; color: #e3ecfa; }
+  .title .meta { position: absolute; left: 80px; bottom: 56px; font-size: 16px; color: #c8d7ef; line-height: 1.6; }
+  .title .badge { display: inline-block; border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: 6px 14px;
+                  font-size: 15px; margin: 0 8px 8px 0; color: #fff; }
+
+  /* process */
+  .steps { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin: 6px 0 18px; }
+  .step { border: 1px solid #c9dbf3; background: var(--blue-2); border-radius: 10px; padding: 14px 12px; min-height: 230px; }
+  .step .n { width: 28px; height: 28px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700;
+             display: flex; align-items: center; justify-content: center; font-size: 14px; margin-bottom: 8px; }
+  .step b { display: block; font-size: 16px; line-height: 1.25; margin-bottom: 6px; color: var(--navy); }
+  .step span { font-size: 14px; line-height: 1.35; color: var(--ink); display: block; }
+  .step .who { font-size: 12.5px; color: var(--blue); font-weight: 600; margin-top: 6px; }
+  .after { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+  /* architecture */
+  .arch { display: grid; grid-template-columns: 1fr 70px 1fr 70px 1fr; align-items: center; gap: 0; }
+  .box { border: 2px solid var(--blue); border-radius: 12px; padding: 14px 16px; background: #fff; }
+  .box.opt { border-style: dashed; border-color: #8aa6cf; }
+  .box h2 { font-size: 18px; margin-bottom: 4px; }
+  .box p { font-size: 14px; margin: 0; line-height: 1.4; }
+  .arrow { text-align: center; color: var(--blue); font-size: 28px; font-weight: 700; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  .num { font-size: 34px; font-weight: 800; color: var(--blue); line-height: 1; }
+</style>
+</head>
+<body>
+
+<!-- 1. Tytuł -->
+<section class="slide title">
+  <p class="kicker" style="color:#9fc0ef">HackNation 2026 · wyzwanie KPRM</p>
+  <h1>Cyfrowy Asystent<br>Ocen Okresowych</h1>
+  <p class="lead">Prowadzi przełożonego, ocenianego i kadry przez całą ocenę okresową w służbie cywilnej:
+    od wyboru arkusza do sprzeciwu, zgodnie z ustawą o służbie cywilnej i rozporządzeniem PRM z 4.04.2016.
+    AI podpowiada i wskazuje źródło, a decyzję zawsze podejmuje człowiek.</p>
+  <div style="margin-top:28px">
+    <span class="badge">Arkusze A, B, C</span><span class="badge">7 etapów z terminami z przepisów</span>
+    <span class="badge">Asystent AI ze źródłami</span><span class="badge">Wirtualny HR partner</span>
+    <span class="badge">Open source, bez płatnych licencji</span>
+  </div>
+  <div class="meta">
+    Prototyp: cyfrowy.rabbithole.carrotly.tech · konta demo, hasło <b>Ocena2026!</b><br>
+    Zespół Carrotly Technologies · github.com/carrotly-technologies/cyfrowy-asystent-ocen-okresowych-backend (i -frontend)
+  </div>
+</section>
+
+<!-- 2. Problem -->
+<section class="slide">
+  <p class="kicker">Problem</p>
+  <h1>Ocena okresowa to proces prawny, a prowadzi się ją na papierze i z pamięci</h1>
+  <div class="cols c2">
+    <div>
+      <ul>
+        <li><b>Siedem kroków i kilka terminów</b> z ustawy i rozporządzenia: rozmowa rozpoczynająca w 30 dni,
+          ocena co 24 miesiące (6 po negatywnej), 7 dni na sprzeciw, 14 dni na jego rozpatrzenie.</li>
+        <li><b>Trzy wzory arkuszy</b> (A, B, C), kryteria obowiązkowe zależne od stanowiska, najwyżej 3 dodatkowe,
+          skala 1–9 i reguła wyniku z § 11.</li>
+        <li><b>Ocena z ostatnich tygodni</b>: bez notatek z całego okresu przełożony ocenia z ogólnego wrażenia.</li>
+        <li><b>Błędy formalne</b> (brak uzasadnienia, brak IPRZ, przekroczony termin) wychodzą dopiero przy sprzeciwie.</li>
+        <li><b>Kadry nie widzą stanu</b> ocen w urzędzie i ręcznie przypominają o terminach.</li>
+      </ul>
+    </div>
+    <div class="stack">
+      <div class="card amber"><h2>Przełożony</h2><p>Nie jest kadrowcem ani prawnikiem. Potrzebuje prowadzenia krok po kroku
+        i pomocy w przygotowaniu rozmowy, a nie kolejnego formularza.</p></div>
+      <div class="card amber"><h2>Oceniany</h2><p>Chce znać kryteria i oczekiwania od pierwszego dnia oraz wiedzieć,
+        jakie ma prawa po ocenie.</p></div>
+      <div class="card amber"><h2>Kadry i dyrektor generalny</h2><p>Odpowiadają za przeprowadzenie ocen w całym urzędzie
+        i rozpatrują sprzeciwy w terminie.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Cyfrowy Asystent Ocen Okresowych</span><span>2 / 15</span></div>
+</section>
+
+<!-- 3. Rozwiązanie -->
+<section class="slide">
+  <p class="kicker">Rozwiązanie</p>
+  <h1>Jedna teczka oceny dla każdej osoby, prowadzona przez reguły z przepisów</h1>
+  <div class="cols c-text-shot">
+    <div>
+      <p><b>Przełożony</b> widzi swój zespół, etap każdej oceny i najbliższy termin. Otwiera teczkę i robi to, co system
+        podpowiada na danym etapie.</p>
+      <p><b>Oceniany</b> ma własne konto: widzi kryteria, potwierdza rozmowę i zapoznanie się z oceną, może złożyć sprzeciw.</p>
+      <p><b>Kadry</b> monitorują wszystkie oceny w urzędzie i wysyłają przypomnienia, <b>dyrektor generalny</b> rozpatruje sprzeciwy.</p>
+      <p><b>Asystent AI</b> odpowiada z przepisów i poradników KPRM ze źródłem, a <b>wirtualny HR partner</b> pomaga
+        przygotować rozmowę i zauważyć przeciążenie zespołu.</p>
+      <p class="muted small">Arkusz A/B/C wypełnia się sam z decyzji w teczce i jest pobierany jako PDF zgodny ze wzorem.</p>
+    </div>
+    <div><img class="shot-img" src="zrzuty/01-moj-zespol.jpg" alt="Widok Mój zespół">
+      <p class="cap">Widok „Mój zespół”: etap 1–7, najbliższy termin z przepisów i status każdej oceny.</p></div>
+  </div>
+  <div class="foot"><span>Cyfrowy Asystent Ocen Okresowych</span><span>3 / 15</span></div>
+</section>
+
+<!-- 4. Proces -->
+<section class="slide">
+  <p class="kicker">Proces krok po kroku</p>
+  <h1>Kryteria → rozmowy → ocena → zapoznanie → sprzeciw</h1>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><b>Arkusz i kryteria</b><span>Propozycja arkusza A/B/C, kryteria obowiązkowe, do 3 dodatkowych, termin oceny.</span><span class="who">przełożony · § 3–5</span></div>
+    <div class="step"><div class="n">2</div><b>Rozmowa rozpoczynająca</b><span>Oczekiwania do kryteriów, część I arkusza, termin 30 dni.</span><span class="who">przełożony · § 5, § 7</span></div>
+    <div class="step"><div class="n">3</div><b>Potwierdzenie ocenianego</b><span>Oceniany sam potwierdza rozmowę i kryteria na swoim koncie.</span><span class="who">oceniany · § 6</span></div>
+    <div class="step"><div class="n">4</div><b>Okres obserwacji</b><span>Dziennik S-D-R przy kryteriach przez cały okres, pokrycie dowodami.</span><span class="who">przełożony · poradnik KPRM</span></div>
+    <div class="step"><div class="n">5</div><b>Rozmowa oceniająca i ocena</b><span>Oceny 1–9, średnia, poziom, wynik, uzasadnienie, IPRZ, część III.</span><span class="who">przełożony · § 10–11</span></div>
+    <div class="step"><div class="n">6</div><b>Podpis i przekazanie</b><span>Kontrola formalna blokuje podpis, dopóki arkusz ma braki.</span><span class="who">przełożony · § 11–12</span></div>
+    <div class="step"><div class="n">7</div><b>Zapoznanie z oceną</b><span>Potwierdzenie ocenianego otwiera 7-dniowy termin na sprzeciw.</span><span class="who">oceniany · art. 83</span></div>
+  </div>
+  <div class="after">
+    <div class="card green"><h2>Fikcja zapoznania</h2><p>Gdy oceniany nie może lub nie chce potwierdzić, przełożony albo kadry odnotowują datę doręczenia i bieg terminu.</p></div>
+    <div class="card green"><h2>Sprzeciw</h2><p>Oceniany składa go w 7 dni (termin liczony wg KC). Dyrektor generalny w 14 dni oddala, zmienia ocenę albo poleca ją sporządzić ponownie.</p></div>
+    <div class="card green"><h2>Zmiana terminu oceny</h2><p>Wniosek ocenianego (art. 81 ust. 8 pkt 4) i decyzja oceniającego z historią zmian i podstawą prawną.</p></div>
+  </div>
+  <div class="foot"><span>Każde przejście to akcja w maszynie stanów: niedozwolony krok dostaje odmowę z polskim wyjaśnieniem.</span><span>4 / 15</span></div>
+</section>
+
+<!-- 5. Kryteria -->
+<section class="slide">
+  <p class="kicker">Krok 1 · kryteria</p>
+  <h1>System proponuje arkusz i wyjaśnia dlaczego, przełożony zatwierdza</h1>
+  <div class="cols c-text-shot">
+    <div>
+      <ul>
+        <li>Reguła z § 3: kierownik urzędu → A, bezpośrednie kierowanie ludźmi → B, pozostali → C. Przy propozycji
+          widać paragraf.</li>
+        <li>Katalog 14 kryteriów z załącznika nr 1 z opisami; kryteria obowiązkowe arkusza są wstawione,
+          dodatkowe wybiera przełożony (0–3, bez powtórzeń).</li>
+        <li>Termin sporządzenia oceny liczony automatycznie: 24 miesiące, 6 po ocenie negatywnej, z przesunięciem
+          z dnia wolnego.</li>
+        <li>Po zatwierdzeniu części I pola się blokują; poprawkę robi tylko administrator w audytowanym trybie korekty.</li>
+      </ul>
+    </div>
+    <div><img class="shot-img" src="zrzuty/02-arkusz-i-kryteria.jpg" alt="Wybór arkusza i kryteriów">
+      <p class="cap">Etap „Arkusz i kryteria”: propozycja arkusza C z podstawą prawną.</p></div>
+  </div>
+  <div class="foot"><span>§ 2–5 rozp. PRM z 4.04.2016 (Dz.U. poz. 470), załącznik nr 1</span><span>5 / 15</span></div>
+</section>
+
+<!-- 6. Rozmowy i obserwacje -->
+<section class="slide">
+  <p class="kicker">Kroki 2–4 · rozmowy i obserwacje</p>
+  <h1>Ocena oparta na faktach z całego okresu, nie na ostatnich tygodniach</h1>
+  <div class="cols c-text-shot">
+    <div>
+      <ul>
+        <li><b>Rozmowa rozpoczynająca</b>: oczekiwania do każdego kryterium trafiają do części I arkusza.</li>
+        <li><b>Potwierdzenie</b> składa oceniany na własnym koncie; przełożony nie może kliknąć za niego.</li>
+        <li><b>Dziennik obserwacji S-D-R</b> (sytuacja, działanie, rezultat) przy kryteriach, przez cały rok,
+          z podziałem na mocne strony i obszary do rozwoju.</li>
+        <li><b>Pokrycie kryteriów dowodami</b>: system ostrzega, gdy kryterium ma mniej niż 2 obserwacje,
+          zanim przełożony przejdzie do oceny.</li>
+        <li>Notatki przełożonego są prywatne: nie widzą ich kadry ani administrator.</li>
+      </ul>
+    </div>
+    <div><img class="shot-img" src="zrzuty/03-dziennik-obserwacji.jpg" alt="Dziennik obserwacji">
+      <p class="cap">Dziennik obserwacji kierownika zespołu (arkusz B) z ostrzeżeniem o pokryciu kryteriów.</p></div>
+  </div>
+  <div class="foot"><span>§ 5–7 rozp. PRM z 4.04.2016; Poradnik KPRM „Oceny okresowe w służbie cywilnej”, etap II</span><span>6 / 15</span></div>
+</section>
+
+<!-- 7. Ocena -->
+<section class="slide">
+  <p class="kicker">Kroki 5–6 · ocena i podpis</p>
+  <h1>Ocenę wybiera przełożony, system pilnuje formy i reguł § 11</h1>
+  <div class="cols c2">
+    <div>
+      <div class="shot" style="height:300px;background-image:url(zrzuty/04-oceny-czastkowe.jpg);background-size:122%;background-position:0 98%"></div>
+      <p class="cap">Oceny cząstkowe 1–9 w skali z rozporządzenia, kryteria obowiązkowe i dodatkowe.</p>
+      <ul class="small" style="margin-top:10px">
+        <li>Średnia, poziom i wynik liczone na bieżąco: pozytywna przy średniej &gt; 4 i braku oceny 1 pkt.</li>
+        <li>Arkusz roboczy przed rozmową, poprawki po niej, blokada po podpisie.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="shot" style="height:300px;background-image:url(zrzuty/05-kontrola-formalna.jpg);background-size:200%;background-position:100% 62%"></div>
+      <p class="cap">Kontrola formalna przed podpisem: każdy punkt z paragrafem.</p>
+      <ul class="small" style="margin-top:10px">
+        <li>Podpis jest zablokowany, dopóki brakuje ocen, uzasadnienia przy ocenie negatywnej, wniosków do IPRZ
+          albo odpowiedzi o kolejny stopień służbowy.</li>
+        <li>Arkusz A/B/C jako PDF generowany na serwerze, zgodny ze wzorem z załączników.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>§ 10–12 rozp. PRM z 4.04.2016; art. 89 ust. 1 i art. 108 ustawy o służbie cywilnej</span><span>7 / 15</span></div>
+</section>
+
+<!-- 8. Zapoznanie i sprzeciw -->
+<section class="slide">
+  <p class="kicker">Krok 7 · zapoznanie i sprzeciw</p>
+  <h1>Oceniany ma własne konto, a jego prawa są widoczne od pierwszego dnia</h1>
+  <div class="cols c-text-shot">
+    <div>
+      <ul>
+        <li>„Moje oceny”: tylko własne oceny, tylko do odczytu; część II widać dopiero po przekazaniu do zapoznania.</li>
+        <li>Potwierdzenia części I i zapoznania z oceną składa wyłącznie oceniany.</li>
+        <li>Pouczenie z wzoru arkusza (art. 83 ust. 1) i licznik 7 dni na sprzeciw.</li>
+        <li>Sprzeciw trafia do dyrektora generalnego z terminem 14 dni; decyzja „zmiana oceny” zachowuje poprzednią
+          wersję, „ponowna ocena” wraca do etapu 5.</li>
+        <li>Każde zdarzenie (sprzeciw, decyzja, zmiana terminu) jest w historii teczki z informacją, kogo powiadomić.</li>
+      </ul>
+    </div>
+    <div><img class="shot-img" src="zrzuty/06-oceniany-potwierdzenie.jpg" alt="Widok ocenianego">
+      <p class="cap">Konto ocenianego: potwierdzenie rozmowy rozpoczynającej i kryteriów (§ 6 ust. 2).</p></div>
+  </div>
+  <div class="foot"><span>art. 83 ust. 1–5 ustawy o służbie cywilnej; § 12 rozp. PRM z 4.04.2016</span><span>8 / 15</span></div>
+</section>
+
+<!-- 9. Wirtualny HR partner -->
+<section class="slide">
+  <p class="kicker">Wirtualny HR partner</p>
+  <h1>Pomoc w zarządzaniu ludźmi przez cały rok, nie tylko przy ocenie</h1>
+  <div class="cols c3">
+    <div class="card blue">
+      <h2>Puls zespołu</h2>
+      <p>Dobrowolny check-in pracownika co 14 dni: 5 pytań w skali 1–5 (obciążenie, energia, wsparcie, jasność
+        priorytetów, satysfakcja) i opcjonalny komentarz.</p>
+      <p class="small muted">Przełożony widzi trendy, komentarz tylko gdy pracownik go udostępni. Średnie zespołu
+        dopiero od 3 odpowiedzi. Kadry nie mają wglądu.</p>
+    </div>
+    <div class="card blue">
+      <h2>Sygnały ryzyka</h2>
+      <p>Reguły łączą trend pulsu, obserwacje z teczki i dane o pracy (zadania, zmiany obowiązków, długość nieobecności):</p>
+      <p><span class="tag">przeciążenie</span><span class="tag">spadek motywacji</span><span class="tag">ryzyko wypalenia</span><span class="tag">moment do docenienia</span></p>
+      <p class="small muted">Każdy sygnał ma powody i propozycje działań.</p>
+    </div>
+    <div class="card blue">
+      <h2>Przygotowanie rozmowy</h2>
+      <p>Mocne strony i obszary do rozwoju z obserwacji, sformułowania informacji zwrotnej w modelu S-D-R, formy
+        rozwoju do IPRZ dla każdego kryterium.</p>
+      <p class="small muted">Pytanie do partnera trafia do modelu językowego wyłącznie po anonimizacji.</p>
+    </div>
+  </div>
+  <div class="card amber" style="margin-top:18px">
+    <p style="margin:0"><b>Puls nie jest częścią oceny okresowej.</b> Partner nie zmienia teczki ani ocen
+      cząstkowych: każda odpowiedź kończy się zdaniem „Decyzja należy do przełożonego; podpowiedzi nie wpływają na ocenę”.</p>
+  </div>
+  <div class="foot"><span>Moduł <code>src/partner</code>: reguły jako czyste funkcje z testami</span><span>9 / 15</span></div>
+</section>
+
+<!-- 10. AI i anonimizacja -->
+<section class="slide">
+  <p class="kicker">AI i anonimizacja</p>
+  <h1>AI odpowiada tylko z przepisów, wskazuje źródło i nie widzi nazwisk</h1>
+  <div class="cols" style="grid-template-columns: 290px 1fr 1fr; gap: 26px">
+    <div><img class="shot-img" src="zrzuty/07-asystent-formalny.jpg" alt="Asystent formalny" style="height:400px;object-fit:cover;object-position:top">
+      <p class="cap">Odpowiedź z linkami do stron ustawy i poradnika.</p></div>
+    <div>
+      <h2>Asystent oparty na źródłach</h2>
+      <ul class="small">
+        <li>Baza wiedzy tylko z dokumentów: ustawa o służbie cywilnej, rozporządzenie z 2016 r., poradnik KPRM,
+          standardy ZZL, wzory arkuszy, zasady obliczania terminów, przypadki użycia.</li>
+        <li>Wyszukiwanie lokalne (BM25 z polską normalizacją), bez zewnętrznych usług.</li>
+        <li>Każda odpowiedź ma źródła z linkiem do strony PDF. Poniżej progu trafności: „Nie znalazłem tego w bazie
+          wiedzy”, zamiast zgadywania.</li>
+        <li>Dwa tryby: <b>formalny</b> (procedura, terminy) i <b>rozmowy</b> (pytania na podstawie kryteriów i obserwacji).</li>
+        <li>Model językowy jest opcjonalny: dowolny endpoint zgodny z OpenAI (np. lokalna Ollama). Bez niego
+          odpowiedź jest ekstraktywna, z cytatami.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Co naprawdę trafia do modelu</h2>
+<pre>Kontekst:
+Pracownik: <span class="hl">[OSOBA_1]</span>.
+Trend pulsu: Stabilnie: indeks 4.6.
+Sygnał: Moment do docenienia. …
+Mocne strony: Rzetelność, Współpraca, …
+
+Pytanie przełożonego: Jak porozmawiać
+z <span class="hl">[OSOBA_1]</span> o jej obciążeniu pracą?</pre>
+      <p class="small" style="margin-top:10px">Imiona i nazwiska (w każdym przypadku), PESEL, e-mail, telefon i nazwy
+        komórek są zastępowane znacznikami przed wysłaniem; serwer przywraca je dopiero w odpowiedzi.
+        Kontekst teczki zawiera stanowisko, kryteria i obserwacje, bez danych osobowych.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Prawdziwy prompt z <code>POST /api/partner/ask</code> (dane demo: „Jak porozmawiać z Anną Nowak…”)</span><span>10 / 15</span></div>
+</section>
+
+<!-- 11. Kadry -->
+<section class="slide">
+  <p class="kicker">Kadry i dyrektor generalny</p>
+  <h1>Stan wszystkich ocen w urzędzie na jednym ekranie</h1>
+  <div class="cols" style="grid-template-columns: 1fr 330px">
+    <div><img class="shot-img" src="zrzuty/09-monitoring-hr.jpg" alt="Monitoring ocen">
+      <p class="cap">Monitoring ocen: liczniki są filtrami, terminy liczone z przepisów, przypomnienia jednym kliknięciem.</p></div>
+    <div>
+      <ul class="small">
+        <li>Liczniki: w toku, termin ≤ 14 dni, po terminie, oczekuje na zapoznanie, w okresie sprzeciwu.</li>
+        <li>Filtry po komórce, arkuszu, wyszukiwanie pracownika i oceniającego.</li>
+        <li>Przypomnienia do przełożonych z zapisem w historii teczki.</li>
+        <li>Lista sprzeciwów dla dyrektora generalnego z terminem decyzji.</li>
+        <li>Kadry widzą status i terminy, ale nie edytują ocen i nie widzą notatek przełożonego ani pulsu.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Role: przełożony, oceniany, kadry, dyrektor generalny, administrator</span><span>11 / 15</span></div>
+</section>
+
+<!-- 12. Architektura -->
+<section class="slide">
+  <p class="kicker">Architektura i wdrożenie w urzędzie</p>
+  <h1>Dwa obrazy Docker, zero płatnych licencji, działa bez internetu</h1>
+  <div class="arch" style="margin: 6px 0 22px">
+    <div class="box"><h2>Przeglądarka</h2><p>React 19 + Vite (SPA), nginx. Interfejs po polsku, tryb ciemny,
+      wysoki kontrast, powiększenie tekstu.</p></div>
+    <div class="arrow">⇄</div>
+    <div class="box"><h2>API (NestJS, Node LTS)</h2><p>REST/JSON, logowanie JWT, role i uprawnienia sprawdzane przy każdym
+      żądaniu, walidacja wejścia (Zod), PDF arkusza (pdfmake).</p></div>
+    <div class="arrow">⇄</div>
+    <div class="stack">
+      <div class="box"><h2>PostgreSQL 17</h2><p>Opcjonalny; migracje same przy starcie. Bez bazy: tryb demo w pamięci.</p></div>
+      <div class="box opt"><h2>Model językowy (opcjonalny)</h2><p>Lokalny (Ollama) albo dowolny zgodny z OpenAI.</p></div>
+    </div>
+  </div>
+  <div class="cols c3" style="gap:20px">
+    <div class="card"><h2>Instalacja</h2><ul class="small">
+      <li><code>docker run</code> backendu i frontendu; konfiguracja tylko przez zmienne środowiskowe z domyślnymi wartościami.</li>
+      <li>Linux, Windows, macOS; dowolny serwer lub chmura bez vendor lock-in.</li>
+      <li>Nazwa urzędu, miejscowość i adresat sprzeciwu ustawiane w env.</li></ul></div>
+    <div class="card"><h2>Integracje</h2><ul class="small">
+      <li>Udokumentowane REST API: import pracowników i podległości z systemu kadrowego (np. QNT).</li>
+      <li>PDF arkusza z serwera (<code>GET /api/cases/:id/sheet.pdf</code>) do EZD.</li>
+      <li>Aplikacja działa samodzielnie: integracja nie jest warunkiem startu.</li></ul></div>
+    <div class="card"><h2>Utrzymanie</h2><ul class="small">
+      <li>Aktualizacja = nowy obraz; bez ręcznych zmian na serwerze.</li>
+      <li>Bezstanowe API: skalowanie poziome w dużych urzędach.</li>
+      <li>Reguły z przepisów w osobnych plikach z testami: zmiana prawa = zmiana jednego pliku.</li></ul></div>
+  </div>
+  <div class="foot"><span>Zależności tylko na licencjach MIT / Apache-2.0 / BSD / ISC</span><span>12 / 15</span></div>
+</section>
+
+<!-- 13. Zgodność z przepisami -->
+<section class="slide">
+  <p class="kicker">Zgodność z przepisami</p>
+  <h1>Każda reguła ma paragraf, test i jedno miejsce w kodzie</h1>
+  <div class="cols" style="grid-template-columns: 1.35fr 1fr">
+    <table>
+      <tr><th>Wymóg</th><th>Podstawa</th><th>W systemie</th></tr>
+      <tr><td>Arkusz A/B/C, kryteria obowiązkowe, ≤ 3 dodatkowe</td><td class="law">§ 2–4 rozp. 2016, zał. 1</td><td>propozycja + walidacja</td></tr>
+      <tr><td>Rozmowa rozpoczynająca w 30 dni (7 po negatywnej)</td><td class="law">§ 7</td><td>termin z przesunięciem z dnia wolnego (KC)</td></tr>
+      <tr><td>Skala 1–9, średnia, wynik pozytywny/negatywny</td><td class="law">§ 11 ust. 1</td><td>wyliczenie i uzasadnienie wyniku</td></tr>
+      <tr><td>Uzasadnienie przy negatywnej, wnioski do IPRZ</td><td class="law">§ 11 ust. 3–4, art. 108</td><td>kontrola formalna blokuje podpis</td></tr>
+      <tr><td>Wniosek o kolejny stopień służbowy</td><td class="law">art. 89 ust. 1, § 11 ust. 5</td><td>część III, następny stopień</td></tr>
+      <tr><td>Zmiana terminu oceny na wniosek</td><td class="law">art. 81 ust. 8 pkt 4, ust. 9</td><td>wniosek i decyzja z historią</td></tr>
+      <tr><td>Sprzeciw 7 dni, decyzja 14 dni, sąd pracy</td><td class="law">art. 83 ust. 1–5</td><td>terminy, role, wersje oceny</td></tr>
+    </table>
+    <div class="stack">
+      <div class="card green"><h2>Ochrona danych (RODO)</h2><ul class="small">
+        <li>Minimalizacja: tylko pola potrzebne do oceny, bez PESEL i adresu.</li>
+        <li>Dostęp wg roli: przełożony tylko swój zespół, oceniany tylko swoje oceny.</li>
+        <li>Bez danych osobowych w logach; do modelu tylko dane zanonimizowane.</li>
+        <li>Korekty po zablokowaniu tylko przez administratora, z powodem i audytem.</li></ul></div>
+      <div class="card green"><h2>AI wyłącznie doradcze</h2><p class="small" style="margin:0">AI nie zwraca punktów i nie zapisuje decyzji.
+        Ocenę cząstkową zawsze wybiera przełożony; widać to w API i w interfejsie.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Rozp. PRM z 4.04.2016 (Dz.U. 2016 poz. 470); ustawa z 21.11.2008 o służbie cywilnej</span><span>13 / 15</span></div>
+</section>
+
+<!-- 14. Kierunki rozwoju -->
+<section class="slide">
+  <p class="kicker">Kierunki rozwoju</p>
+  <h1>Od prototypu do wdrożenia w urzędzie</h1>
+  <div class="cols c2">
+    <div class="stack">
+      <div class="card"><h2>Integracje</h2><p>Konektory do EZD (przekazanie podpisanego arkusza, podpis kwalifikowany
+        lub profil zaufany) i do systemów kadrowych (pracownicy, podległość, nieobecności, zastępstwa).</p></div>
+      <div class="card"><h2>Powiadomienia</h2><p>Harmonogram przypomnień o terminach i e-mail do przełożonego,
+        ocenianego i kadr; zdarzenia są już zapisywane w historii teczki z listą odbiorców.</p></div>
+      <div class="card"><h2>Kartoteka kadrowa i statystyki</h2><p>Nieobecności dłuższe niż miesiąc przesuwające termin oceny,
+        historia ocen z poprzednich lat, raporty dla dyrektora generalnego.</p></div>
+    </div>
+    <div class="stack">
+      <div class="card"><h2>Pierwsza ocena i kolejne procesy</h2><p>Ścieżka pierwszej oceny (rozp. z 2015 r.) i obowiązkowe
+        przyznanie stopnia służbowego jako kolejne moduły na tym samym silniku reguł.</p></div>
+      <div class="card"><h2>Model językowy w urzędzie</h2><p>Otwarty model uruchomiony lokalnie, ewaluacja odpowiedzi na
+        zestawie pytań i odpowiedzi KPRM, rozbudowa bazy wiedzy o interpretacje departamentu służby cywilnej.</p></div>
+      <div class="card"><h2>Pilotaż</h2><p>Jeden departament przez pełny cykl, szkolenie przełożonych w 30 minut,
+        audyt bezpieczeństwa i dostępności (WCAG 2.1) przed wdrożeniem produkcyjnym.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>Cyfrowy Asystent Ocen Okresowych</span><span>14 / 15</span></div>
+</section>
+
+<!-- 15. Podsumowanie -->
+<section class="slide title" style="padding:64px 80px">
+  <p class="kicker" style="color:#9fc0ef">Podsumowanie</p>
+  <h1 style="font-size:44px">Ocena okresowa zgodna z przepisami, oparta na faktach i prosta dla przełożonego</h1>
+  <div class="cols c3" style="margin-top:18px;gap:20px;flex:0">
+    <div class="card" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff">
+      <div class="num" style="color:#fff">7 etapów</div><p style="color:#e3ecfa;font-size:16px;margin-top:8px">pełna ścieżka oceny okresowej plus sprzeciw, fikcja zapoznania i zmiana terminu</p></div>
+    <div class="card" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff">
+      <div class="num" style="color:#fff">5 ról</div><p style="color:#e3ecfa;font-size:16px;margin-top:8px">przełożony, oceniany, kadry, dyrektor generalny, administrator, każda z własnymi uprawnieniami</p></div>
+    <div class="card" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff">
+      <div class="num" style="color:#fff">0 zł</div><p style="color:#e3ecfa;font-size:16px;margin-top:8px">licencji: open source, Docker, opcjonalny lokalny model AI, działa offline</p></div>
+  </div>
+  <div class="meta" style="bottom:48px">
+    <b style="color:#fff">Prototyp:</b> https://cyfrowy.rabbithole.carrotly.tech<br>
+    Konta demo (hasło <b style="color:#fff">Ocena2026!</b>): j.kaminska (przełożona), p.wojcik i a.nowak (oceniani),
+    a.lis (kadry), b.wisniewska (dyrektor generalny), admin<br>
+    Kod: github.com/carrotly-technologies/cyfrowy-asystent-ocen-okresowych-backend i -frontend · wszystkie dane fikcyjne
+  </div>
+</section>
+
+</body>
+</html>
