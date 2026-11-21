@@ -1,8 +1,10 @@
 import { openingTalkDeadline } from '../cases/deadlines.rules.js';
 import {
+  conflictingUnit,
   effectiveEvaluator,
   newCycleStart,
   obligatoryPromotion,
+  obligatoryPromotionNextStep,
   type PastAssessment,
 } from './employees.rules.js';
 import { parseHistoryCsv } from './history-import.rules.js';
@@ -281,5 +283,50 @@ describe('computeStatistics', () => {
 
   it('toCsv quotes cells with separators', () => {
     expect(toCsv([['a;b', 'x"y', 3]])).toBe('﻿"a;b";"x""y";3\r\n');
+  });
+});
+
+describe('conflictingUnit', () => {
+  const units = [
+    'Wydział Legislacji, Departament Prawny',
+    'Wydział Kadr i Szkoleń, Biuro Dyrektora Generalnego',
+    'Sekretariat',
+  ];
+  it('accepts an existing unit and a new one', () => {
+    expect(
+      conflictingUnit('Wydział Legislacji, Departament Prawny', units),
+    ).toBeNull();
+    expect(
+      conflictingUnit('Wydział Kontroli, Departament Prawny', units),
+    ).toBeNull();
+    expect(
+      conflictingUnit('Wydział Kadr, Departament Prawny', units),
+    ).toBeNull();
+  });
+  it('rejects only the first part of an existing unit (seeded duplicate in statistics)', () => {
+    expect(conflictingUnit('Wydział Legislacji', units)).toBe(units[0]);
+  });
+  it('rejects the same name written differently or with a part added', () => {
+    expect(
+      conflictingUnit('  wydział legislacji,  departament prawny', units),
+    ).toBe(units[0]);
+    expect(conflictingUnit('Sekretariat, Biuro Ministra', units)).toBe(
+      'Sekretariat',
+    );
+  });
+});
+
+describe('obligatoryPromotionNextStep', () => {
+  const fmt = (d: string) => d.split('-').reverse().join('.');
+  it('gives the date to grant the grade by, or says it passed', () => {
+    expect(
+      obligatoryPromotionNextStep('2026-12-21', '2026-11-21', fmt),
+    ).toContain('do 21.12.2026');
+    expect(
+      obligatoryPromotionNextStep('2024-12-27', '2026-11-21', fmt),
+    ).toContain('niezwłocznie: termin upłynął 27.12.2024');
+    expect(obligatoryPromotionNextStep(null, '2026-11-21', fmt)).toContain(
+      '30 dni od zapoznania',
+    );
   });
 });

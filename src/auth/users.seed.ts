@@ -53,7 +53,7 @@ export const USER_SEED: readonly (User & { passwordHash: string })[] = [
     lastName: 'Lis',
     role: 'HR',
     position: 'Specjalistka ds. kadr',
-    unit: 'Biuro Dyrektora Generalnego, Wydział Kadr',
+    unit: 'Wydział Kadr i Szkoleń, Biuro Dyrektora Generalnego',
     evaluatorId: null,
     personId: null,
     passwordHash:

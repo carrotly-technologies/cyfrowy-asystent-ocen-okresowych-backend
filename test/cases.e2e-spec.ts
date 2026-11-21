@@ -257,6 +257,16 @@ describe('Cases, team, employee and HR (e2e)', () => {
       .post('/api/hr/reminders')
       .send({ caseIds: ['nope'] })
       .expect(404);
+    const overview = await asHr().get('/api/hr/overview').expect(200);
+    const closed = overview.body.cases.find(
+      (c: { id: string }) => c.id === 'c-301',
+    );
+    expect(closed.remindable).toBe(false);
+    const refused = await asHr()
+      .post('/api/hr/reminders')
+      .send({ caseIds: ['c-301'] })
+      .expect(409);
+    expect(refused.body.message).toContain('sprzeciw w rozpatrzeniu');
   });
 
   it('POST /api/demo/reset restores the seed', async () => {

@@ -5,6 +5,7 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
@@ -18,7 +19,22 @@ import {
 } from '../cases/case.rules.js';
 import type { CaseRecord, Person } from '../cases/case.types.js';
 import { CasesService } from '../cases/cases.service.js';
-import { formatDatePl } from '../cases/dates.js';
+import {
+  daysTermEnd,
+  formatDatePl,
+  shiftToWorkingDay,
+} from '../cases/dates.js';
+import {
+  assessmentDueDeadline,
+  openingTalkDeadline,
+  toDeadline,
+} from '../cases/deadlines.rules.js';
+import {
+  OBLIGATORY_GRADE_DAYS,
+  obligatoryGradeFor,
+} from '../cases/obligatory-grade.rules.js';
+import { stageDeadline } from '../cases/stages.rules.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { emptyPromotionRequest } from '../cases/promotion.rules.js';
 import { caseRecord } from '../cases/seed/seed-helpers.js';
 import { EVALUATORS } from '../cases/seed/seed.data.js';
@@ -27,9 +43,12 @@ import { suggestSheet } from '../sheets/sheet-suggestion.rules.js';
 import { ABSENCE_TYPES } from './data/absence-types.data.js';
 import {
   byNewest,
+  conflictingUnit,
   effectiveEvaluator,
   newCycleStart,
+  normalizeUnit,
   obligatoryPromotion,
+  obligatoryPromotionNextStep,
   type PastAssessment,
 } from './employees.rules.js';
 import { EmployeesRepository } from './employees.repository.js';
@@ -70,18 +89,25 @@ export interface ListQuery {
  * keeps their person data, evaluator and absences in step.
  */
 @Injectable()
-export class EmployeesService implements OnModuleInit {
+export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
   constructor(
     @Inject(EmployeesRepository) private readonly repo: EmployeesRepository,
     private readonly cases: CasesService,
     private readonly auth: AuthenticationContext,
     private readonly demoReset: DemoReset,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async onModuleInit(): Promise<void> {
     this.demoReset.register(() => this.reset());
     if (await this.repo.isEmpty()) await this.reset();
     else await this.syncAbsences();
+  }
+
+  /** After the reminders module (it clears the inbox on a demo reset). */
+  async onApplicationBootstrap(): Promise<void> {
+    this.demoReset.register(() => this.notifyObligatoryPromotions());
+    await this.notifyObligatoryPromotions();
   }
 
   async reset(): Promise<void> {
@@ -147,16 +173,43 @@ export class EmployeesService implements OnModuleInit {
 
   async get(id: string) {
     const employee = await this.employee(id);
+    const imported = await this.repo.listHistory(id);
     const view = this.view(
       employee,
       await this.repo.listSubstitutions(),
-      await this.repo.listHistory(id),
+      imported,
     );
     if (!this.canRead(view))
       throw new ForbiddenException(
         'Możesz przeglądać tylko dane osób, które oceniasz.',
       );
-    return view;
+    return { ...view, nextCycle: this.nextCyclePreview(employee, imported) };
+  }
+
+  /**
+   * What "Rozpocznij nowy cykl" would do, so HR is warned before starting a
+   * cycle whose opening-talk term (§7 rozp. 2016) has already passed. Null
+   * while an assessment is in progress.
+   */
+  private nextCyclePreview(
+    employee: Employee,
+    imported: Parameters<EmployeesService['pastAssessments']>[1],
+  ) {
+    if (this.casesOf(employee.id).some((r) => !r.acknowledgedOn)) return null;
+    const start = newCycleStart(
+      employee,
+      this.pastAssessments(employee.id, imported),
+    );
+    if (!start.ok)
+      return { ok: false, reason: start.message, openingTalk: null };
+    return {
+      ok: true,
+      reason: start.reason,
+      openingTalk: toDeadline(
+        openingTalkDeadline(start.cycleStart),
+        this.today,
+      ),
+    };
   }
 
   private async employee(id: string): Promise<Employee> {
@@ -267,10 +320,97 @@ export class EmployeesService implements OnModuleInit {
             status: summary.status,
             sheetId: summary.sheetId,
             nextDeadline: summary.nextDeadline,
+            assessmentDue: this.assessmentDue(current!),
           }
         : null,
       lastAssessment: history[0] ?? null,
-      obligatoryPromotion: obligatoryPromotion(employee, history),
+      obligatoryPromotion: this.obligatory(employee, history),
+    };
+  }
+
+  /**
+   * art. 89 ust. 2, one answer for the register, statistics, monitoring and
+   * the inbox: the rule on the person's acknowledged case (as the reminders
+   * use it) or, for assessments imported from before the system, the rule on
+   * the whole history. Adds the date to grant the grade by and the next step.
+   */
+  private obligatory(employee: Employee, history: readonly PastAssessment[]) {
+    const records = this.casesOf(employee.id);
+    const acknowledged = records
+      .filter((r) => r.acknowledgedOn)
+      .sort((a, b) => b.acknowledgedOn!.localeCompare(a.acknowledgedOn!))[0];
+    const fromCase = acknowledged
+      ? obligatoryGradeFor(
+          acknowledged,
+          records.find((r) => r.nextCaseId === acknowledged.id) ?? null,
+        )
+      : null;
+    const rule = obligatoryPromotion(employee, history);
+    const last = history[0];
+    const deadline = fromCase
+      ? fromCase.deadline
+      : rule.due && last?.acknowledgedOn
+        ? shiftToWorkingDay(
+            daysTermEnd(last.acknowledgedOn, OBLIGATORY_GRADE_DAYS),
+          )
+        : null;
+    const due = !!fromCase || rule.due;
+    return {
+      ...rule,
+      due,
+      reason: fromCase ? fromCase.message : rule.reason,
+      deadline: due ? deadline : null,
+      nextStep: due
+        ? obligatoryPromotionNextStep(deadline, this.today, formatDatePl)
+        : null,
+    };
+  }
+
+  /** HR inbox: one notification per person with an obligatory next grade. */
+  private async notifyObligatoryPromotions(): Promise<void> {
+    const substitutions = await this.repo.listSubstitutions();
+    const history = await this.repo.listHistory();
+    const drafts = (await this.repo.listEmployees()).flatMap((e) => {
+      const promotion = this.view(
+        e,
+        substitutions,
+        history.filter((h) => h.employeeId === e.id),
+      ).obligatoryPromotion;
+      if (!promotion.due) return [];
+      return [
+        {
+          key: `employee:${e.id}:OBLIGATORY_GRADE:${promotion.deadline ?? ''}`,
+          audience: 'HR' as const,
+          caseId: null,
+          type: 'OBLIGATORY_GRADE' as const,
+          title: `Obowiązkowy kolejny stopień służbowy: ${fullName(e)}`,
+          body: `${promotion.reason} ${promotion.nextStep} (${promotion.legalBasis}).`,
+        },
+      ];
+    });
+    try {
+      await this.notifications.deliver(drafts, () => null, this.today);
+    } catch {
+      // The inbox is best effort; the register still shows the alert.
+    }
+  }
+
+  /**
+   * Term of the assessment (art. 81 ust. 4) with and without the extension
+   * for absences longer than a month (ust. 7). The opening-talk term (§7
+   * rozp. 2016) is never extended, so the card shows both side by side.
+   */
+  private assessmentDue(record: CaseRecord) {
+    const extended = stageDeadline(record, 'ASSESSMENT', this.today);
+    const base = assessmentDueDeadline(
+      record.cycleStart,
+      record.partI.assessmentDue,
+    );
+    if (!extended?.date) return null;
+    return {
+      ...extended,
+      baseDate: base.date,
+      extended: !!base.date && base.date !== extended.date,
     };
   }
 
@@ -279,6 +419,28 @@ export class EmployeesService implements OnModuleInit {
   private assertEvaluator(id: string | null | undefined) {
     if (id && !EVALUATORS.some((e) => e.id === id))
       throw new BadRequestException(['Wybrany oceniający nie istnieje.']);
+  }
+
+  /** Known units: the register and the evaluators (podległość służbowa). */
+  async units(): Promise<string[]> {
+    const all = [
+      ...(await this.repo.listEmployees()).map((e) => e.unit),
+      ...EVALUATORS.map((e) => e.unit),
+    ];
+    return [...new Set(all)].sort((a, b) => a.localeCompare(b, 'pl'));
+  }
+
+  private async assertUnit(
+    unit: string | undefined,
+  ): Promise<string | undefined> {
+    if (unit === undefined) return undefined;
+    const name = normalizeUnit(unit);
+    const existing = conflictingUnit(name, await this.units());
+    if (existing)
+      throw new BadRequestException([
+        `Komórka „${name}” już jest w kartotece jako „${existing}”. Wybierz ją z listy, żeby nie powstał duplikat w statystykach.`,
+      ]);
+    return name;
   }
 
   private normalize<T extends Partial<EmployeeInput>>(fields: T): T {
@@ -295,9 +457,10 @@ export class EmployeesService implements OnModuleInit {
 
   async create(input: EmployeeInput) {
     this.assertEvaluator(input.evaluatorId);
+    const unit = (await this.assertUnit(input.unit))!;
     const now = new Date().toISOString();
     const employee: Employee = {
-      ...this.normalize(input),
+      ...this.normalize({ ...input, unit }),
       id: `p-${randomUUID().slice(0, 8)}`,
       createdAt: now,
       updatedAt: now,
@@ -314,14 +477,19 @@ export class EmployeesService implements OnModuleInit {
   async update(id: string, patch: EmployeePatch) {
     const stored = await this.employee(id);
     this.assertEvaluator(patch.evaluatorId);
+    const unit =
+      patch.unit !== undefined && normalizeUnit(patch.unit) !== stored.unit
+        ? ((await this.assertUnit(patch.unit)) ?? stored.unit)
+        : stored.unit;
     const next: Employee = {
       ...stored,
-      ...this.normalize({ ...stored, ...patch }),
+      ...this.normalize({ ...stored, ...patch, unit }),
       id,
       createdAt: stored.createdAt,
       updatedAt: new Date().toISOString(),
     };
     await this.repo.updateEmployee(next);
+    void this.notifyObligatoryPromotions();
     for (const record of this.casesOf(id)) {
       if (record.acknowledgedOn) continue;
       const history = [...record.history];
@@ -623,7 +791,23 @@ export class EmployeesService implements OnModuleInit {
         createdAt: now,
       })),
     );
-    return { imported: fresh.length, skipped: rows.length - fresh.length };
+    void this.notifyObligatoryPromotions();
+    const freshRows = new Set(fresh);
+    const nameOf = new Map(employees.map((e) => [e.id, fullName(e)]));
+    return {
+      imported: fresh.length,
+      skipped: rows.length - fresh.length,
+      // Who was imported, so HR can open each card and check it.
+      rows: rows.map((r) => ({
+        line: r.line,
+        employeeId: r.employeeId,
+        name: nameOf.get(r.employeeId) ?? r.employeeId,
+        assessedOn: r.assessedOn,
+        result: r.result,
+        level: r.level,
+        skipped: !freshRows.has(r),
+      })),
+    };
   }
 
   // ---- statistics and export ----------------------------------------------
@@ -670,7 +854,7 @@ export class EmployeesService implements OnModuleInit {
       }));
     const employeeFacts = employees.map((e) => ({
       unit: e.unit,
-      obligatoryPromotion: obligatoryPromotion(
+      obligatoryPromotion: this.obligatory(
         e,
         this.pastAssessments(
           e.id,

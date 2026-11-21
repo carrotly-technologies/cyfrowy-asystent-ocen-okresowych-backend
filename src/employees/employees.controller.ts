@@ -56,6 +56,15 @@ export class EmployeesController {
     return this.employees.evaluators();
   }
 
+  @Get('employees/units')
+  @ApiOperation({
+    summary: 'Komórki organizacyjne (do wyboru w formularzu kartoteki)',
+  })
+  @Roles('HR', 'ADMIN', 'SUPERVISOR')
+  units() {
+    return this.employees.units();
+  }
+
   @Get('employees/absence-types')
   @ApiOperation({ summary: 'Rodzaje nieobecności' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
@@ -79,7 +88,7 @@ export class EmployeesController {
 
   @Post('employees/history/import')
   @ApiOperation({ summary: 'Import historii ocen' })
-  @Roles('HR', 'ADMIN')
+  @Roles('HR')
   @HttpCode(200)
   @ApiOperation({ summary: 'Import ocen historycznych z CSV' })
   importHistory(
@@ -90,7 +99,7 @@ export class EmployeesController {
 
   @Post('employees')
   @ApiOperation({ summary: 'Dodanie pracownika' })
-  @Roles('HR', 'ADMIN')
+  @Roles('HR')
   @ApiOperation({ summary: 'Dodanie pracownika do kartoteki' })
   create(@Body({ schema: employeeSchema }) body: EmployeeInput) {
     return this.employees.create(body);
@@ -106,7 +115,7 @@ export class EmployeesController {
 
   @Patch('employees/:id')
   @ApiOperation({ summary: 'Zmiana danych pracownika' })
-  @Roles('HR', 'ADMIN')
+  @Roles('HR')
   @ApiOperation({ summary: 'Edycja danych pracownika lub zmiana podległości' })
   update(
     @Param('id') id: string,
@@ -117,7 +126,7 @@ export class EmployeesController {
 
   @Delete('employees/:id')
   @ApiOperation({ summary: 'Usunięcie pracownika' })
-  @Roles('HR', 'ADMIN')
+  @Roles('HR')
   @HttpCode(204)
   @ApiOperation({ summary: 'Usunięcie danych pracownika' })
   remove(@Param('id') id: string) {
@@ -126,7 +135,7 @@ export class EmployeesController {
 
   @Post('employees/:id/cycles')
   @ApiOperation({ summary: 'Rozpoczęcie nowego cyklu oceny' })
-  @Roles('HR', 'ADMIN')
+  @Roles('HR')
   @ApiOperation({ summary: 'Rozpoczęcie nowego cyklu oceny okresowej' })
   startCycle(@Param('id') id: string) {
     return this.employees.startCycle(id);
@@ -150,7 +159,7 @@ export class EmployeesController {
 
   @Post('employees/:id/absences')
   @ApiOperation({ summary: 'Dodanie nieobecności' })
-  @Roles('HR', 'ADMIN')
+  @Roles('HR')
   @ApiOperation({ summary: 'Dodanie nieobecności' })
   addAbsence(
     @Param('id') id: string,
@@ -161,7 +170,7 @@ export class EmployeesController {
 
   @Delete('employees/:id/absences/:absenceId')
   @ApiOperation({ summary: 'Usunięcie nieobecności' })
-  @Roles('HR', 'ADMIN')
+  @Roles('HR')
   @HttpCode(204)
   @ApiOperation({ summary: 'Usunięcie nieobecności' })
   removeAbsence(
@@ -181,7 +190,7 @@ export class EmployeesController {
 
   @Post('substitutions')
   @ApiOperation({ summary: 'Dodanie zastępstwa' })
-  @Roles('HR', 'ADMIN')
+  @Roles('HR')
   @ApiOperation({ summary: 'Dodanie zastępstwa' })
   addSubstitution(
     @Body({ schema: substitutionSchema }) body: SubstitutionInput,
@@ -191,7 +200,7 @@ export class EmployeesController {
 
   @Delete('substitutions/:id')
   @ApiOperation({ summary: 'Usunięcie zastępstwa' })
-  @Roles('HR', 'ADMIN')
+  @Roles('HR')
   @HttpCode(204)
   @ApiOperation({ summary: 'Usunięcie zastępstwa' })
   removeSubstitution(@Param('id') id: string) {

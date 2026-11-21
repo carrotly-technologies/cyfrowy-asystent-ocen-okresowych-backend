@@ -109,8 +109,30 @@ describe('HR register: employees, absences, history, statistics (e2e)', () => {
   });
 
   describe('create, edit, delete', () => {
-    it('ADMIN creates and HR edits; a new evaluator moves open cases', async () => {
-      const created = await as(admin)
+    it('ADMIN (technical role) reads the register but does not change it', async () => {
+      await as(admin).get('/api/employees').expect(200);
+      await as(admin).post('/api/employees').send(newEmployee).expect(403);
+      await as(admin)
+        .patch('/api/employees/p-wojcik')
+        .send({ position: 'X' })
+        .expect(403);
+      await as(admin).post('/api/employees/p-pietrzak/cycles').expect(403);
+    });
+
+    it('lists units and refuses a unit that duplicates an existing one', async () => {
+      const units = await as(hr).get('/api/employees/units').expect(200);
+      expect(units.body).toContain('Wydział Legislacji, Departament Prawny');
+      const res = await as(hr)
+        .post('/api/employees')
+        .send({ ...newEmployee, unit: 'Wydział Legislacji' })
+        .expect(400);
+      expect(res.body.message[0]).toContain(
+        'jako „Wydział Legislacji, Departament Prawny”',
+      );
+    });
+
+    it('HR creates and edits; a new evaluator moves open cases', async () => {
+      const created = await as(hr)
         .post('/api/employees')
         .send(newEmployee)
         .expect(201);
@@ -150,6 +172,19 @@ describe('HR register: employees, absences, history, statistics (e2e)', () => {
   });
 
   describe('assessment cycle', () => {
+    it('previews the opening-talk term before a cycle is started', async () => {
+      const res = await as(hr).get('/api/employees/p-pietrzak').expect(200);
+      expect(res.body.nextCycle).toMatchObject({ ok: true });
+      expect(res.body.nextCycle.openingTalk.date).toMatch(
+        /^\d{4}-\d{2}-\d{2}$/,
+      );
+      const busy = await as(hr).get('/api/employees/p-nowak').expect(200);
+      expect(busy.body.nextCycle).toBeNull();
+      expect(busy.body.currentCase.assessmentDue).toMatchObject({
+        extended: false,
+      });
+    });
+
     it('starts a first cycle from the indefinite employment date', async () => {
       const res = await as(hr)
         .post('/api/employees/p-pietrzak/cycles')
@@ -281,12 +316,24 @@ describe('HR register: employees, absences, history, statistics (e2e)', () => {
         .post('/api/employees/history/import')
         .send({ csv })
         .expect(200);
-      expect(res.body).toEqual({ imported: 2, skipped: 0 });
+      expect(res.body).toMatchObject({ imported: 2, skipped: 0 });
+      expect(res.body.rows).toEqual([
+        expect.objectContaining({
+          employeeId: 'p-krol',
+          name: 'Aleksandra Król',
+          assessedOn: '2024-05-06',
+          skipped: false,
+        }),
+        expect.objectContaining({ employeeId: 'p-krol', skipped: false }),
+      ]);
       const again = await as(hr)
         .post('/api/employees/history/import')
         .send({ csv })
         .expect(200);
-      expect(again.body).toEqual({ imported: 0, skipped: 2 });
+      expect(again.body).toMatchObject({ imported: 0, skipped: 2 });
+      expect(
+        again.body.rows.every((r: { skipped: boolean }) => r.skipped),
+      ).toBe(true);
       const history = await as(hr)
         .get('/api/employees/p-krol/history')
         .expect(200);
