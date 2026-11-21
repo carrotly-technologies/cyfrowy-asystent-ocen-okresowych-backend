@@ -190,11 +190,12 @@ export class CasesController {
   @HttpCode(200)
   @ApiOperation({
     summary: 'Przywrócenie danych demonstracyjnych',
-    description: 'Przywraca oceny i notatnik do stanu początkowego.',
+    description:
+      'Przywraca oceny, konta, notatnik i rejestr kadrowy do stanu początkowego (także w bazie danych).',
   })
   @ApiOkResponse({ description: '`{ ok: true, today }`.' })
   async reset() {
-    this.cases.reset();
+    await this.cases.reset();
     await this.demoReset.run();
     return { ok: true, today: this.cases.today };
   }

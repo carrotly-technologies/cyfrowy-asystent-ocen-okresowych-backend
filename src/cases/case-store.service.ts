@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CaseRepository } from './case.repository.js';
 import type { CaseRecord, Evaluator } from './case.types.js';
 import { isIsoDate } from './dates.js';
 import { buildSeed, EVALUATORS } from './seed/seed.data.js';
@@ -7,28 +8,41 @@ import { buildSeed, EVALUATORS } from './seed/seed.data.js';
 export const DEFAULT_DEMO_TODAY = '2026-11-21';
 
 /**
- * In-memory store, seeded on startup and by POST /api/demo/reset. "Today" is
- * DEMO_TODAY (config), so every deadline is computed against a fixed date.
+ * The cases, read from memory and written through CaseRepository (PostgreSQL
+ * with DATABASE_URL). Loaded at startup; the seed goes only into empty
+ * storage, and POST /api/demo/reset restores it. "Today" is DEMO_TODAY
+ * (config), so every deadline is computed against a fixed date.
+ *
+ * Reads stay synchronous on purpose (rules and services call them a lot), so
+ * one instance owns the cases: run a single backend instance per database.
  */
 @Injectable()
-export class CaseStore {
+export class CaseStore implements OnModuleInit {
   readonly today: string;
   private cases = new Map<string, CaseRecord>();
-  private observationSeq = 0;
   private readonly saveListeners: ((record: CaseRecord) => void)[] = [];
 
-  constructor(config: ConfigService) {
+  constructor(
+    config: ConfigService,
+    @Inject(CaseRepository) private readonly repo: CaseRepository,
+  ) {
     const today = config.get<string>('DEMO_TODAY', DEFAULT_DEMO_TODAY);
     if (!isIsoDate(today)) {
       throw new Error(`DEMO_TODAY must be YYYY-MM-DD (got "${today}").`);
     }
     this.today = today;
-    this.reset();
   }
 
-  reset(): void {
-    this.cases = new Map(buildSeed(this.today).map((c) => [c.id, c]));
-    this.observationSeq = 0;
+  async onModuleInit(): Promise<void> {
+    if (await this.repo.isEmpty()) await this.reset();
+    else
+      this.cases = new Map((await this.repo.loadAll()).map((c) => [c.id, c]));
+  }
+
+  async reset(): Promise<void> {
+    const seed = buildSeed(this.today);
+    await this.repo.replaceAll(seed);
+    this.cases = new Map(seed.map((c) => [c.id, c]));
   }
 
   all(): CaseRecord[] {
@@ -39,7 +53,9 @@ export class CaseStore {
     return this.cases.get(id);
   }
 
-  save(record: CaseRecord): void {
+  /** Stored before it is visible, so a failed write changes nothing. */
+  async save(record: CaseRecord): Promise<void> {
+    await this.repo.save(record);
     this.cases.set(record.id, record);
     for (const listener of this.saveListeners) listener(record);
   }
@@ -55,8 +71,14 @@ export class CaseStore {
     return evaluator;
   }
 
+  /** Unique within the case, also after a restart (derived from stored ids). */
   nextObservationId(caseId: string): string {
-    this.observationSeq += 1;
-    return `${caseId}-obs-new-${this.observationSeq}`;
+    const prefix = `${caseId}-obs-new-`;
+    const taken = (this.cases.get(caseId)?.observations ?? [])
+      .map((o) => o.id)
+      .filter((id) => id.startsWith(prefix))
+      .map((id) => Number(id.slice(prefix.length)))
+      .filter(Number.isInteger);
+    return `${prefix}${Math.max(0, ...taken) + 1}`;
   }
 }

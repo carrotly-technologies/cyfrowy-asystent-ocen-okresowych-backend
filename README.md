@@ -97,9 +97,9 @@ only by an ADMIN in correction mode. Every correction is audited in `CaseDetail.
   that user's next request (the frontend picks it up at the next sign-in).
 - Passwords are scrypt hashes (`PasswordHasher` of `@nestjs/authentication`, Node's `crypto.scrypt`); a wrong
   password and an unknown login get the same 401. `node scripts/hash-password.mjs <password>` prints a hash.
-- Accounts sit behind `UsersRepository` (`src/auth/users.repository.ts`); the in-memory implementation
-  (`users.in-memory.repository.ts`, seed in `users.seed.ts`) is bound in `AuthModule` and can be swapped for a
-  database one there. Supervisors are linked to `EVALUATORS` of the case seed by `evaluatorId`, employees to the
+- Accounts sit behind `UsersRepository` (`src/auth/users.repository.ts`): table `users` with `DATABASE_URL`
+  (`postgres-users.repository.ts`), in memory without it (`users.in-memory.repository.ts`). The demo accounts
+  (`users.seed.ts`) go into empty storage only and are restored by `POST /api/demo/reset` (role changes too). Supervisors are linked to `EVALUATORS` of the case seed by `evaluatorId`, employees to the
   assessed person (`Person.id`) by `personId`.
 
 ### Demo accounts (for the jury)
@@ -156,9 +156,12 @@ curl -X POST localhost:3000/api/assessments/evaluate -H 'content-type: applicati
   -d '{"sheetId":"C","scores":[{"criterionId":"rzetelnosc","points":5},{"criterionId":"wykorzystywanie_wiedzy","points":5},{"criterionId":"organizacja_pracy","points":5},{"criterionId":"komunikacja","points":5},{"criterionId":"wspolpraca","points":7}]}'
 ```
 
-### Assessment cases (in-memory demo)
+### Assessment cases
 
-Cases live in memory behind `CaseStore` (`src/cases/case-store.service.ts`, swap it for persistent storage there), seeded on startup (and on `POST /api/demo/reset`) with
+`CaseStore` (`src/cases/case-store.service.ts`) reads the cases from memory and writes every change through
+`CaseRepository`: table `cases` (the whole record, history included, as JSONB) with `DATABASE_URL`, memory only without
+it. At startup it loads the stored cases; the seed goes into empty storage only (and is restored by
+`POST /api/demo/reset`). Run one backend instance per database: reads are served from that instance's memory. Seed:
 fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadline is computed against that date.
 
 | Route                            | What it does                                                                             |
@@ -173,7 +176,7 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
 | `POST /api/cases/:id/actions`    | State machine (`{ action }`); 403 when the caller is not the actor of the action, 409 with a Polish explanation for an illegal transition |
 | `GET /api/hr/overview`           | Counters and every case in the office, with evaluator and last reminder                 |
 | `POST /api/hr/reminders`         | Simulated reminders (`{ caseIds }`), logged in each case's history                       |
-| `POST /api/demo/reset`           | Restores the seed (cases, journal, pulse)                                                 |
+| `POST /api/demo/reset`           | Restores the seed (cases, accounts, journal, pulse, HR register)                          |
 
 ### Deadlines, scheduler and notifications
 
@@ -476,9 +479,8 @@ docker compose exec -T db psql -U hacknation hacknation < kopia-RRRR-MM-DD.sql
 ```
 
 Kopię wykonuj codziennie (np. cron / Harmonogram zadań) i przechowuj zgodnie z polityką urzędu. W PostgreSQL są
-notatki i obserwacje przełożonych oraz ankiety pulsu. Uwaga: w obecnej wersji (POC) teczki ocen trzymane są
-w pamięci (`CaseStore`) i odtwarzane z danych demonstracyjnych przy restarcie; przeniesienie ich do bazy to
-podmiana jednej klasy (`src/cases/case-store.service.ts`).
+teczki ocen z historią (`cases`), konta użytkowników (`users`), rejestr kadrowy, notatki i obserwacje przełożonych,
+powiadomienia oraz ankiety pulsu. Dane demonstracyjne trafiają tylko do pustej bazy, więc restart niczego nie kasuje.
 
 ### Bezpieczeństwo i RODO
 

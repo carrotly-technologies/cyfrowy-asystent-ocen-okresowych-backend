@@ -92,7 +92,7 @@ export class CorrectionsController {
   })
   @ApiCreatedResponse({ description: '`{ correction, case, fields }`.' })
   @ApiErrors(400, 404, 409)
-  correct(
+  async correct(
     @CurrentUser() me: User,
     @Param('id') id: string,
     @Body({ schema: correctionSchema }) body: CorrectionBody,
@@ -105,7 +105,7 @@ export class CorrectionsController {
         today: this.cases.today,
         by: { userId: me.id, name: fullName(me) },
       });
-      this.cases.save(next);
+      await this.cases.save(next);
       return {
         correction,
         case: this.cases.detail(id, null),

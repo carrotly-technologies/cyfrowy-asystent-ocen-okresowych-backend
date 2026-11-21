@@ -8,8 +8,10 @@ import {
 import { AuthorizationModule } from '@nestjs/authorization';
 import { CasePolicy } from '../auth/case.policy.js';
 import { USER_SEED } from '../auth/users.seed.js';
+import { CaseStore } from '../cases/case-store.service.js';
 import { CasesModule } from '../cases/cases.module.js';
 import { CasesService } from '../cases/cases.service.js';
+import { DatabaseModule } from '../database/database.module.js';
 import { AssistantService } from './assistant.service.js';
 import { NOT_FOUND } from './assistant.types.js';
 import { LlmClient } from './llm.client.js';
@@ -21,11 +23,13 @@ describe('AssistantService', () => {
 
   beforeEach(async () => {
     chat.mockReset();
+    delete process.env.DATABASE_URL;
     const moduleRef = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }),
         AuthenticationModule.forRoot({ globalGuard: false }),
         AuthorizationModule.forRoot({ globalGuard: false }),
+        DatabaseModule.forRoot(),
         CasesModule,
       ],
       providers: [
@@ -37,6 +41,8 @@ describe('AssistantService', () => {
       .overrideProvider(AuthenticationContext)
       .useValue({ requireUser: () => USER_SEED[0] })
       .compile();
+    // Loads the seed (the whole app would do it in onModuleInit).
+    await moduleRef.get(CaseStore).onModuleInit();
     service = moduleRef.get(AssistantService);
     cases = moduleRef.get(CasesService);
   });

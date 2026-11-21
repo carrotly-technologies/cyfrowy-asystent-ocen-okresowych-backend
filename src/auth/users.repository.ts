@@ -5,11 +5,13 @@ export interface UserCredentials {
   passwordHash: string;
 }
 
+/** An account as stored: the user and its password hash. */
+export type UserRow = User & { passwordHash: string };
+
 /**
- * Where accounts live. Auth depends only on this contract: the in-memory
- * implementation (users.in-memory.repository.ts) can be swapped for a
- * database one in AuthModule without touching anything else. Async on
- * purpose, as a database implementation will be.
+ * Where accounts live: PostgreSQL with DATABASE_URL
+ * (postgres-users.repository.ts), memory without it
+ * (users.in-memory.repository.ts). Auth depends only on this contract.
  */
 export abstract class UsersRepository {
   abstract findById(id: string): Promise<User | null>;
@@ -18,4 +20,11 @@ export abstract class UsersRepository {
   abstract list(): Promise<User[]>;
   /** The updated user, or null when there is no such user. */
   abstract updateRole(id: string, role: Role): Promise<User | null>;
+  abstract isEmpty(): Promise<boolean>;
+  /** Replaces every account (seed, POST /api/demo/reset). */
+  abstract replaceAll(rows: readonly UserRow[]): Promise<void>;
+}
+
+export function publicUser({ passwordHash: _hash, ...user }: UserRow): User {
+  return { ...user };
 }

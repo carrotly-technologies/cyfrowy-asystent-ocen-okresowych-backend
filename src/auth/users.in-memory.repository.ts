@@ -1,16 +1,14 @@
-import { Injectable } from '@nestjs/common';
 import type { Role, User } from './user.types.js';
-import { type UserCredentials, UsersRepository } from './users.repository.js';
-import { USER_SEED } from './users.seed.js';
+import {
+  publicUser,
+  type UserCredentials,
+  type UserRow,
+  UsersRepository,
+} from './users.repository.js';
 
-type Row = User & { passwordHash: string };
-
-/** Accounts in memory, seeded on startup (until the database ticket lands). */
-@Injectable()
+/** Used without DATABASE_URL: accounts live in this process only. */
 export class InMemoryUsersRepository extends UsersRepository {
-  private readonly rows = new Map<string, Row>(
-    USER_SEED.map((row) => [row.id, { ...row }]),
-  );
+  private rows = new Map<string, UserRow>();
 
   findById(id: string): Promise<User | null> {
     const row = this.rows.get(id);
@@ -37,8 +35,13 @@ export class InMemoryUsersRepository extends UsersRepository {
     row.role = role;
     return Promise.resolve(publicUser(row));
   }
-}
 
-function publicUser({ passwordHash: _hash, ...user }: Row): User {
-  return { ...user };
+  isEmpty(): Promise<boolean> {
+    return Promise.resolve(this.rows.size === 0);
+  }
+
+  replaceAll(rows: readonly UserRow[]): Promise<void> {
+    this.rows = new Map(rows.map((r) => [r.id, { ...r }]));
+    return Promise.resolve();
+  }
 }

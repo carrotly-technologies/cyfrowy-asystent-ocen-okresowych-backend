@@ -7,6 +7,10 @@ import { CredentialsService } from './credentials.service.js';
 import { readJwtSecret } from './jwt-secret.js';
 import { JwtAuth } from './jwt.auth.js';
 import { RolePolicy } from './role.policy.js';
+import { DATABASE, type Database } from '../database/database.js';
+import { DemoModule } from '../demo/demo.module.js';
+import { PostgresUsersRepository } from './postgres-users.repository.js';
+import { UsersSeeder } from './users-seeder.service.js';
 import { InMemoryUsersRepository } from './users.in-memory.repository.js';
 import { UsersRepository } from './users.repository.js';
 
@@ -29,10 +33,16 @@ export const AuthenticationRoot = AuthenticationModule.forRootAsync({
 
 @Global()
 @Module({
+  imports: [DemoModule],
   controllers: [AuthController],
   providers: [
-    // Swap for a database implementation here; nothing else depends on it.
-    { provide: UsersRepository, useClass: InMemoryUsersRepository },
+    {
+      provide: UsersRepository,
+      inject: [DATABASE],
+      useFactory: (db: Database | null): UsersRepository =>
+        db ? new PostgresUsersRepository(db) : new InMemoryUsersRepository(),
+    },
+    UsersSeeder,
     CredentialsService,
     JwtAuth,
     RolePolicy,
