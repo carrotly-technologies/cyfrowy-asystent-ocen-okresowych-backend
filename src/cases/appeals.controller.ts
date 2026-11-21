@@ -114,6 +114,24 @@ export class AppealsController {
     return this.appeals.requestDueDateChange(id, body);
   }
 
+  @Post('cases/:id/due-date-request/withdraw')
+  @ApiParam({
+    name: 'id',
+    description: 'Identyfikator teczki oceny, np. `c-001`.',
+  })
+  @ApiOperation({
+    summary: 'Wycofanie wniosku o zmianę terminu oceny',
+    description:
+      'Oceniany wycofuje swój wniosek, dopóki oceniający go nie rozpatrzył.',
+  })
+  @ApiOkResponse({ description: 'Teczka oceny (`CaseDetail`).' })
+  @ApiErrors(409)
+  @Can.Anyone()
+  @HttpCode(200)
+  async withdrawDueDateRequest(@Param('id') id: string): Promise<CaseDetail> {
+    return this.appeals.withdrawDueDateRequest(id);
+  }
+
   @Post('cases/:id/due-date-request/decision')
   @ApiParam({
     name: 'id',

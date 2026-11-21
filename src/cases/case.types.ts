@@ -174,6 +174,7 @@ export const CASE_EVENT_TYPES = [
   'DUE_DATE_CHANGE_REQUESTED',
   'DUE_DATE_CHANGE_APPROVED',
   'DUE_DATE_CHANGE_REJECTED',
+  'DUE_DATE_CHANGE_WITHDRAWN',
   'DUE_DATE_CHANGED',
 ] as const;
 export type CaseEventType = (typeof CASE_EVENT_TYPES)[number];
@@ -247,7 +248,7 @@ export interface DueDateRequest {
   reason: string;
   proposedDate: string | null;
   /** MOOT: closed without a decision because the assessment was drawn up (the term can no longer change). */
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'MOOT';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'MOOT' | 'WITHDRAWN';
   decidedOn: string | null;
   decisionNote: string | null;
   newDate: string | null;
@@ -295,6 +296,8 @@ export interface CaseDetail extends CaseSummary {
   sentForAckOn: string | null;
   acknowledgedOn: string | null;
   objectionDeadline: Deadline | null;
+  /** "Co dalej?": the objection path in plain words (art. 83 ustawy). */
+  objectionNextSteps?: { text: string; legalBasis: string }[];
   history: HistoryEntry[];
   /** Administrator corrections of locked fields (audit: who, when, old → new, why). */
   corrections: Correction[];

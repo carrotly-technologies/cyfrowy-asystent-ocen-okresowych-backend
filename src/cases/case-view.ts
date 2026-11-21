@@ -14,6 +14,7 @@ import { caseLocks } from './correction.rules.js';
 import { dueDateRequestRule, dueDateRequestsView } from './due-date.rules.js';
 import { dueChangeBlocker } from './due-date-change.rules.js';
 import { formalCheck } from './formal-check.rules.js';
+import { objectionNextSteps } from './objection-guide.rules.js';
 import { objectionViews } from './objection-terms.rules.js';
 import { promotionRequestOf } from './promotion.rules.js';
 import {
@@ -74,6 +75,7 @@ export function toDetail(
     sentForAckOn: record.sentForAckOn,
     acknowledgedOn: record.acknowledgedOn,
     objectionDeadline: objectionDeadlineOf(record, today),
+    objectionNextSteps: objectionNextSteps(),
     history: record.history,
     corrections: record.corrections ?? [],
     locks: caseLocks(record),

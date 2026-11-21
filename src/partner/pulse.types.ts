@@ -24,6 +24,4 @@ export interface PulsePoint {
   /** Average of the answers, 1–5, rounded to 0.1. */
   index: number;
   sharedComment: string | null;
-  /** True when there is a comment the employee did not share. */
-  hasPrivateComment: boolean;
 }

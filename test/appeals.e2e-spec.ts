@@ -216,4 +216,24 @@ describe('Post-assessment paths: fikcja zapoznania, sprzeciw, zmiana terminu (e2
       .expect(200);
     expect(rejected.body.dueDateRequests[0].status).toBe('REJECTED');
   });
+
+  it('the assessed person withdraws a pending due-date request', async () => {
+    const filed = await as('a.nowak')
+      .post('/api/cases/c-001/due-date-request')
+      .send({ reason: 'Długotrwała delegacja' })
+      .expect(200);
+    expect(filed.body.legalActions).toContain('WITHDRAW_DUE_DATE_REQUEST');
+    await as('j.kaminska')
+      .post('/api/cases/c-001/due-date-request/withdraw')
+      .expect(403);
+    const res = await as('a.nowak')
+      .post('/api/cases/c-001/due-date-request/withdraw')
+      .expect(200);
+    expect(res.body.dueDateRequests[0].status).toBe('WITHDRAWN');
+    expect(res.body.legalActions).not.toContain('WITHDRAW_DUE_DATE_REQUEST');
+    expect(res.body.legalActions).toContain('REQUEST_DUE_DATE_CHANGE');
+    await as('a.nowak')
+      .post('/api/cases/c-001/due-date-request/withdraw')
+      .expect(409);
+  });
 });

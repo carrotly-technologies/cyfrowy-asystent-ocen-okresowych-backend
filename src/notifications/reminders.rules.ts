@@ -315,6 +315,7 @@ const EVENT_TITLES: Record<CaseEventType, string> = {
   DUE_DATE_CHANGE_REQUESTED: 'Wniosek o zmianę terminu oceny',
   DUE_DATE_CHANGE_APPROVED: 'Wniosek o zmianę terminu oceny uwzględniony',
   DUE_DATE_CHANGE_REJECTED: 'Wniosek o zmianę terminu oceny nieuwzględniony',
+  DUE_DATE_CHANGE_WITHDRAWN: 'Oceniany wycofał wniosek o zmianę terminu oceny',
   DUE_DATE_CHANGED: 'Zmiana terminu oceny',
 };
 
