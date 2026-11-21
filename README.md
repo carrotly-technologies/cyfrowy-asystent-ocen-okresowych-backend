@@ -266,6 +266,38 @@ answer comes from the rules.
 | `GET /api/partner/cases/:caseId/hints` | SUPERVISOR (the case's evaluator): strengths, areas, feedback phrasing, development forms, management tips |
 | `POST /api/partner/ask`            | SUPERVISOR: `{ question, personId?, caseId? }` → `{ answer, mode: LLM\|RULES, anonymizedPrompt, … }` |
 
+### HR register (kartoteka): employees, absences, substitutions, history, statistics
+
+`src/employees`. Stored in PostgreSQL (`employees`, `employee_absences`, `evaluator_substitutions`,
+`assessment_history`) with `DATABASE_URL`, in memory without it; the demo seed (25 fictional people in 5 units,
+`employees.seed.ts`) goes into empty tables only and is restored by `POST /api/demo/reset`. Writes: `HR`, `ADMIN`.
+Reads: `HR`, `ADMIN` and `SUPERVISOR` (only people they assess, also as an active substitute; others 403).
+Statistics (and their CSV): `HR`, `ADMIN`, `DIRECTOR`; register CSV: `HR`, `ADMIN`. Cases stay in `CaseStore`; this module starts them and keeps their
+person data, evaluator and absences in step.
+
+| Route | What it does |
+| ----- | ------------ |
+| `GET /api/employees` | Register: `?q=` (name, position, unit), `unit`, `employment`, `sheet`, `evaluatorId`, `sort=lastName\|unit\|position\|deadline`; each with `evaluatorName`, `effectiveEvaluator*` (substitution), `sheetId` (case or suggestion), `currentCase`, `lastAssessment`, `obligatoryPromotion` |
+| `GET /api/employees/:id` | One employee (same view) |
+| `POST /api/employees` | `{ firstName, lastName, unit, position, employment, officeHead, managesPeople, appointedYear, grade, gradeGrantedOn, indefiniteSince, evaluatorId }` (201) |
+| `PATCH /api/employees/:id` | Any of those; open cases get the new person data, a new `evaluatorId` moves them (zmiana podległości, noted in the case history) |
+| `DELETE /api/employees/:id` | 204; 409 while an assessment is in progress (not acknowledged). Deletes the record, absences and imported history; finished cases are anonymised ("Dane usunięte") so statistics keep them without personal data |
+| `POST /api/employees/:id/cycles` | Starts a new cycle: case in `SHEET_SELECTION` anchored on the last assessment (30 days, 7 after a negative one) or on `indefiniteSince`; part II item 10 prefilled for an urzędnik; 409 with an open case or no evaluator |
+| `GET /api/employees/:id/history` | `{ cases, imported }`: every system cycle (result, level) and imported assessments |
+| `GET/POST /api/employees/:id/absences`, `DELETE …/absences/:absenceId` | `{ type, from, to, justified?, note? }`; GET also returns `continuous` (merged periods with `longerThanMonth`) |
+| `GET /api/employees/absence-types`, `GET /api/employees/evaluators` | Absence kinds (`data/absence-types.data.ts`) and evaluators to pick from |
+| `POST /api/employees/history/import` | `{ csv }`: past assessments; all-or-nothing, 400 with a Polish message per bad row, duplicates (same person and date) skipped. Sample: `docs/import/oceny-historyczne-przyklad.csv` |
+| `GET/POST /api/substitutions`, `DELETE /api/substitutions/:id` | Evaluator substitutions `{ evaluatorId, substituteId, from, to, note? }` |
+| `GET /api/statistics?unit=` | Results, levels, negative %, signed on time vs late, open overdue, cases per stage, promotions requested / obligatory (art. 89 ust. 2), per unit |
+| `GET /api/statistics/export.csv`, `GET /api/employees/export.csv` | CSV (`;`, UTF-8 BOM) of the statistics and of the register |
+
+- Absences (`src/cases/absences.rules.ts`): `continuousAbsences` merges justified absences separated only by days off
+  work (5–16.10.2026 + 19.10–6.11.2026 = one 33-day absence), `isLongerThanMonth` uses the month of art. 112 KC,
+  `extendAssessmentDue` / `withAbsenceExtension` extend the assessment due date by such absences (art. 81 ust. 7);
+  not after a negative assessment (ust. 9). Applied to the deadlines of stages 4–6 of every case.
+- Rules: `employees.rules.ts` (cycle start, obligatory promotion, substitution), `history-import.rules.ts`,
+  `statistics.rules.ts`.
+
 ### AI assistant (source-grounded)
 
 | Route                                  | What it does                                                                    |

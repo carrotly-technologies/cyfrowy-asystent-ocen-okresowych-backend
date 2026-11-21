@@ -19,6 +19,7 @@ import { HealthModule } from './health/health.module.js';
 import { HrModule } from './hr/hr.module.js';
 import { JournalModule } from './journal/journal.module.js';
 import { PartnerModule } from './partner/partner.module.js';
+import { EmployeesModule } from './employees/employees.module.js';
 import { SheetsModule } from './sheets/sheets.module.js';
 
 @Module({
@@ -44,6 +45,7 @@ import { SheetsModule } from './sheets/sheets.module.js';
     ExportModule,
     JournalModule,
     PartnerModule,
+    EmployeesModule,
   ],
   // Polish messages for the generic 401 / 403 of every route.
   providers: [{ provide: APP_FILTER, useClass: PolishAuthErrorsFilter }],

@@ -347,6 +347,11 @@ export interface CaseRecord {
   assessmentVersions?: AssessmentVersion[];
   dueDateRequests?: DueDateRequest[];
   dueDateChanges?: DueDateChange[];
+  /**
+   * Absences of the assessed person recorded by HR (src/employees), synced
+   * into the case; they extend the assessment due date (art. 81 ust. 7).
+   */
+  absences?: { from: string; to: string; justified: boolean }[];
 }
 
 export const CASE_ACTIONS = [
