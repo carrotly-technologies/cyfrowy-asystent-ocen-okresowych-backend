@@ -6,13 +6,17 @@ import {
 } from '@nestjs/common';
 import { AuthenticationContext } from '@nestjs/authentication';
 import { AuthorizationService } from '@nestjs/authorization';
-import { CasePolicy } from '../auth/case.policy.js';
-import type { User } from '../auth/user.types.js';
+import {
+  CasePolicy,
+  isAssessedIn,
+  isEvaluatorOf,
+} from '../auth/case.policy.js';
 import { applyAction } from './actions.rules.js';
 import { fullName } from './case.rules.js';
 import { CaseRuleError, CaseValidationError } from './case-rule.error.js';
 import { CaseStore } from './case-store.service.js';
 import type {
+  Actor,
   CaseAction,
   CaseDetail,
   CaseRecord,
@@ -35,16 +39,13 @@ export interface TodoItem {
 }
 
 const TODO_TEXT: Partial<Record<StageId, string>> = {
-  OSP_ANALYSIS: 'przeanalizuj opis stanowiska',
-  SHEET_PROPOSAL: 'zaakceptuj proponowany formularz oceny',
+  SHEET_SELECTION: 'wybierz arkusz, kryteria dodatkowe i termin oceny',
   OPENING_TALK: 'przeprowadź rozmowę rozpoczynającą (część I)',
-  OBSERVATION: 'przejdź do formularza oceny kompetencji',
-  ASSESSMENT: 'wypełnij formularz oceny kompetencji',
-  JUSTIFICATION: 'uzupełnij uzasadnienie i IPRZ, zatwierdź ocenę',
-  INTRO_TALK: 'przeprowadź rozmowę wstępną i wyznacz termin sprawozdania',
-  REPORT: 'odbierz sprawozdanie pracownika',
-  FIRST_ASSESSMENT: 'wypełnij formularz pierwszej oceny',
-  FIRST_CONDITIONS: 'uzupełnij warunki pierwszej oceny i zatwierdź ocenę',
+  PART_I_ACK: 'oceniany potwierdza część I',
+  OBSERVATION: 'zapisuj obserwacje i przejdź do oceny',
+  ASSESSMENT: 'przeprowadź rozmowę oceniającą i uzupełnij ocenę',
+  SIGNATURE: 'podpisz ocenę i przekaż ją do zapoznania',
+  ACKNOWLEDGEMENT: 'oceniany zapoznaje się z oceną',
 };
 
 @Injectable()
@@ -73,18 +74,26 @@ export class CasesService {
     };
   }
 
-  /** Cases the caller may see: a supervisor's own, every case for HR. */
+  /**
+   * Cases the caller may see: a supervisor's own, the assessed person's own
+   * ("Moje oceny", newest first), every case for HR.
+   */
   visibleCases(): CaseSummary[] {
     const user = this.auth.requireUser();
     return this.store
       .all()
-      .filter((r) => user.role === 'HR' || isEvaluator(user, r))
+      .filter(
+        (r) =>
+          user.role === 'HR' || isEvaluatorOf(user, r) || isAssessedIn(user, r),
+      )
       .map((r) => toSummary(r, this.today));
   }
 
   team(): { cases: CaseSummary[]; todo: TodoItem[] } {
     const user = this.auth.requireUser();
-    const records = this.store.all().filter((c) => isEvaluator(user, c));
+    const records = this.store
+      .all()
+      .filter((c) => isEvaluatorOf(user, c) && !c.nextCaseId);
     const cases = records.map((r) => toSummary(r, this.today));
     const todo = cases
       .flatMap((c): TodoItem[] => {
@@ -118,15 +127,24 @@ export class CasesService {
 
   /** GET /api/cases/:id: 404 for an unknown case, 403 for someone else's. */
   async view(id: string): Promise<CaseDetail> {
-    await this.authorize('view', this.record(id));
-    return this.detail(id);
+    const record = this.record(id);
+    await this.authorize('view', record);
+    return this.detail(id, this.actorFor(record));
+  }
+
+  /** Who the caller is in this case; null when they only read it (HR). */
+  private actorFor(record: CaseRecord): Actor | null {
+    const user = this.auth.requireUser();
+    if (isEvaluatorOf(user, record)) return 'EVALUATOR';
+    if (isAssessedIn(user, record)) return 'EMPLOYEE';
+    return null;
   }
 
   async patch(id: string, patch: PatchCase): Promise<CaseDetail> {
     const record = this.record(id);
     await this.authorize('edit', record);
     this.store.save(this.run(() => applyPatch(record, patch, this.today)));
-    return this.detail(id);
+    return this.detail(id, 'EVALUATOR');
   }
 
   async addObservation(
@@ -147,11 +165,23 @@ export class CasesService {
     return this.detail(id);
   }
 
+  /**
+   * Workflow action. 404 unknown case; 403 when the caller is not the actor
+   * of this action (the assessed person confirms, the evaluator does the
+   * rest); 409 when the action is not legal at this stage.
+   */
   async action(id: string, action: CaseAction): Promise<CaseDetail> {
     const record = this.record(id);
-    await this.authorize('edit', record);
+    await this.authorize('view', record);
+    await this.authorization.authorize(
+      CasePolicy,
+      'act',
+      this.auth.requireUser(),
+      record,
+      action,
+    );
     this.store.save(this.run(() => applyAction(record, action, this.today)));
-    return this.detail(id);
+    return this.detail(id, this.actorFor(record));
   }
 
   private authorize(ability: 'view' | 'edit', record: CaseRecord) {
@@ -164,13 +194,14 @@ export class CasesService {
   }
 
   /** Unscoped: for internal use. Routes go through view(). */
-  detail(id: string): CaseDetail {
+  detail(id: string, actor: Actor | null = 'EVALUATOR'): CaseDetail {
     const record = this.record(id);
     return toDetail(
       record,
       this.today,
       this.store.evaluator(record.evaluatorId),
       OFFICE_NAME,
+      actor,
     );
   }
 
@@ -212,8 +243,4 @@ export class CasesService {
       throw error;
     }
   }
-}
-
-function isEvaluator(user: User, record: CaseRecord): boolean {
-  return !!user.evaluatorId && record.evaluatorId === user.evaluatorId;
 }

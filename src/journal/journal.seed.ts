@@ -44,7 +44,7 @@ export function buildJournalSeed(
       authorId: AUTHOR_ID,
       date: addDays(today, -45),
       criterionId: 'komunikacja',
-      indicatorId: 'komunikacja.1',
+      indicatorId: null,
       kind: 'STRENGTH',
       situation: 'Spotkanie z interesantami w sprawie zmiany procedury.',
       action: 'Wyjaśniła zmiany prostym językiem i przygotowała krótką ściągę.',

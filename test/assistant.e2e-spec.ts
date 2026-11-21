@@ -83,10 +83,10 @@ describe('Assistant (e2e, no LLM configured)', () => {
 
   it('GET /api/assistant/suggestions returns questions per stage', async () => {
     const res = await withToken(app, token)
-      .get('/api/assistant/suggestions?stageId=FIRST_CONDITIONS')
+      .get('/api/assistant/suggestions?stageId=ACKNOWLEDGEMENT')
       .expect(200);
     expect(res.body).toEqual(
-      expect.arrayContaining([expect.stringMatching(/pierwszej oceny/)]),
+      expect.arrayContaining([expect.stringMatching(/sprzeciw/)]),
     );
     await withToken(app, token).get('/api/assistant/suggestions').expect(200);
     await withToken(app, token)

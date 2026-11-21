@@ -93,9 +93,8 @@ export class AssistantService {
     detail: CaseDetail,
   ): Promise<AskResponse> {
     const stage = input.stageId ?? detail.currentStage;
-    // Only the rules of the case's path: periodic (RO, PO) or first (RP, PP).
-    const otherPath: KnowledgeDocId[] =
-      detail.path === 'FIRST' ? ['RO', 'PO'] : ['RP', 'PP'];
+    // Only the periodic rules (RO, PO); the first-assessment ones (RP, PP) are out.
+    const otherPath: KnowledgeDocId[] = ['RP', 'PP'];
     let retrieval: Retrieval = retrieve(this.kb, input.question, otherPath);
     if (!retrieval.grounded) {
       retrieval = retrieve(this.kb, STAGE_RULE_QUERY[stage], otherPath);

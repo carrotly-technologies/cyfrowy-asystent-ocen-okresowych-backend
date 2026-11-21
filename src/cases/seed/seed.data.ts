@@ -1,5 +1,5 @@
 import type { CaseRecord, Evaluator } from '../case.types.js';
-import { defaultAssessmentDue, defaultReportDue } from '../deadlines.rules.js';
+import { defaultAssessmentDue } from '../deadlines.rules.js';
 import { addDays, formatDatePl } from '../dates.js';
 import { emptyPromotionRequest } from '../promotion.rules.js';
 import {
@@ -7,18 +7,20 @@ import {
   emptyPartI,
   observations,
   previousAssessment,
-  ratingsFor,
   relative,
 } from './seed-helpers.js';
 
 /**
  * Demo data (notatki/ux-koncepcja.md, "Dane demonstracyjne"). Every person,
- * unit and event is FICTIONAL; only the three OSP documents are real. All
+ * unit and event is FICTIONAL. All
  * dates are relative to DEMO_TODAY, so the demo looks the same on any day.
  */
 
-export const OFFICE_NAME = 'Ministerstwo Cyfryzacji (dane demonstracyjne)';
+export const OFFICE_NAME = 'Urząd demonstracyjny (dane fikcyjne)';
 export const SUPERVISOR_ID = 'ev-kaminska';
+/** Assessed people with their own EMPLOYEE account (src/auth/users.seed.ts). */
+export const EMPLOYEE_NOWAK = 'p-nowak';
+export const EMPLOYEE_WOJCIK = 'p-wojcik';
 const TEAM_UNIT = 'Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych';
 
 export const EVALUATORS: readonly Evaluator[] = [
@@ -43,46 +45,127 @@ export const EVALUATORS: readonly Evaluator[] = [
     position: 'Naczelnik wydziału',
     unit: 'Wydział Legislacji, Departament Prawny',
   },
+  {
+    id: 'ev-zawadzki',
+    firstName: 'Krzysztof',
+    lastName: 'Zawadzki',
+    position: 'Sekretarz stanu',
+    unit: 'Kierownictwo ministerstwa (dane demonstracyjne)',
+  },
 ];
 
 export function buildSeed(today: string): CaseRecord[] {
   const r = relative(today);
   return [
+    previousNowakCase(r),
     mainCase(r),
-    ospAnalysisCase(r),
+    partIAckCase(r),
     sheetBCase(r),
-    firstAssessmentCase(r),
+    sheetSelectionCase(r),
     afterNegativeCase(r),
     objectionPeriodCase(r),
+    negativeSignatureCase(r),
+    teamLeaderDraftCase(r),
     ...otherUnitCases(r),
   ];
 }
 
 type Rel = ReturnType<typeof relative>;
 
-/** Main demo path: sheet C, right before the assessment talk, 8 observations. */
-function mainCase(r: Rel): CaseRecord {
-  const id = 'c-001';
-  // Part I confirmed ~23.5 months ago, so the assessment is due in ~2 weeks.
-  const confirmed = r.months(-24, 13);
-  const previous = r.workday(confirmed.replace(/-\d\d$/, '-01'));
-  const due = defaultAssessmentDue(confirmed);
-  const startedAssessment = r.days(-2);
+/** Date of Anna Nowak's previous assessment (end of case c-000). */
+function nowakPreviousOn(r: Rel): string {
+  return r.workday(r.months(-24, 13).replace(/-\d\d$/, '-01'));
+}
+
+/** Anna Nowak's previous cycle, finished 2 years ago (account a.nowak sees both). */
+function previousNowakCase(r: Rel): CaseRecord {
+  const signed = nowakPreviousOn(r);
+  const talk = r.workday(addDays(signed, -2));
+  const acknowledged = r.workday(addDays(signed, 1));
+  const confirmed = r.months(-48, 10);
   return caseRecord({
-    id,
+    id: 'c-000',
     person: {
-      id: 'p-nowak',
+      id: EMPLOYEE_NOWAK,
       firstName: 'Anna',
       lastName: 'Nowak',
       position: 'Radca do spraw regulacji sztucznej inteligencji',
       unit: TEAM_UNIT,
       employment: 'URZEDNIK',
       hiredOn: '2017-04-03',
+      officeHead: false,
+      managesPeople: false,
     },
     evaluatorId: SUPERVISOR_ID,
-    path: 'PERIODIC',
     sheetId: 'C',
-    ospId: 'osp-dsi-wwi-5',
+    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-49) },
+    promotionRequest: { ...emptyPromotionRequest('URZEDNIK'), attached: 'NO' },
+    stage: 'ACKNOWLEDGEMENT',
+    completedOn: {
+      SHEET_SELECTION: confirmed,
+      OPENING_TALK: confirmed,
+      PART_I_ACK: confirmed,
+      OBSERVATION: talk,
+      ASSESSMENT: talk,
+      SIGNATURE: signed,
+      ACKNOWLEDGEMENT: acknowledged,
+    },
+    partI: {
+      ...emptyPartI(),
+      additionalCriteria: ['myslenie_analityczne'],
+      assessmentDue: defaultAssessmentDue(confirmed),
+      confirmedByEvaluatorOn: confirmed,
+      acknowledgedByEmployeeOn: confirmed,
+    },
+    decisions: {
+      wykorzystywanie_wiedzy: 7,
+      rzetelnosc: 7,
+      organizacja_pracy: 7,
+      wspolpraca: 7,
+      komunikacja: 5,
+      myslenie_analityczne: 9,
+    },
+    justification:
+      'Opinie przygotowywane terminowo i bez poprawek merytorycznych; wyróżniająca jakość analiz.',
+    iprz: 'Szkolenie z prawa nowych technologii UE; udział w pracach zespołu ds. wdrożenia aktu w sprawie AI.',
+    assessmentTalkOn: talk,
+    signedByEvaluatorOn: signed,
+    sentForAckOn: signed,
+    acknowledgedOn: acknowledged,
+    nextCaseId: 'c-001',
+    history: [
+      {
+        date: signed,
+        text: 'Oceniający podpisał ocenę: pozytywna, „Powyżej oczekiwań”. Ocenę przekazano do zapoznania.',
+      },
+      { date: acknowledged, text: 'Oceniany zapoznał się z oceną.' },
+    ],
+  });
+}
+
+/** Main demo path: sheet C, in the assessment stage (draft scores), 8 observations. */
+function mainCase(r: Rel): CaseRecord {
+  const id = 'c-001';
+  // Part I confirmed ~23.5 months ago, so the assessment is due in ~2 weeks.
+  const confirmed = r.months(-24, 13);
+  const previous = nowakPreviousOn(r);
+  const due = defaultAssessmentDue(confirmed);
+  const startedAssessment = r.days(-2);
+  return caseRecord({
+    id,
+    person: {
+      id: EMPLOYEE_NOWAK,
+      firstName: 'Anna',
+      lastName: 'Nowak',
+      position: 'Radca do spraw regulacji sztucznej inteligencji',
+      unit: TEAM_UNIT,
+      employment: 'URZEDNIK',
+      hiredOn: '2017-04-03',
+      officeHead: false,
+      managesPeople: false,
+    },
+    evaluatorId: SUPERVISOR_ID,
+    sheetId: 'C',
     cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: previous },
     previousAssessment: previousAssessment(
       { kind: 'PREVIOUS_POSITIVE', assessedOn: previous },
@@ -90,8 +173,9 @@ function mainCase(r: Rel): CaseRecord {
     ),
     stage: 'ASSESSMENT',
     completedOn: {
-      OSP_ANALYSIS: r.workday(confirmed.replace(/-\d\d$/, '-02')),
+      SHEET_SELECTION: r.workday(confirmed.replace(/-\d\d$/, '-02')),
       OPENING_TALK: confirmed,
+      PART_I_ACK: confirmed,
       OBSERVATION: startedAssessment,
     },
     partI: {
@@ -128,7 +212,6 @@ function mainCase(r: Rel): CaseRecord {
       {
         date: r.months(-21, 10),
         criterionId: 'rzetelnosc',
-        indicatorId: 'rzetelnosc.2',
         kind: 'STRENGTH',
         situation:
           'Do wydziału wpłynęło 14 wniosków o opinie indywidualne dotyczące klasyfikacji systemów AI jako systemów wysokiego ryzyka, z terminem 30 dni.',
@@ -140,7 +223,6 @@ function mainCase(r: Rel): CaseRecord {
       {
         date: r.months(-18, 5),
         criterionId: 'komunikacja',
-        indicatorId: 'komunikacja.3',
         kind: 'DEVELOPMENT',
         situation:
           'Projekt odpowiedzi na pismo stowarzyszenia branżowego w sprawie obowiązków dostawców modeli AI ogólnego przeznaczenia.',
@@ -152,7 +234,6 @@ function mainCase(r: Rel): CaseRecord {
       {
         date: r.months(-15, 12),
         criterionId: 'myslenie_analityczne',
-        indicatorId: 'myslenie_analityczne.2',
         kind: 'STRENGTH',
         situation:
           'Analiza barier prawnych dla piaskownic regulacyjnych AI na potrzeby posiedzenia Komisji.',
@@ -164,7 +245,6 @@ function mainCase(r: Rel): CaseRecord {
       {
         date: r.months(-12, 3),
         criterionId: 'wspolpraca',
-        indicatorId: 'wspolpraca.6',
         kind: 'STRENGTH',
         situation:
           'Do wydziału dołączyły dwie nowe osoby bez doświadczenia w opiniowaniu.',
@@ -176,7 +256,6 @@ function mainCase(r: Rel): CaseRecord {
       {
         date: r.months(-9, 8),
         criterionId: 'organizacja_pracy',
-        indicatorId: 'organizacja_pracy.2',
         kind: 'DEVELOPMENT',
         situation:
           'W jednym tygodniu zbiegły się: projekt stanowiska na posiedzenie Komisji i uwagi do projektu ustawy w uzgodnieniach międzyresortowych.',
@@ -188,7 +267,6 @@ function mainCase(r: Rel): CaseRecord {
       {
         date: r.months(-6, 2),
         criterionId: 'wykorzystywanie_wiedzy',
-        indicatorId: 'wykorzystywanie_wiedzy.2',
         kind: 'STRENGTH',
         situation:
           'Komisja Europejska opublikowała wytyczne dotyczące praktyk zakazanych w obszarze AI.',
@@ -200,7 +278,6 @@ function mainCase(r: Rel): CaseRecord {
       {
         date: r.months(-3, 4),
         criterionId: 'komunikacja',
-        indicatorId: 'komunikacja.2',
         kind: 'DEVELOPMENT',
         situation:
           'Spotkanie konsultacyjne z przedstawicielami młodych firm technologicznych.',
@@ -212,7 +289,6 @@ function mainCase(r: Rel): CaseRecord {
       {
         date: r.days(-24),
         criterionId: 'myslenie_analityczne',
-        indicatorId: 'myslenie_analityczne.3',
         kind: 'STRENGTH',
         situation:
           'Rozbieżne interpretacje wydziału i organu ochrony danych co do podstawy przetwarzania danych przy trenowaniu modeli.',
@@ -239,13 +315,14 @@ function mainCase(r: Rel): CaseRecord {
   });
 }
 
-/** New cycle, OSP analysis (starszy specjalista: myślenie analityczne). */
-function ospAnalysisCase(r: Rel): CaseRecord {
+/** Part I confirmed by the evaluator yesterday; waits for the assessed person (account p.wojcik). */
+function partIAckCase(r: Rel): CaseRecord {
   const previous = r.days(-11);
+  const confirmed = r.days(-1);
   return caseRecord({
     id: 'c-002',
     person: {
-      id: 'p-wojcik',
+      id: EMPLOYEE_WOJCIK,
       firstName: 'Piotr',
       lastName: 'Wójcik',
       position:
@@ -253,17 +330,42 @@ function ospAnalysisCase(r: Rel): CaseRecord {
       unit: TEAM_UNIT,
       employment: 'PRACOWNIK',
       hiredOn: '2019-10-01',
+      officeHead: false,
+      managesPeople: false,
     },
     evaluatorId: SUPERVISOR_ID,
-    path: 'PERIODIC',
-    sheetId: null,
-    ospId: 'osp-dc-wzksoic-6',
+    sheetId: 'C',
     cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: previous },
-    stage: 'OSP_ANALYSIS',
+    stage: 'PART_I_ACK',
+    completedOn: { SHEET_SELECTION: r.days(-3), OPENING_TALK: confirmed },
+    partI: {
+      ...emptyPartI(),
+      additionalCriteria: ['sytuacje_kryzysowe', 'myslenie_analityczne'],
+      assessmentDue: defaultAssessmentDue(confirmed),
+      topics: {
+        duties:
+          'Koordynacja obsługi incydentów w cyberprzestrzeni, raporty sytuacyjne, ćwiczenia z zarządzania kryzysowego.',
+        criteria:
+          'Pięć kryteriów obowiązkowych arkusza C oraz „Radzenie sobie w sytuacjach kryzysowych” i „Myślenie analityczne”.',
+        expectations:
+          'Raporty sytuacyjne w ciągu 2 godzin od zgłoszenia incydentu; wnioski z każdego ćwiczenia.',
+        goals:
+          'Przygotowanie procedury eskalacji incydentów do końca I kwartału.',
+      },
+      confirmedByEvaluatorOn: confirmed,
+    },
     history: [
       {
         date: previous,
         text: 'Sporządzono poprzednią ocenę okresową: pozytywna, „Na poziomie oczekiwań”. Rozpoczął się nowy cykl oceny.',
+      },
+      {
+        date: r.days(-3),
+        text: 'Oceniający zatwierdził arkusz C (zgodnie z propozycją systemu) i 2 kryteria dodatkowe.',
+      },
+      {
+        date: confirmed,
+        text: 'Oceniający potwierdził przeprowadzenie rozmowy rozpoczynającej. Część I czeka na potwierdzenie ocenianego.',
       },
     ],
   });
@@ -283,18 +385,22 @@ function sheetBCase(r: Rel): CaseRecord {
       unit: TEAM_UNIT,
       employment: 'URZEDNIK',
       hiredOn: '2014-02-03',
+      officeHead: false,
+      managesPeople: true,
     },
     evaluatorId: SUPERVISOR_ID,
-    path: 'PERIODIC',
     sheetId: 'B',
-    ospId: 'osp-dwm-wkam-1',
     cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-15, 10) },
     previousAssessment: previousAssessment(
       { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-15, 10) },
       'na poziomie oczekiwań',
     ),
     stage: 'OBSERVATION',
-    completedOn: { OSP_ANALYSIS: r.months(-14, -3), OPENING_TALK: confirmed },
+    completedOn: {
+      SHEET_SELECTION: r.months(-14, -3),
+      OPENING_TALK: confirmed,
+      PART_I_ACK: confirmed,
+    },
     partI: {
       ...emptyPartI(),
       additionalCriteria: ['wykorzystywanie_wiedzy', 'negocjowanie'],
@@ -332,7 +438,6 @@ function sheetBCase(r: Rel): CaseRecord {
       {
         date: r.months(-11, 6),
         criterionId: 'zarzadzanie_ludzmi',
-        indicatorId: 'zarzadzanie_ludzmi.4',
         kind: 'STRENGTH',
         situation:
           'Po nieudanej organizacji spotkania dwustronnego członek zespołu pominął potwierdzenie tłumacza.',
@@ -343,7 +448,6 @@ function sheetBCase(r: Rel): CaseRecord {
       {
         date: r.months(-8, 1),
         criterionId: 'negocjowanie',
-        indicatorId: 'negocjowanie.1',
         kind: 'DEVELOPMENT',
         situation:
           'Uzgadnianie z wykonawcą zmian w umowie na usługi tłumaczeniowe.',
@@ -355,7 +459,6 @@ function sheetBCase(r: Rel): CaseRecord {
       {
         date: r.months(-4, 9),
         criterionId: 'podejmowanie_decyzji',
-        indicatorId: 'podejmowanie_decyzji.2',
         kind: 'STRENGTH',
         situation:
           'Odwołany lot delegacji na dzień przed konferencją w Brukseli.',
@@ -366,7 +469,6 @@ function sheetBCase(r: Rel): CaseRecord {
       {
         date: r.days(-30),
         criterionId: 'komunikacja',
-        indicatorId: 'komunikacja.3',
         kind: 'STRENGTH',
         situation:
           'Notatka dla kierownictwa przed wizytą partnerów z Europy Północnej.',
@@ -385,13 +487,11 @@ function sheetBCase(r: Rel): CaseRecord {
   });
 }
 
-/** First assessment: hired ~8 months ago, waiting for the report. */
-function firstAssessmentCase(r: Rel): CaseRecord {
-  const id = 'c-004';
-  const hiredOn = r.months(-8, -5);
-  const intro = r.workday(addDays(hiredOn, 10));
+/** Hired for an indefinite period 2 weeks ago: the evaluator picks the sheet and criteria. */
+function sheetSelectionCase(r: Rel): CaseRecord {
+  const hiredOn = r.days(-14);
   return caseRecord({
-    id,
+    id: 'c-004',
     person: {
       id: 'p-mazur',
       firstName: 'Julia',
@@ -400,55 +500,16 @@ function firstAssessmentCase(r: Rel): CaseRecord {
       unit: TEAM_UNIT,
       employment: 'PRACOWNIK',
       hiredOn,
+      officeHead: false,
+      managesPeople: false,
     },
     evaluatorId: SUPERVISOR_ID,
-    path: 'FIRST',
-    sheetId: 'FIRST',
     cycleStart: { kind: 'HIRED', date: hiredOn },
-    stage: 'REPORT',
-    completedOn: { INTRO_TALK: intro },
-    firstConditions: {
-      examPassed: 'YES',
-      reportSubmittedOn: null,
-      reportDue: defaultReportDue(hiredOn),
-    },
-    observations: observations(id, [
-      {
-        date: r.months(-5),
-        criterionId: 'rzetelnosc',
-        indicatorId: 'rzetelnosc.1',
-        kind: 'STRENGTH',
-        situation:
-          'Pierwsze samodzielne zestawienie danych do sprawozdania kwartalnego.',
-        action:
-          'Sprawdziła kompletność danych ze źródłami i opisała przyjęte założenia.',
-        result: 'Zestawienie przyjęto bez poprawek.',
-      },
-      {
-        date: r.months(-2),
-        criterionId: 'komunikacja',
-        indicatorId: 'komunikacja.1',
-        kind: 'DEVELOPMENT',
-        situation:
-          'Spotkanie z departamentem merytorycznym w sprawie zakresu analizy.',
-        action:
-          'Nie dopytała o niejasny zakres danych i nie potwierdziła ustaleń po spotkaniu.',
-        result:
-          'Analizę trzeba było częściowo powtórzyć; ustaliliśmy, że po spotkaniach wysyła krótkie podsumowanie.',
-      },
-    ]),
+    stage: 'SHEET_SELECTION',
     history: [
       {
         date: hiredOn,
-        text: 'Nawiązanie stosunku pracy na czas określony 12 miesięcy (art. 35 ust. 3 ustawy o służbie cywilnej).',
-      },
-      {
-        date: intro,
-        text: `Odbyła się rozmowa wstępna. Termin na złożenie sprawozdania: ${formatDatePl(defaultReportDue(hiredOn))}.`,
-      },
-      {
-        date: r.months(-4, 12),
-        text: 'Służba przygotowawcza zakończona egzaminem z wynikiem pozytywnym.',
+        text: 'Zatrudnienie na czas nieokreślony. Pierwsza ocena okresowa: rozmowa rozpoczynająca w 30 dni (§7 pkt 1).',
       },
     ],
   });
@@ -468,14 +529,14 @@ function afterNegativeCase(r: Rel): CaseRecord {
       unit: TEAM_UNIT,
       employment: 'URZEDNIK',
       hiredOn: '2020-06-01',
+      officeHead: false,
+      managesPeople: false,
     },
     evaluatorId: SUPERVISOR_ID,
-    path: 'PERIODIC',
     sheetId: 'C',
-    ospId: 'osp-dc-wzksoic-6',
     cycleStart: { kind: 'PREVIOUS_NEGATIVE', assessedOn, acknowledgedOn },
     stage: 'OPENING_TALK',
-    completedOn: { OSP_ANALYSIS: r.days(-2) },
+    completedOn: { SHEET_SELECTION: r.days(-2) },
     // Part I stays empty (no additional criteria either): the supervisor
     // fills it by hand at the opening talk.
     history: [
@@ -489,7 +550,7 @@ function afterNegativeCase(r: Rel): CaseRecord {
       },
       {
         date: r.days(-2),
-        text: 'Zatwierdzono analizę opisu stanowiska: arkusz C.',
+        text: 'Oceniający zatwierdził arkusz C i termin ponownej oceny.',
       },
     ],
   });
@@ -510,25 +571,26 @@ function objectionPeriodCase(r: Rel): CaseRecord {
       unit: TEAM_UNIT,
       employment: 'URZEDNIK',
       hiredOn: '2012-09-03',
+      officeHead: false,
+      managesPeople: false,
     },
     evaluatorId: SUPERVISOR_ID,
-    path: 'PERIODIC',
     sheetId: 'C',
-    ospId: 'osp-dsi-wwi-5',
     cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25, 20) },
     previousAssessment: previousAssessment(
       { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25, 20) },
       'na poziomie oczekiwań',
     ),
     promotionRequest: { ...emptyPromotionRequest('URZEDNIK'), attached: 'NO' },
-    stage: 'DOCUMENT',
+    stage: 'ACKNOWLEDGEMENT',
     completedOn: {
-      OSP_ANALYSIS: r.months(-24, 2),
+      SHEET_SELECTION: r.months(-24, 2),
       OPENING_TALK: confirmed,
+      PART_I_ACK: confirmed,
       OBSERVATION: r.days(-9),
       ASSESSMENT: r.days(-7),
-      JUSTIFICATION: signed,
-      DOCUMENT: acknowledged,
+      SIGNATURE: signed,
+      ACKNOWLEDGEMENT: acknowledged,
     },
     partI: {
       ...emptyPartI(),
@@ -560,16 +622,6 @@ function objectionPeriodCase(r: Rel): CaseRecord {
       confirmedByEvaluatorOn: confirmed,
       acknowledgedByEmployeeOn: confirmed,
     },
-    ratings: {
-      wykorzystywanie_wiedzy: ratingsFor('wykorzystywanie_wiedzy', 7),
-      rzetelnosc: ratingsFor('rzetelnosc', 7),
-      organizacja_pracy: ratingsFor('organizacja_pracy', 5, {
-        'organizacja_pracy.3': null,
-      }),
-      wspolpraca: ratingsFor('wspolpraca', 7, { 'wspolpraca.3': 5 }),
-      komunikacja: ratingsFor('komunikacja', 5),
-      kreatywnosc: ratingsFor('kreatywnosc', 7),
-    },
     decisions: {
       wykorzystywanie_wiedzy: 7,
       rzetelnosc: 7,
@@ -581,6 +633,7 @@ function objectionPeriodCase(r: Rel): CaseRecord {
     justification:
       'Oceniana przez cały okres przygotowywała opinie do projektów aktów prawnych terminowo i bez błędów merytorycznych. Wyróżnia ją łączenie wiedzy z kilku dziedzin prawa i proponowanie nowych rozwiązań (m.in. lista kontrolna oceny skutków regulacji). Organizacja pracy i komunikacja na poziomie oczekiwań.',
     iprz: 'Szkolenie z prowadzenia spotkań konsultacyjnych (I półrocze); udział w zespole ds. wdrożenia aktu w sprawie AI jako ekspert; mentoring nowej osoby w wydziale.',
+    assessmentTalkOn: r.days(-7),
     signedByEvaluatorOn: signed,
     sentForAckOn: signed,
     acknowledgedOn: acknowledged,
@@ -622,18 +675,20 @@ function otherUnitCases(r: Rel): CaseRecord[] {
         unit: budget.unit,
         employment: 'PRACOWNIK',
         hiredOn: '2021-01-04',
+        officeHead: false,
+        managesPeople: false,
       },
       evaluatorId: budget.id,
-      path: 'PERIODIC',
       sheetId: 'C',
       cycleStart: { kind: 'HIRED', date: '2024-11-04' },
-      stage: 'DOCUMENT',
+      stage: 'ACKNOWLEDGEMENT',
       completedOn: {
-        OSP_ANALYSIS: '2024-11-12',
+        SHEET_SELECTION: '2024-11-12',
         OPENING_TALK: '2024-11-20',
+        PART_I_ACK: '2024-11-20',
         OBSERVATION: r.days(-6),
         ASSESSMENT: r.days(-4),
-        JUSTIFICATION: signed,
+        SIGNATURE: signed,
       },
       partI: {
         ...emptyPartI(),
@@ -649,6 +704,7 @@ function otherUnitCases(r: Rel): CaseRecord[] {
         komunikacja: 5,
       },
       iprz: 'Szkolenie z kontroli rozliczeń dotacji; samodzielne prowadzenie rozliczeń w nowym systemie finansowym.',
+      assessmentTalkOn: r.days(-4),
       signedByEvaluatorOn: signed,
       sentForAckOn: signed,
       history: [
@@ -668,13 +724,14 @@ function otherUnitCases(r: Rel): CaseRecord[] {
         unit: budget.unit,
         employment: 'URZEDNIK',
         hiredOn: '2018-05-02',
+        officeHead: false,
+        managesPeople: false,
       },
       evaluatorId: budget.id,
-      path: 'PERIODIC',
       sheetId: 'C',
       cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.days(-47) },
       stage: 'OPENING_TALK',
-      completedOn: { OSP_ANALYSIS: r.days(-40) },
+      completedOn: { SHEET_SELECTION: r.days(-40) },
       lastReminderOn: r.days(-7),
       history: [
         {
@@ -697,9 +754,10 @@ function otherUnitCases(r: Rel): CaseRecord[] {
         unit: legal.unit,
         employment: 'URZEDNIK',
         hiredOn: '2015-03-02',
+        officeHead: false,
+        managesPeople: false,
       },
       evaluatorId: legal.id,
-      path: 'PERIODIC',
       sheetId: 'C',
       cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25, -10) },
       previousAssessment: previousAssessment(
@@ -708,8 +766,9 @@ function otherUnitCases(r: Rel): CaseRecord[] {
       ),
       stage: 'OBSERVATION',
       completedOn: {
-        OSP_ANALYSIS: overdueConfirmed,
+        SHEET_SELECTION: overdueConfirmed,
         OPENING_TALK: overdueConfirmed,
+        PART_I_ACK: overdueConfirmed,
       },
       partI: {
         ...emptyPartI(),
@@ -725,21 +784,143 @@ function otherUnitCases(r: Rel): CaseRecord[] {
         id: 'p-olszewski',
         firstName: 'Bartosz',
         lastName: 'Olszewski',
-        position: 'Referent do spraw legislacji',
+        position: 'Kierownik zespołu do spraw legislacji gospodarczej',
         unit: legal.unit,
-        employment: 'PRACOWNIK',
-        hiredOn: r.days(-12),
+        employment: 'URZEDNIK',
+        hiredOn: '2016-09-01',
+        officeHead: false,
+        managesPeople: true,
       },
       evaluatorId: legal.id,
-      path: 'FIRST',
-      sheetId: 'FIRST',
-      cycleStart: { kind: 'HIRED', date: r.days(-12) },
-      stage: 'INTRO_TALK',
-      firstConditions: {
-        examPassed: null,
-        reportSubmittedOn: null,
-        reportDue: null,
+      cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.days(-12) },
+      stage: 'SHEET_SELECTION',
+    }),
+    caseRecord({
+      id: 'c-201',
+      person: {
+        id: 'p-baran',
+        firstName: 'Elżbieta',
+        lastName: 'Baran',
+        position: 'Prezes urzędu centralnego',
+        unit: 'Urząd centralny (dane demonstracyjne)',
+        employment: 'URZEDNIK',
+        hiredOn: '2019-02-01',
+        officeHead: true,
+        managesPeople: true,
+      },
+      evaluatorId: 'ev-zawadzki',
+      sheetId: 'A',
+      cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-10) },
+      stage: 'OBSERVATION',
+      completedOn: {
+        SHEET_SELECTION: r.months(-10, 5),
+        OPENING_TALK: r.months(-10, 12),
+        PART_I_ACK: r.months(-10, 13),
+      },
+      partI: {
+        ...emptyPartI(),
+        additionalCriteria: ['wystapienia_publiczne'],
+        assessmentDue: defaultAssessmentDue(r.months(-10, 13)),
+        confirmedByEvaluatorOn: r.months(-10, 12),
+        acknowledgedByEmployeeOn: r.months(-10, 13),
       },
     }),
   ];
+}
+
+/** Negative assessment: the talk was held, the evaluator is about to sign. */
+function negativeSignatureCase(r: Rel): CaseRecord {
+  const confirmed = r.months(-24, 3);
+  const talk = r.days(-1);
+  return caseRecord({
+    id: 'c-007',
+    person: {
+      id: 'p-zielinska',
+      firstName: 'Monika',
+      lastName: 'Zielińska',
+      position: 'Specjalista do spraw obsługi sekretariatu',
+      unit: TEAM_UNIT,
+      employment: 'PRACOWNIK',
+      hiredOn: '2020-02-03',
+      officeHead: false,
+      managesPeople: false,
+    },
+    evaluatorId: SUPERVISOR_ID,
+    sheetId: 'C',
+    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25) },
+    stage: 'SIGNATURE',
+    completedOn: {
+      SHEET_SELECTION: confirmed,
+      OPENING_TALK: confirmed,
+      PART_I_ACK: confirmed,
+      OBSERVATION: r.days(-6),
+      ASSESSMENT: talk,
+    },
+    partI: {
+      ...emptyPartI(),
+      additionalCriteria: ['orientacja_na_klienta'],
+      assessmentDue: defaultAssessmentDue(confirmed),
+      confirmedByEvaluatorOn: confirmed,
+      acknowledgedByEmployeeOn: confirmed,
+    },
+    decisions: {
+      wykorzystywanie_wiedzy: 3,
+      rzetelnosc: 1,
+      organizacja_pracy: 3,
+      wspolpraca: 5,
+      komunikacja: 3,
+      orientacja_na_klienta: 5,
+    },
+    justification:
+      'Rzetelność 1 pkt: w okresie oceny trzykrotnie nie przekazano pism w terminie ustawowym, mimo uzgodnionego planu naprawczego. Organizacja pracy i komunikacja poniżej oczekiwań: brak sygnalizowania zaległości.',
+    iprz: 'Szkolenie z instrukcji kancelaryjnej i EZD; cotygodniowy przegląd zaległości z przełożonym przez 3 miesiące.',
+    assessmentTalkOn: talk,
+    history: [
+      {
+        date: talk,
+        text: 'Przeprowadzono rozmowę oceniającą. Wynik wstępny: ocena negatywna.',
+      },
+    ],
+  });
+}
+
+/** Sheet B, team leader in the assessment stage with a draft. */
+function teamLeaderDraftCase(r: Rel): CaseRecord {
+  const confirmed = r.months(-23, 20);
+  return caseRecord({
+    id: 'c-008',
+    person: {
+      id: 'p-kowalczyk',
+      firstName: 'Tomasz',
+      lastName: 'Kowalczyk',
+      position: 'Kierownik zespołu do spraw usług cyfrowych',
+      unit: TEAM_UNIT,
+      employment: 'URZEDNIK',
+      hiredOn: '2013-05-06',
+      officeHead: false,
+      managesPeople: true,
+    },
+    evaluatorId: SUPERVISOR_ID,
+    sheetId: 'B',
+    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-24) },
+    stage: 'ASSESSMENT',
+    completedOn: {
+      SHEET_SELECTION: confirmed,
+      OPENING_TALK: confirmed,
+      PART_I_ACK: confirmed,
+      OBSERVATION: r.days(-3),
+    },
+    partI: {
+      ...emptyPartI(),
+      additionalCriteria: ['kreatywnosc', 'orientacja_na_klienta'],
+      assessmentDue: defaultAssessmentDue(confirmed),
+      confirmedByEvaluatorOn: confirmed,
+      acknowledgedByEmployeeOn: confirmed,
+    },
+    decisions: {
+      zarzadzanie_ludzmi: 7,
+      podejmowanie_decyzji: 7,
+      organizacja_pracy: 9,
+    },
+  });
 }

@@ -1,29 +1,21 @@
-import { displayName } from '../assessments/assessment.format.js';
 import {
   evaluate,
   type EvaluateResult,
   validateEvaluation,
 } from '../assessments/evaluate.rules.js';
-import { COMPETENCY_MODEL } from '../competency-model/data/model.data.js';
-import type { Competency } from '../competency-model/competency-model.types.js';
+import {
+  CRITERIA_CATALOGUE,
+  knownCriterionName,
+} from '../criteria/data/criteria.data.js';
 import { SHEETS } from '../sheets/sheets.data.js';
 import type { Sheet } from '../sheets/sheet.types.js';
-import type { CaseRecord, FirstConditions, StageId } from './case.types.js';
+import type { CaseRecord, StageId } from './case.types.js';
 
-export function findCompetency(id: string): Competency | undefined {
-  return COMPETENCY_MODEL.competencies.find((c) => c.id === id);
-}
-
-/** "Rzetelność"; the id itself when unknown. */
-export function criterionName(id: string): string {
-  const competency = findCompetency(id);
-  return competency ? displayName(competency.name) : id;
-}
-
-export function knownCriterionName(id: string): string | undefined {
-  const competency = findCompetency(id);
-  return competency ? displayName(competency.name) : undefined;
-}
+export {
+  criterionName,
+  findCriterion,
+  knownCriterionName,
+} from '../criteria/data/criteria.data.js';
 
 export function sheetOf(record: Pick<CaseRecord, 'sheetId'>): Sheet | null {
   return SHEETS.find((s) => s.id === record.sheetId) ?? null;
@@ -35,7 +27,6 @@ export function caseCriteria(
 ): string[] {
   const sheet = sheetOf(record);
   if (!sheet) return [];
-  if (sheet.kind === 'FIRST') return [...sheet.mandatoryCriteria];
   return [...sheet.mandatoryCriteria, ...record.partI.additionalCriteria];
 }
 
@@ -46,26 +37,10 @@ export function allDecided(record: CaseRecord): boolean {
   );
 }
 
-/** Whether the first-assessment report was on time; null while undecided. */
-export function reportOnTime(
-  conditions: FirstConditions | null,
-  today: string,
-): boolean | null {
-  if (!conditions) return null;
-  const { reportSubmittedOn, reportDue } = conditions;
-  if (reportSubmittedOn)
-    return reportDue ? reportSubmittedOn <= reportDue : null;
-  if (reportDue && today > reportDue) return false;
-  return null;
-}
-
-/**
- * Result computed with the v1 rules once every criterion has a decision (and,
- * for FIRST, both conditions are known); null otherwise.
- */
+/** Result once every criterion has a valid decision; null otherwise. */
 export function computeEvaluation(
   record: CaseRecord,
-  today: string,
+  _today?: string,
 ): EvaluateResult | null {
   const sheet = sheetOf(record);
   if (!sheet || !allDecided(record)) return null;
@@ -73,52 +48,25 @@ export function computeEvaluation(
     criterionId,
     points: record.decisions[criterionId],
   }));
-  let first: Parameters<typeof evaluate>[2];
-  if (sheet.kind === 'FIRST') {
-    const onTime = reportOnTime(record.firstConditions, today);
-    const exam = record.firstConditions?.examPassed;
-    if (!exam || onTime === null) return null;
-    first = { examPassed: exam, reportSubmittedOnTime: onTime };
-  }
-  if (validateEvaluation(sheet, scores, first, knownCriterionName).length > 0) {
+  if (validateEvaluation(sheet, scores, knownCriterionName).length > 0) {
     return null;
   }
-  return evaluate(
-    sheet,
-    scores,
-    first,
-    knownCriterionName,
-    COMPETENCY_MODEL.scale,
-  );
+  return evaluate(sheet, scores, knownCriterionName, CRITERIA_CATALOGUE.scale);
 }
 
-/**
- * The current stage. The store keeps ASSESSMENT / FIRST_ASSESSMENT for the
- * whole part II; once every criterion is decided, the case is in
- * JUSTIFICATION / FIRST_CONDITIONS.
- */
+/** The current stage (kept for symmetry with older derived stages). */
 export function effectiveStage(record: CaseRecord): StageId {
-  if (record.stage === 'ASSESSMENT' && allDecided(record))
-    return 'JUSTIFICATION';
-  if (record.stage === 'FIRST_ASSESSMENT' && allDecided(record)) {
-    return 'FIRST_CONDITIONS';
-  }
   return record.stage;
 }
 
 export const STAGE_NAMES: Record<StageId, string> = {
-  OSP_ANALYSIS: 'Analiza opisu stanowiska',
-  SHEET_PROPOSAL: 'Wstępny formularz',
+  SHEET_SELECTION: 'Wybór arkusza, kryteriów i terminu oceny',
   OPENING_TALK: 'Rozmowa rozpoczynająca · część I',
+  PART_I_ACK: 'Potwierdzenie części I przez ocenianego',
   OBSERVATION: 'Okres oceny · obserwacje',
-  ASSESSMENT: 'Formularz oceny kompetencji',
-  JUSTIFICATION: 'Uzasadnienie i plan rozwoju (IPRZ)',
-  DOCUMENT: 'Dokument i zapoznanie',
-  INTRO_TALK: 'Rozmowa wstępna',
-  REPORT: 'Sprawozdanie pracownika',
-  FIRST_ASSESSMENT: 'Formularz pierwszej oceny',
-  FIRST_CONDITIONS: 'Warunki pierwszej oceny',
-  FIRST_DOCUMENT: 'Dokument i zapoznanie',
+  ASSESSMENT: 'Rozmowa oceniająca i ocena',
+  SIGNATURE: 'Podpis oceniającego i przekazanie do zapoznania',
+  ACKNOWLEDGEMENT: 'Zapoznanie ocenianego z oceną',
 };
 
 export function fullName(person: { firstName: string; lastName: string }) {

@@ -9,11 +9,7 @@ import {
 import {
   assessmentDueDeadline,
   defaultAssessmentDue,
-  defaultReportDue,
   describeDaysLeft,
-  firstAssessmentDeadline,
-  firstAssessmentWindow,
-  introTalkDeadline,
   objectionDeadline,
   openingTalkDeadline,
   reassessmentAfterNegativeDue,
@@ -128,28 +124,6 @@ describe('objection (art. 83 ust. 1)', () => {
     const spec = objectionDeadline('2026-11-18');
     expect(spec.date).toBe('2026-11-25');
     expect(spec.legalBasis).toContain('art. 83 ust. 1');
-  });
-});
-
-describe('first assessment (rozp. 2015, art. 38)', () => {
-  it('introductory talk within 21 days (§3)', () => {
-    const spec = introTalkDeadline('2015-11-23');
-    expect(spec.date).toBe('2015-12-14');
-    expect(spec.legalBasis).toContain('§3');
-  });
-
-  it('default report due falls after 8 months of work', () => {
-    expect(defaultReportDue('2026-03-16')).toBe('2026-11-30');
-  });
-
-  it('window: after 8 months, at the latest 1 month before the contract ends', () => {
-    expect(firstAssessmentWindow('2026-03-16')).toEqual({
-      from: '2026-11-17',
-      to: '2027-02-15',
-    });
-    expect(firstAssessmentDeadline('2026-03-16').legalBasis).toContain(
-      'art. 38 ust. 1',
-    );
   });
 });
 

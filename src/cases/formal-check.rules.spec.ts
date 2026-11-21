@@ -33,6 +33,7 @@ describe('formalCheck: periodic', () => {
       ['ALL_CRITERIA_DECIDED', false],
       ['POINTS_IN_SCALE', true],
       ['ADDITIONAL_CRITERIA_CONSISTENT', true],
+      ['ASSESSMENT_TALK_HELD', false],
       ['JUSTIFICATION_IF_NEGATIVE', false],
       ['IPRZ_REQUIRED', false],
       ['PROMOTION_REQUEST', false],
@@ -55,6 +56,14 @@ describe('formalCheck: periodic', () => {
     expect(
       item({ ...negative, justification: 'Opis.' }, 'JUSTIFICATION_IF_NEGATIVE')
         ?.ok,
+    ).toBe(true);
+  });
+
+  it('requires the assessment talk before signing (§10)', () => {
+    const r = decided([7, 7, 7, 7, 7, 7]);
+    expect(item(r, 'ASSESSMENT_TALK_HELD')?.ok).toBe(false);
+    expect(
+      item({ ...r, assessmentTalkOn: TODAY }, 'ASSESSMENT_TALK_HELD')?.ok,
     ).toBe(true);
   });
 
@@ -86,63 +95,9 @@ describe('formalCheck: periodic', () => {
     const r = {
       ...base,
       iprz: 'Plan.',
+      assessmentTalkOn: TODAY,
       promotionRequest: { ...base.promotionRequest, attached: 'NO' as const },
     };
     expect(formalCheck(r, TODAY).every((i) => i.ok)).toBe(true);
-  });
-});
-
-describe('formalCheck: first assessment', () => {
-  const first = (patch: Partial<CaseRecord>): CaseRecord => ({
-    ...seed('c-004'),
-    decisions: {
-      rzetelnosc: 5,
-      wykorzystywanie_wiedzy: 5,
-      organizacja_pracy: 7,
-      komunikacja: 5,
-      wspolpraca: 5,
-    },
-    ...patch,
-  });
-
-  it('requires the conditions (exam, report on time)', () => {
-    const r = first({
-      firstConditions: {
-        examPassed: null,
-        reportSubmittedOn: null,
-        reportDue: '2026-11-30',
-      },
-    });
-    const check = item(r, 'FIRST_CONDITIONS_FILLED');
-    expect(check?.ok).toBe(false);
-    expect(check?.message).toContain('egzaminu');
-    expect(check?.message).toContain('sprawozdania');
-  });
-
-  it('is fine once the report was submitted on time', () => {
-    const r = first({
-      firstConditions: {
-        examPassed: 'YES',
-        reportSubmittedOn: TODAY,
-        reportDue: '2026-11-30',
-      },
-    });
-    expect(formalCheck(r, TODAY).every((i) => i.ok)).toBe(true);
-    expect(item(r, 'IPRZ_REQUIRED')).toBeUndefined();
-  });
-
-  it('a 9-point decision is outside the 3/5/7 scale', () => {
-    const r = first({});
-    r.decisions = { ...r.decisions, komunikacja: 9 };
-    expect(item(r, 'POINTS_IN_SCALE')?.ok).toBe(false);
-  });
-
-  it('refuses an assessment before 8 months of work (art. 38 ust. 1)', () => {
-    const r = first({});
-    expect(item(r, 'FIRST_ASSESSMENT_WINDOW', '2026-11-10')).toMatchObject({
-      ok: false,
-      legalBasis: expect.stringContaining('art. 38 ust. 1'),
-    });
-    expect(item(r, 'FIRST_ASSESSMENT_WINDOW')?.ok).toBe(true);
   });
 });

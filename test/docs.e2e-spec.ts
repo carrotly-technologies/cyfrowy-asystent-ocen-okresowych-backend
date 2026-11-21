@@ -81,14 +81,14 @@ describe('Source documents (e2e)', () => {
       indexed: boolean;
       note: string | null;
     }[];
-    expect(docs.length).toBeGreaterThanOrEqual(15);
+    expect(docs.length).toBeGreaterThanOrEqual(12);
     const ro = docs.find((d) => d.id === 'RO')!;
     expect(ro).toMatchObject({ indexed: true, note: null });
     await get(ro.url!).expect(200);
     for (const d of docs.filter((x) => x.url?.startsWith('/api/docs/'))) {
       await get(d.url!).expect(200);
     }
-    expect(docs.find((d) => d.id === 'opis-zadania')?.indexed).toBe(false);
+    expect(docs.find((d) => d.id === 'wykaz-kryteriow')?.indexed).toBe(false);
   });
 
   it('links each source of an answer, PDFs on their page', async () => {

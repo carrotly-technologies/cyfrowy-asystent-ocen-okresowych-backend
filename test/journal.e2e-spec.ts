@@ -135,11 +135,6 @@ describe('Journal: notes and observations about an employee (e2e)', () => {
 
     it.each([
       ['unknown criterion', { criterionId: 'nie-ma' }, 'nie istnieje'],
-      [
-        'indicator of another criterion',
-        { indicatorId: 'rzetelnosc.1' },
-        'nie należy',
-      ],
       ['date in the future', { date: '2026-11-22' }, 'z przyszłości'],
       ['empty situation', { situation: ' ' }, 'sytuację'],
       ['malformed date', { date: '21.11.2026' }, 'RRRR-MM-DD'],
@@ -159,8 +154,8 @@ describe('Journal: notes and observations about an employee (e2e)', () => {
         .expect(201);
       await http()
         .patch(`/api/observations/${obs.id}`)
-        .send({ criterionId: 'rzetelnosc' })
-        .expect(400); // komunikacja.2 is not an indicator of rzetelnosc
+        .send({ criterionId: 'nie-ma' })
+        .expect(400);
       const patched = await http()
         .patch(`/api/observations/${obs.id}`)
         .send({

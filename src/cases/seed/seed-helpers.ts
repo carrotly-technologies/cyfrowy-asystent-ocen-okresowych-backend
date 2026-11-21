@@ -4,9 +4,7 @@ import type {
   Observation,
   PartI,
   PreviousAssessment,
-  RatingPoints,
 } from '../case.types.js';
-import { findCompetency } from '../case.rules.js';
 import { addDays, addMonths, isNonWorkingDay } from '../dates.js';
 import { emptyPromotionRequest } from '../promotion.rules.js';
 
@@ -39,50 +37,30 @@ export function emptyPartI(): PartI {
 
 type Required_ = Pick<
   CaseRecord,
-  'id' | 'person' | 'evaluatorId' | 'path' | 'cycleStart' | 'stage'
+  'id' | 'person' | 'evaluatorId' | 'cycleStart' | 'stage'
 >;
 
 export function caseRecord(base: Required_ & Partial<CaseRecord>): CaseRecord {
   return {
     sheetId: null,
-    ospId: null,
     completedOn: {},
     partI: emptyPartI(),
     observations: [],
-    ratings: {},
     decisions: {},
     deviationNotes: {},
     justification: '',
     iprz: '',
     previousAssessment: null,
     promotionRequest: emptyPromotionRequest(base.person.employment),
-    firstConditions: null,
+    assessmentTalkOn: null,
     signedByEvaluatorOn: null,
     sentForAckOn: null,
     acknowledgedOn: null,
     history: [],
     lastReminderOn: null,
+    nextCaseId: null,
     ...base,
   };
-}
-
-/**
- * Indicator ratings of one criterion: `points` for every indicator, with
- * optional overrides (`null` = brak podstaw do oceny).
- */
-export function ratingsFor(
-  criterionId: string,
-  points: RatingPoints,
-  overrides: Record<string, RatingPoints | null> = {},
-): Record<string, RatingPoints | null> {
-  const competency = findCompetency(criterionId);
-  if (!competency) throw new Error(`Unknown criterion ${criterionId}`);
-  return Object.fromEntries(
-    competency.indicators.map((i) => [
-      i.id,
-      i.id in overrides ? overrides[i.id] : points,
-    ]),
-  );
 }
 
 export function observations(

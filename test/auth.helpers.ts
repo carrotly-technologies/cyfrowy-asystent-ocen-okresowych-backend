@@ -3,7 +3,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types.js';
 
 /** Password of every demo account (README, src/auth/users.seed.ts). */
-export const DEMO_PASSWORD = 'Kompas2026!';
+export const DEMO_PASSWORD = 'Ocena2026!';
 
 /** Signs in through the real route and returns the bearer token. */
 export async function loginAs(

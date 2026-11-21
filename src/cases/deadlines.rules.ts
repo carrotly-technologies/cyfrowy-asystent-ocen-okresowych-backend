@@ -1,8 +1,7 @@
-import { RO_2016, RP_2015 } from '../assessments/assessment.format.js';
+import { RO_2016 } from '../assessments/assessment.format.js';
 import type { CycleStart, Deadline } from './case.types.js';
 import {
   addDays,
-  addMonths,
   daysBetween,
   daysTermEnd,
   formatDatePl,
@@ -110,56 +109,6 @@ export function objectionDeadline(acknowledgedOn: string): DeadlineSpec {
     'Termin na wniesienie sprzeciwu do dyrektora generalnego urzędu',
     `art. 83 ust. 1 ${USC}: 7 dni od dnia zapoznania się z oceną`,
   );
-}
-
-/** First assessment: introductory talk within 21 days of hiring (§3). */
-export function introTalkDeadline(hiredOn: string): DeadlineSpec {
-  return termEnd(
-    daysTermEnd(hiredOn, 21),
-    'Rozmowa wstępna do',
-    `§3 ${RP_2015}: 21 dni od nawiązania stosunku pracy`,
-  );
-}
-
-/**
- * Default report due date set at the introductory talk. It has to fall after
- * 8 months of employment (§4 ust. 1); we propose 8 months + 14 days, which
- * leaves time for the talk and the assessment before the window closes.
- */
-export function defaultReportDue(hiredOn: string): string {
-  return shiftToWorkingDay(addDays(monthsTermEnd(hiredOn, 8), 14));
-}
-
-export function reportDeadline(reportDue: string | null): DeadlineSpec {
-  return {
-    date: reportDue,
-    label: 'Sprawozdanie pracownika do',
-    legalBasis: `§4 ust. 1 i §6 ${RP_2015}: termin wyznaczony na rozmowie wstępnej`,
-  };
-}
-
-/**
- * Window of the first assessment (art. 38 ust. 1 ustawy): after 8 months of
- * employment and no later than 1 month before the 12-month contract ends.
- */
-export function firstAssessmentWindow(hiredOn: string): {
-  from: string;
-  to: string;
-} {
-  const contractEnd = addDays(monthsTermEnd(hiredOn, 12), -1);
-  return {
-    from: addDays(monthsTermEnd(hiredOn, 8), 1),
-    to: addMonths(contractEnd, -1),
-  };
-}
-
-export function firstAssessmentDeadline(hiredOn: string): DeadlineSpec {
-  const window = firstAssessmentWindow(hiredOn);
-  return {
-    date: window.to,
-    label: 'Pierwsza ocena najpóźniej do',
-    legalBasis: `art. 38 ust. 1 ${USC}: po upływie 8 miesięcy pracy (od ${formatDatePl(window.from)}) i nie później niż miesiąc przed końcem umowy`,
-  };
 }
 
 /** Relates a deadline to "today": days left and OK / SOON / OVERDUE / NONE. */

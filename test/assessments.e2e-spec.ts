@@ -5,7 +5,7 @@ import { AppModule } from './../src/app.module.js';
 import { configureApp } from './../src/configure-app.js';
 import { loginAs, withToken } from './auth.helpers.js';
 
-describe('Competency model, sheets and assessments (e2e)', () => {
+describe('Criteria, sheets and assessments (e2e)', () => {
   let app: INestApplication<App>;
   let token: string;
 
@@ -26,38 +26,34 @@ describe('Competency model, sheets and assessments (e2e)', () => {
 
   const http = () => withToken(app, token);
 
-  describe('GET /api/competency-model', () => {
-    it('returns the model with Polish texts', async () => {
-      const res = await http().get('/api/competency-model').expect(200);
-      expect(res.body.title).toContain('MODEL KOMPETENCJI');
-      expect(res.body.instructions).toHaveLength(3);
+  describe('GET /api/criteria', () => {
+    it('returns the catalogue of załącznik nr 1 with descriptions', async () => {
+      const res = await http().get('/api/criteria').expect(200);
+      expect(res.body.legalBasis).toContain('załącznik nr 1');
       expect(res.body.scale[0]).toEqual({
         points: 1,
         label: 'Znacznie poniżej oczekiwań',
       });
-      expect(res.body.competencies).toHaveLength(14);
-      expect(res.body.competencies[0]).toMatchObject({
-        id: 'rzetelnosc',
-        name: 'RZETELNOŚĆ',
+      expect(res.body.criteria).toHaveLength(14);
+      expect(res.body.criteria[0]).toMatchObject({
+        id: 'komunikacja',
+        number: 1,
+        name: 'Komunikacja',
       });
-      expect(
-        Object.keys(res.body.competencies[0].indicators[0].levels),
-      ).toEqual(['1', '3', '5', '7', '9']);
+      expect(res.body.criteria[0].description).toHaveLength(4);
     });
   });
 
   describe('GET /api/sheets', () => {
-    it('returns the four sheets', async () => {
+    it('returns the three periodic sheets', async () => {
       const res = await http().get('/api/sheets').expect(200);
       expect(res.body.map((s: { id: string }) => s.id)).toEqual([
         'A',
         'B',
         'C',
-        'FIRST',
       ]);
       expect(res.body[1]).toMatchObject({
         name: 'Arkusz B oceny okresowej',
-        kind: 'PERIODIC',
         scale: [1, 3, 5, 7, 9],
         maxAdditionalCriteria: 3,
         template: {
@@ -69,13 +65,6 @@ describe('Competency model, sheets and assessments (e2e)', () => {
         },
       });
       expect(res.body[2].template.annex).toBe('Załącznik nr 4');
-      expect(res.body[3]).toMatchObject({
-        name: 'Arkusz pierwszej oceny',
-        kind: 'FIRST',
-        scale: [3, 5, 7],
-        maxAdditionalCriteria: 0,
-        template: null,
-      });
     });
   });
 
@@ -94,79 +83,6 @@ describe('Competency model, sheets and assessments (e2e)', () => {
         'IX',
       ]);
       expect(res.body.legalBasis).toContain('art. 86 ust. 1');
-    });
-  });
-
-  describe('POST /api/assessments/suggest-level', () => {
-    it('answers 200 with a suggestion', async () => {
-      const res = await http()
-        .post('/api/assessments/suggest-level')
-        .send({
-          sheetId: 'C',
-          competencyId: 'komunikacja',
-          indicatorRatings: [
-            { indicatorId: 'komunikacja.1', points: 5 },
-            { indicatorId: 'komunikacja.2', points: 3 },
-            { indicatorId: 'komunikacja.3', points: null },
-          ],
-        })
-        .expect(200);
-      expect(res.body).toMatchObject({
-        suggestedPoints: 5,
-        suggestedLabel: 'Na poziomie oczekiwań',
-        ratedCount: 2,
-        skippedCount: 1,
-        mean: 4,
-        isSuggestionOnly: true,
-      });
-      expect(typeof res.body.rationale).toBe('string');
-      expect(Array.isArray(res.body.warnings)).toBe(true);
-    });
-
-    it('returns null when nothing is rated', async () => {
-      const res = await http()
-        .post('/api/assessments/suggest-level')
-        .send({
-          sheetId: 'FIRST',
-          competencyId: 'rzetelnosc',
-          indicatorRatings: [],
-        })
-        .expect(200);
-      expect(res.body).toMatchObject({ suggestedPoints: null, mean: null });
-    });
-
-    it('answers 400 for points outside 1/3/5/7/9', async () => {
-      const res = await http()
-        .post('/api/assessments/suggest-level')
-        .send({
-          sheetId: 'C',
-          competencyId: 'komunikacja',
-          indicatorRatings: [{ indicatorId: 'komunikacja.1', points: 4 }],
-        })
-        .expect(400);
-      expect(res.body.message.join(' ')).toContain(
-        'Ocena wskaźnika musi wynosić',
-      );
-    });
-
-    it('answers 400 for an unknown sheet', async () => {
-      const res = await http()
-        .post('/api/assessments/suggest-level')
-        .send({
-          sheetId: 'D',
-          competencyId: 'komunikacja',
-          indicatorRatings: [],
-        })
-        .expect(400);
-      expect(res.body.message.join(' ')).toContain('sheetId musi mieć');
-    });
-
-    it('answers 400 for an unknown competency', async () => {
-      const res = await http()
-        .post('/api/assessments/suggest-level')
-        .send({ sheetId: 'C', competencyId: 'xyz', indicatorRatings: [] })
-        .expect(400);
-      expect(res.body.message).toEqual(['Nieznana kompetencja „xyz”.']);
     });
   });
 
@@ -199,29 +115,6 @@ describe('Competency model, sheets and assessments (e2e)', () => {
       expect(res.body.reasons.length).toBeGreaterThan(0);
     });
 
-    it('evaluates a first assessment', async () => {
-      const res = await http()
-        .post('/api/assessments/evaluate')
-        .send({
-          sheetId: 'FIRST',
-          scores: [
-            'rzetelnosc',
-            'wykorzystywanie_wiedzy',
-            'organizacja_pracy',
-            'komunikacja',
-            'wspolpraca',
-          ].map((criterionId) => ({ criterionId, points: 5 })),
-          firstAssessment: { examPassed: 'YES', reportSubmittedOnTime: true },
-        })
-        .expect(200);
-      expect(res.body).toMatchObject({
-        average: 5,
-        averageDisplay: '5,00',
-        level: null,
-        result: 'POSITIVE',
-      });
-    });
-
     it('answers 400 with Polish domain messages', async () => {
       const res = await http()
         .post('/api/assessments/evaluate')
@@ -236,17 +129,6 @@ describe('Competency model, sheets and assessments (e2e)', () => {
       expect(res.body.message).toContain(
         'Brak oceny kryterium obowiązkowego „Komunikacja” (arkusz C).',
       );
-    });
-
-    it('answers 400 for FIRST without firstAssessment', async () => {
-      const res = await http()
-        .post('/api/assessments/evaluate')
-        .send({
-          sheetId: 'FIRST',
-          scores: C.map((criterionId) => ({ criterionId, points: 5 })),
-        })
-        .expect(400);
-      expect(res.body.message.join(' ')).toContain('firstAssessment');
     });
 
     it('answers 400 for a malformed body', async () => {

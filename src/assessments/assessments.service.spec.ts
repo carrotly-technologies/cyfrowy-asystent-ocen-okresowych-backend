@@ -1,6 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { CompetencyModelService } from '../competency-model/competency-model.service.js';
 import { SheetsService } from '../sheets/sheets.service.js';
 import { AssessmentsService } from './assessments.service.js';
 
@@ -9,38 +8,29 @@ describe('AssessmentsService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [AssessmentsService, CompetencyModelService, SheetsService],
+      providers: [AssessmentsService, SheetsService],
     }).compile();
     service = module.get(AssessmentsService);
   });
 
-  it('suggests a level', () => {
-    const result = service.suggestLevel({
+  it('evaluates a complete sheet C', () => {
+    const result = service.evaluate({
       sheetId: 'C',
-      competencyId: 'rzetelnosc',
-      indicatorRatings: [
-        { indicatorId: 'rzetelnosc.1', points: 7 },
-        { indicatorId: 'rzetelnosc.2', points: 7 },
-      ],
+      scores: [
+        'wykorzystywanie_wiedzy',
+        'rzetelnosc',
+        'organizacja_pracy',
+        'wspolpraca',
+        'komunikacja',
+      ].map((criterionId) => ({ criterionId, points: 7 })),
     });
-    expect(result.suggestedPoints).toBe(7);
-    expect(result.suggestedLabel).toBe('Powyżej oczekiwań');
-  });
-
-  it('throws 400 with Polish messages for an unknown competency', () => {
-    expect(() =>
-      service.suggestLevel({
-        sheetId: 'C',
-        competencyId: 'nope',
-        indicatorRatings: [],
-      }),
-    ).toThrow(BadRequestException);
+    expect(result.result).toBe('POSITIVE');
   });
 
   it('throws 400 listing every domain error of an evaluation', () => {
     try {
       service.evaluate({
-        sheetId: 'FIRST',
+        sheetId: 'C',
         scores: [{ criterionId: 'rzetelnosc', points: 5 }],
       });
       expect.unreachable();
@@ -49,7 +39,7 @@ describe('AssessmentsService', () => {
       const body = (error as BadRequestException).getResponse() as {
         message: string[];
       };
-      expect(body.message).toHaveLength(5); // 4 missing elements + firstAssessment
+      expect(body.message).toHaveLength(4); // 4 missing mandatory criteria
     }
   });
 });

@@ -1,51 +1,36 @@
-import { RO_2016, RP_2015 } from '../assessments/assessment.format.js';
-import {
-  computeEvaluation,
-  effectiveStage,
-  STAGE_NAMES,
-} from './case.rules.js';
+import { RO_2016 } from '../assessments/assessment.format.js';
+import { computeEvaluation, STAGE_NAMES } from './case.rules.js';
 import {
   type CaseRecord,
   type CaseStatus,
   type CycleStart,
   type Deadline,
-  FIRST_STAGES,
-  PERIODIC_STAGES,
   type StageId,
   type StageInfo,
+  STAGES,
 } from './case.types.js';
 import { addMonths } from './dates.js';
 import {
   assessmentDueDeadline,
   type DeadlineSpec,
-  firstAssessmentDeadline,
-  introTalkDeadline,
   objectionDeadline,
   openingTalkDeadline,
-  reportDeadline,
   toDeadline,
   USC,
 } from './deadlines.rules.js';
 
 export const STAGE_LEGAL_BASIS: Record<StageId, string> = {
-  OSP_ANALYSIS: `§3 i §5 ust. 1 pkt 1, ust. 2 ${RO_2016}`,
-  SHEET_PROPOSAL: `§3 ust. 3–4, §2 ust. 2 i §5 ust. 2 ${RO_2016}`,
+  SHEET_SELECTION: `§2 ust. 2, §3, §5 ust. 2–3 ${RO_2016}`,
   OPENING_TALK: `§5–§7 ${RO_2016}`,
-  OBSERVATION: `art. 81 ust. 1 ${USC}; §5 ust. 3 ${RO_2016}`,
-  ASSESSMENT: `§10, §11 ust. 1 pkt 1–4 ${RO_2016}`,
-  JUSTIFICATION: `§11 ust. 1 pkt 5 i ust. 3–4 ${RO_2016}; art. 108 ${USC}`,
-  DOCUMENT: `§12 ${RO_2016}; art. 83 ust. 1 ${USC}`,
-  INTRO_TALK: `§3–§4 ${RP_2015}`,
-  REPORT: `§4 ust. 1, §6 ${RP_2015}`,
-  FIRST_ASSESSMENT: `art. 38 ust. 1–2 ${USC}; §7–§9 ${RP_2015}`,
-  FIRST_CONDITIONS: `§10 ust. 1 ${RP_2015}`,
-  FIRST_DOCUMENT: `§11 ${RP_2015}; art. 38 ust. 3 ${USC}`,
+  PART_I_ACK: `§6 ust. 2–3 ${RO_2016}`,
+  OBSERVATION: `art. 81 ust. 1 ${USC}`,
+  ASSESSMENT: `§10, §11 ${RO_2016}; art. 108 ${USC}`,
+  SIGNATURE: `§11 ust. 2, §12 ust. 1 ${RO_2016}`,
+  ACKNOWLEDGEMENT: `§12 ${RO_2016}; art. 83 ust. 1 ${USC}`,
 };
 
-export function stageOrder(
-  record: Pick<CaseRecord, 'path'>,
-): readonly StageId[] {
-  return record.path === 'FIRST' ? FIRST_STAGES : PERIODIC_STAGES;
+export function stageOrder(): readonly StageId[] {
+  return STAGES;
 }
 
 function stageDeadlineSpec(
@@ -53,44 +38,30 @@ function stageDeadlineSpec(
   stage: StageId,
 ): DeadlineSpec | null {
   switch (stage) {
-    case 'OSP_ANALYSIS':
+    case 'SHEET_SELECTION':
       return {
         ...openingTalkDeadline(record.cycleStart),
-        label: 'Analiza OSP przed rozmową rozpoczynającą, najpóźniej do',
-      };
-    case 'SHEET_PROPOSAL':
-      return {
-        ...openingTalkDeadline(record.cycleStart),
-        label:
-          'Akceptacja formularza przed rozmową rozpoczynającą, najpóźniej do',
+        label: 'Wybór arkusza i kryteriów przed rozmową rozpoczynającą, do',
       };
     case 'OPENING_TALK':
+    case 'PART_I_ACK':
       return openingTalkDeadline(record.cycleStart);
     case 'OBSERVATION':
     case 'ASSESSMENT':
-    case 'JUSTIFICATION':
       return assessmentDueDeadline(
         record.cycleStart,
         record.partI.assessmentDue,
       );
-    case 'DOCUMENT':
+    case 'SIGNATURE':
+      return assessmentDueDeadline(
+        record.cycleStart,
+        record.partI.assessmentDue,
+      );
+    case 'ACKNOWLEDGEMENT':
       return {
         date: null,
         label: 'Zapoznanie ocenianego z oceną niezwłocznie po jej sporządzeniu',
         legalBasis: `§12 ust. 1 ${RO_2016}; art. 81 ust. 3 ${USC}`,
-      };
-    case 'INTRO_TALK':
-      return introTalkDeadline(record.person.hiredOn);
-    case 'REPORT':
-      return reportDeadline(record.firstConditions?.reportDue ?? null);
-    case 'FIRST_ASSESSMENT':
-    case 'FIRST_CONDITIONS':
-      return firstAssessmentDeadline(record.person.hiredOn);
-    case 'FIRST_DOCUMENT':
-      return {
-        date: null,
-        label: 'Zapoznanie ocenianego z oceną niezwłocznie po jej dokonaniu',
-        legalBasis: `§11 ${RP_2015}`,
       };
   }
 }
@@ -103,10 +74,8 @@ export function stageDeadline(
 ): Deadline | null {
   const spec = stageDeadlineSpec(record, stage);
   if (!spec) return null;
-  // Stages "niezwłocznie" keep a NONE deadline; others need a date.
-  if (!spec.date && stage !== 'DOCUMENT' && stage !== 'FIRST_DOCUMENT') {
-    return null;
-  }
+  // "Niezwłocznie" keeps a NONE deadline; others need a date.
+  if (!spec.date && stage !== 'ACKNOWLEDGEMENT') return null;
   return toDeadline(spec, today);
 }
 
@@ -115,7 +84,7 @@ export function nextCycleStart(
   record: CaseRecord,
   today: string,
 ): CycleStart | null {
-  if (record.path !== 'PERIODIC' || !record.signedByEvaluatorOn) return null;
+  if (!record.signedByEvaluatorOn) return null;
   const negative = computeEvaluation(record, today)?.result === 'NEGATIVE';
   if (negative && record.acknowledgedOn) {
     return {
@@ -131,7 +100,7 @@ export function objectionDeadlineOf(
   record: CaseRecord,
   today: string,
 ): Deadline | null {
-  if (record.path !== 'PERIODIC' || !record.acknowledgedOn) return null;
+  if (!record.acknowledgedOn) return null;
   return toDeadline(objectionDeadline(record.acknowledgedOn), today);
 }
 
@@ -146,21 +115,9 @@ export function caseStatus(record: CaseRecord, today: string): CaseStatus {
   return 'W_TOKU';
 }
 
-/**
- * Date a stage was completed. Cases accepted before SHEET_PROPOSAL existed
- * chose the sheet together with the OSP analysis, so that date stands in.
- */
-function completedOnOf(record: CaseRecord, id: StageId): string | null {
-  const date = record.completedOn[id];
-  if (date) return date;
-  return id === 'SHEET_PROPOSAL'
-    ? (record.completedOn.OSP_ANALYSIS ?? null)
-    : null;
-}
-
 export function buildStages(record: CaseRecord, today: string): StageInfo[] {
-  const order = stageOrder(record);
-  const current = order.indexOf(effectiveStage(record));
+  const order = stageOrder();
+  const current = order.indexOf(record.stage);
   const finished = record.acknowledgedOn !== null;
   return order.map((id, index) => {
     const status =
@@ -176,7 +133,7 @@ export function buildStages(record: CaseRecord, today: string): StageInfo[] {
       name: STAGE_NAMES[id],
       status,
       deadline: status === 'DONE' ? null : stageDeadline(record, id, today),
-      completedOn: status === 'DONE' ? completedOnOf(record, id) : null,
+      completedOn: status === 'DONE' ? (record.completedOn[id] ?? null) : null,
       legalBasis: STAGE_LEGAL_BASIS[id],
     };
   });
@@ -184,8 +141,8 @@ export function buildStages(record: CaseRecord, today: string): StageInfo[] {
 
 /**
  * The deadline that matters now: the current stage's; after the employee
- * acknowledged a periodic assessment, the objection term and then the opening
- * talk of the next cycle.
+ * acknowledged the assessment, the objection term and then the opening talk
+ * of the next cycle (unless the next cycle already has its own case).
  */
 export function nextDeadline(
   record: CaseRecord,
@@ -196,6 +153,7 @@ export function nextDeadline(
     if (objection && objection.daysLeft !== null && objection.daysLeft >= 0) {
       return objection;
     }
+    if (record.nextCaseId) return null;
     const next = nextCycleStart(record, today);
     if (!next) return null;
     return toDeadline(
@@ -206,11 +164,10 @@ export function nextDeadline(
       today,
     );
   }
-  return stageDeadline(record, effectiveStage(record), today);
+  return stageDeadline(record, record.stage, today);
 }
 
 export function cycleLabel(record: CaseRecord): string {
-  if (record.path === 'FIRST') return 'Pierwsza ocena';
   const anchor =
     record.cycleStart.kind === 'HIRED'
       ? record.cycleStart.date

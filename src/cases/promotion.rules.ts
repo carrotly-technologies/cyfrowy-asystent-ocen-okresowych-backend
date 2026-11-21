@@ -4,7 +4,7 @@ import {
   GRADE_IDS,
   type GradeId,
 } from '../civil-service-grades/data/grades.data.js';
-import { COMPETENCY_MODEL } from '../competency-model/data/model.data.js';
+import { CRITERIA_CATALOGUE } from '../criteria/data/criteria.data.js';
 import type {
   CaseRecord,
   Employment,
@@ -76,7 +76,7 @@ export function nextGrade(id: string): GradeId | null {
 
 /** Overall levels as the sheet writes them ("na poziomie oczekiwań"). */
 export function previousLevelLabels(): string[] {
-  return COMPETENCY_MODEL.scale.map((s) =>
+  return CRITERIA_CATALOGUE.scale.map((s) =>
     displayName(s.label).toLocaleLowerCase('pl-PL'),
   );
 }

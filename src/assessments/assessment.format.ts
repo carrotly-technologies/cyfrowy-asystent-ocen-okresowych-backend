@@ -1,6 +1,5 @@
 /** Legal references used in Polish messages. */
 export const RO_2016 = 'rozp. PRM z 4.04.2016';
-export const RP_2015 = 'rozp. PRM z 23.07.2015';
 
 const EPSILON = 1e-9;
 
