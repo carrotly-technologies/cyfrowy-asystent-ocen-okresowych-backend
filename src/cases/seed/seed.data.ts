@@ -22,6 +22,7 @@ export const SUPERVISOR_ID = 'ev-kaminska';
 /** Assessed people with their own EMPLOYEE account (src/auth/users.seed.ts). */
 export const EMPLOYEE_NOWAK = 'p-nowak';
 export const EMPLOYEE_WOJCIK = 'p-wojcik';
+export const EMPLOYEE_MAZUR = 'p-mazur';
 const TEAM_UNIT = 'Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych';
 
 export const EVALUATORS: readonly Evaluator[] = [
@@ -495,7 +496,7 @@ function sheetSelectionCase(r: Rel): CaseRecord {
   return caseRecord({
     id: 'c-004',
     person: {
-      id: 'p-mazur',
+      id: EMPLOYEE_MAZUR,
       firstName: 'Julia',
       lastName: 'Mazur',
       position: 'Specjalista do spraw analiz danych',

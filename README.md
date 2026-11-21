@@ -116,6 +116,7 @@ Every demo account has the password `Ocena2026!`.
 | `e.dabrowska` | `EMPLOYEE`  | Ewa Dąbrowska (assessed), case c-006 in the 7-day objection period: may file a sprzeciw |
 | `t.jankowski` | `EMPLOYEE`  | Tadeusz Jankowski (assessed), case c-301 with a sprzeciw waiting for the dyrektor generalny |
 | `b.wisniewska` | `DIRECTOR` | Barbara Wiśniewska, dyrektor generalny urzędu: decides objections (c-301) |
+| `j.mazur`    | `EMPLOYEE`   | Julia Mazur (assessed), case c-004 at the sheet selection: the whole process from step 1 (used by the frontend's Playwright tests) |
 | `a.lis`      | `HR`         | Agnieszka Lis, HR (kadry), all 16 cases                        |
 | `admin`      | `ADMIN`      | Marek Zając, administrator                                     |
 
