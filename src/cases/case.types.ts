@@ -1,3 +1,5 @@
+import type { OfficeConfig } from '../config/office.js';
+import type { Correction } from './correction.rules.js';
 import type { EvaluateResult } from '../assessments/evaluate.rules.js';
 import type { SheetSuggestion } from '../sheets/sheet-suggestion.rules.js';
 import type { SheetId } from '../sheets/sheet.types.js';
@@ -155,6 +157,8 @@ export interface HistoryEntry {
 export interface CaseDetail extends CaseSummary {
   evaluator: Omit<Evaluator, 'id'>;
   officeName: string;
+  /** Name, city (signatures), logo, sheet A objection addressee (env OFFICE_*). */
+  office: OfficeConfig;
   sheetSuggestion: SheetSuggestion;
   partI: PartI;
   observations: Observation[];
@@ -172,6 +176,10 @@ export interface CaseDetail extends CaseSummary {
   acknowledgedOn: string | null;
   objectionDeadline: Deadline | null;
   history: HistoryEntry[];
+  /** Administrator corrections of locked fields (audit: who, when, old → new, why). */
+  corrections: Correction[];
+  /** Why part I / parts II–III are locked now (null = editable). */
+  locks: { partI: string | null; partII: string | null };
 }
 
 /**
@@ -206,6 +214,8 @@ export interface CaseRecord {
   sentForAckOn: string | null;
   acknowledgedOn: string | null;
   history: HistoryEntry[];
+  /** Audit of the administrator's „tryb korekty” (src/cases/correction.rules.ts). */
+  corrections?: Correction[];
   lastReminderOn: string | null;
   /** Set when a later cycle of the same person exists (this one is archived). */
   nextCaseId: string | null;

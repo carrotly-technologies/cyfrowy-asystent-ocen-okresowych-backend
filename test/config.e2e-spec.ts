@@ -40,7 +40,7 @@ describe('Config and FEATURE_ASSISTANT (e2e)', () => {
     await request(app.getHttpServer())
       .get('/api/config')
       .expect(200)
-      .expect({ features: { assistant: true } });
+      .expect((res) => expect(res.body.features).toEqual({ assistant: true }));
     await http()
       .post('/api/assistant/ask')
       .send({ question: 'Jak liczyć terminy?', assistant: 'FORMAL' })
@@ -55,7 +55,7 @@ describe('Config and FEATURE_ASSISTANT (e2e)', () => {
     await request(app.getHttpServer())
       .get('/api/config')
       .expect(200)
-      .expect({ features: { assistant: false } });
+      .expect((res) => expect(res.body.features).toEqual({ assistant: false }));
     await http()
       .post('/api/assistant/ask')
       .send({ question: 'Jak liczyć terminy?', assistant: 'FORMAL' })

@@ -95,7 +95,8 @@ describe('Authentication, roles and permissions (e2e)', () => {
       ['get', '/api/criteria'],
       ['post', '/api/demo/reset'],
     ] as const)('%s %s', async (method, path) => {
-      await anon()[method](path).expect(401);
+      const res = await anon()[method](path).expect(401);
+      expect(res.body.message).toMatch(/Musisz się zalogować/);
     });
 
     it('rejects a forged token', async () => {
@@ -150,7 +151,8 @@ describe('Authentication, roles and permissions (e2e)', () => {
     });
 
     it("403 on another supervisor's case: read, edit, observe, act", async () => {
-      await as(sikora).get('/api/cases/c-001').expect(403);
+      const other = await as(sikora).get('/api/cases/c-001').expect(403);
+      expect(other.body.message).toBe('Brak uprawnień do tej operacji.');
       await as(sikora)
         .patch('/api/cases/c-001')
         .send({ iprz: 'x' })
@@ -183,7 +185,8 @@ describe('Authentication, roles and permissions (e2e)', () => {
     });
 
     it('403 on the HR panel and the admin API', async () => {
-      await as(kaminska).get('/api/hr/overview').expect(403);
+      const hr = await as(kaminska).get('/api/hr/overview').expect(403);
+      expect(hr.body.message).toBe('Brak uprawnień do tej operacji.');
       await as(kaminska).get('/api/admin/users').expect(403);
     });
   });
