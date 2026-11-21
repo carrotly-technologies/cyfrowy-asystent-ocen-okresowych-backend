@@ -1,13 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { fullName } from '../cases/case.rules.js';
 import type { CaseSummary } from '../cases/case.types.js';
 import { CasesService } from '../cases/cases.service.js';
 import { formatDatePl } from '../cases/dates.js';
 import { describeDaysLeft } from '../cases/deadlines.rules.js';
+import { canRemind, statusText } from './hr.rules.js';
 
 export interface HrCase extends CaseSummary {
   evaluatorName: string;
   lastReminderOn: string | null;
+  /** False for a finished case or an objection under review. */
+  remindable: boolean;
 }
 
 @Injectable()
@@ -19,6 +26,7 @@ export class HrService {
       ...this.cases.summary(record),
       evaluatorName: this.cases.evaluatorName(record),
       lastReminderOn: record.lastReminderOn,
+      remindable: canRemind(this.cases.summary(record).status),
     }));
     const count = (pred: (c: HrCase) => boolean) => cases.filter(pred).length;
     return {
@@ -46,6 +54,14 @@ export class HrService {
     if (unknown.length > 0) {
       throw new NotFoundException(
         `Nie znaleziono teczek oceny: ${unknown.map((id) => `„${id}”`).join(', ')}.`,
+      );
+    }
+    const closed = [...new Set(caseIds)]
+      .map((id) => this.cases.record(id))
+      .filter((r) => !canRemind(this.cases.summary(r).status));
+    if (closed.length > 0) {
+      throw new ConflictException(
+        `Nie wysłano przypomnień: ${closed.map((r) => `${fullName(r.person)} (${statusText(this.cases.summary(r).status)})`).join(', ')}. Przy ocenie zakończonej i przy sprzeciwie rozpatrywanym przez dyrektora generalnego oceniający nie ma nic do zrobienia.`,
       );
     }
     const today = this.cases.today;

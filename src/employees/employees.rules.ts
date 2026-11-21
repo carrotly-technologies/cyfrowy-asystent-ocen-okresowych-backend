@@ -154,3 +154,55 @@ export function effectiveEvaluator(
     ? { evaluatorId: active.substituteId, substitution: active }
     : { evaluatorId, substitution: null };
 }
+
+/**
+ * Next step of HR when the next grade is obligatory (art. 89 ust. 2): the
+ * director general grants it within 30 days of the acknowledgement.
+ */
+export function obligatoryPromotionNextStep(
+  deadline: string | null,
+  today: string,
+  formatDate: (iso: string) => string,
+): string {
+  const act =
+    'Przygotuj dla dyrektora generalnego urzędu akt przyznania kolejnego stopnia służbowego';
+  if (!deadline)
+    return `${act}; termin (30 dni od zapoznania z oceną) wylicz po uzupełnieniu daty zapoznania.`;
+  return deadline < today
+    ? `${act} niezwłocznie: termin upłynął ${formatDate(deadline)}.`
+    : `${act} do ${formatDate(deadline)}.`;
+}
+
+/** Org unit names compared without case and extra spaces. */
+export function normalizeUnit(unit: string): string {
+  return unit.trim().replace(/\s+/g, ' ');
+}
+
+const unitKey = (unit: string) =>
+  normalizeUnit(unit).toLocaleLowerCase('pl-PL');
+const firstSegment = (unit: string) => unitKey(unit).split(',')[0].trim();
+
+/**
+ * A new organisational unit must not duplicate an existing one: the same
+ * name written differently ("wydział legislacji") or only its first part
+ * ("Wydział Legislacji" for "Wydział Legislacji, Departament Prawny"), or
+ * an existing short name with a part added.
+ * Returns the existing unit it collides with, or null when the name is new
+ * or exactly an existing one.
+ */
+export function conflictingUnit(
+  unit: string,
+  existing: readonly string[],
+): string | null {
+  const name = normalizeUnit(unit);
+  if (existing.includes(name)) return null;
+  const key = unitKey(name);
+  return (
+    existing.find(
+      (e) =>
+        unitKey(e) === key ||
+        firstSegment(e) === key ||
+        firstSegment(name) === unitKey(e),
+    ) ?? null
+  );
+}

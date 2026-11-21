@@ -88,8 +88,8 @@ only by an ADMIN in correction mode. Every correction is audited in `CaseDetail.
 | ------------ | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `SUPERVISOR` | `GET /api/team`, `GET /api/cases` (own only), read, PATCH, observations and the evaluator's actions of own cases; own journal about own employees | other supervisors' cases and employees, `EMPLOYEE_ACK_*` actions, `/api/hr/*`, `/api/admin/*` |
 | `EMPLOYEE`   | the assessed person: `GET /api/cases` and `GET /api/cases/:id` of own cases only (read only; no observations, part II only after hand-over), actions `EMPLOYEE_ACK_PART_I` and `EMPLOYEE_ACK_ASSESSMENT` | other cases, PATCH, observations, other actions, `/api/team`, `/api/hr/*`, `/api/admin/*`, journal |
-| `HR`         | `/api/hr/*`, `GET /api/cases` (all), `GET /api/cases/:id` (read only)                                 | PATCH, observations, actions, `/api/team`, `/api/admin/*`, journal |
-| `ADMIN`      | `/api/admin/*`                                                                                        | cases, `/api/team`, `/api/hr/*`, journal                  |
+| `HR`         | `/api/hr/*`, `GET /api/cases` (all), `GET /api/cases/:id` (read only), HR register (kartoteka) reads and writes | PATCH, observations, actions, `/api/team`, `/api/admin/*`, journal |
+| `ADMIN`      | technical role: `/api/admin/*` (accounts, „tryb korekty”), HR register and statistics read only        | register writes (employees, absences, substitutions, import, new cycle), cases, `/api/team`, `/api/hr/*`, journal |
 | `DIRECTOR`   | dyrektor generalny urzędu: `GET /api/objections`, `GET /api/cases(/:id)` of cases with a sprzeciw (read only), `POST /api/cases/:id/objection/decision` | other cases, PATCH, actions, `/api/team`, `/api/hr/*`, `/api/admin/*`, journal |
 | every role   | `/api/me`, assistant, `/api/docs`, criteria, sheets, assessments, `POST /api/demo/reset` | —                                                         |
 
@@ -174,8 +174,8 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
 | `PATCH /api/cases/:id`           | Partial update; 400 for invalid values, 409 for parts locked at the current stage       |
 | `POST /api/cases/:id/observations` | Adds an S-D-R observation (201)                                                        |
 | `POST /api/cases/:id/actions`    | State machine (`{ action }`); 403 when the caller is not the actor of the action, 409 with a Polish explanation for an illegal transition |
-| `GET /api/hr/overview`           | Counters and every case in the office, with evaluator and last reminder                 |
-| `POST /api/hr/reminders`         | Simulated reminders (`{ caseIds }`), logged in each case's history                       |
+| `GET /api/hr/overview`           | Counters and every case in the office, with evaluator, last reminder and `remindable` |
+| `POST /api/hr/reminders`         | Simulated reminders (`{ caseIds }`), logged in each case's history; 409 for a finished case or an objection under review |
 | `POST /api/demo/reset`           | Restores the seed (cases, accounts, journal, pulse, HR register)                          |
 
 ### Deadlines, scheduler and notifications
@@ -309,7 +309,8 @@ answer comes from the rules.
 
 `src/employees`. Stored in PostgreSQL (`employees`, `employee_absences`, `evaluator_substitutions`,
 `assessment_history`) with `DATABASE_URL`, in memory without it; the demo seed (25 fictional people in 5 units,
-`employees.seed.ts`) goes into empty tables only and is restored by `POST /api/demo/reset`. Writes: `HR`, `ADMIN`.
+`employees.seed.ts`) goes into empty tables only and is restored by `POST /api/demo/reset`. Writes: `HR` only
+(`ADMIN` is a technical role: it reads the register and fixes locked case fields only in „tryb korekty”).
 Reads: `HR`, `ADMIN` and `SUPERVISOR` (only people they assess, also as an active substitute; others 403).
 Statistics (and their CSV): `HR`, `ADMIN`, `DIRECTOR`; register CSV: `HR`, `ADMIN`. Cases stay in `CaseStore`; this module starts them and keeps their
 person data, evaluator and absences in step.
@@ -317,7 +318,8 @@ person data, evaluator and absences in step.
 | Route | What it does |
 | ----- | ------------ |
 | `GET /api/employees` | Register: `?q=` (name, position, unit), `unit`, `employment`, `sheet`, `evaluatorId`, `sort=lastName\|unit\|position\|deadline`; each with `evaluatorName`, `effectiveEvaluator*` (substitution), `sheetId` (case or suggestion), `currentCase`, `lastAssessment`, `obligatoryPromotion` |
-| `GET /api/employees/:id` | One employee (same view) |
+| `GET /api/employees/:id` | One employee (same view) plus `nextCycle` (`{ ok, reason, openingTalk }`, null with an open case): preview of a new cycle, so the UI warns when the opening-talk term already passed. `currentCase.assessmentDue` = assessment term with `baseDate` and `extended` (art. 81 ust. 7 absences; the opening-talk term is never extended). `obligatoryPromotion` has `deadline` (30 days from acknowledgement) and `nextStep` |
+| `GET /api/employees/units` | Known organisational units (register + evaluators). `POST`/`PATCH` refuse (400) a new unit that duplicates one of them (other case/spaces, or only its first part such as „Wydział Legislacji”) |
 | `POST /api/employees` | `{ firstName, lastName, unit, position, employment, officeHead, managesPeople, appointedYear, grade, gradeGrantedOn, indefiniteSince, evaluatorId }` (201) |
 | `PATCH /api/employees/:id` | Any of those; open cases get the new person data, a new `evaluatorId` moves them (zmiana podległości, noted in the case history) |
 | `DELETE /api/employees/:id` | 204; 409 while an assessment is in progress (not acknowledged). Deletes the record, absences and imported history; finished cases are anonymised ("Dane usunięte") so statistics keep them without personal data |
@@ -325,7 +327,7 @@ person data, evaluator and absences in step.
 | `GET /api/employees/:id/history` | `{ cases, imported }`: every system cycle (result, level) and imported assessments |
 | `GET/POST /api/employees/:id/absences`, `DELETE …/absences/:absenceId` | `{ type, from, to, justified?, note? }`; GET also returns `continuous` (merged periods with `longerThanMonth`) |
 | `GET /api/employees/absence-types`, `GET /api/employees/evaluators` | Absence kinds (`data/absence-types.data.ts`) and evaluators to pick from |
-| `POST /api/employees/history/import` | `{ csv }`: past assessments; all-or-nothing, 400 with a Polish message per bad row, duplicates (same person and date) skipped. Sample: `docs/import/oceny-historyczne-przyklad.csv` |
+| `POST /api/employees/history/import` | `{ csv }`: past assessments; all-or-nothing, 400 with a Polish message per bad row, duplicates (same person and date) skipped; `{ imported, skipped, rows: [{ line, employeeId, name, assessedOn, result, level, skipped }] }`. Sample: `docs/import/oceny-historyczne-przyklad.csv` |
 | `GET/POST /api/substitutions`, `DELETE /api/substitutions/:id` | Evaluator substitutions `{ evaluatorId, substituteId, from, to, note? }` |
 | `GET /api/statistics?unit=` | Results, levels, negative %, signed on time vs late, open overdue, cases per stage, promotions requested / obligatory (art. 89 ust. 2), per unit |
 | `GET /api/statistics/export.csv`, `GET /api/employees/export.csv` | CSV (`;`, UTF-8 BOM) of the statistics and of the register |

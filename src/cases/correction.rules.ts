@@ -511,9 +511,14 @@ export function applyCorrection(
   next.corrections = [...(record.corrections ?? []), correction];
   next.history.push({
     date: meta.today,
-    text: `Korekta błędu przez administratora (${meta.by.name}): ${def.section.toLowerCase()}, pole „${def.label}”. Powód: ${reason}`,
+    text: `Korekta błędu przez administratora (${meta.by.name}): ${sectionInSentence(def.section)}, pole „${def.label}”. Powód: ${reason}`,
   });
   return { record: next, correction };
+}
+
+/** "Część II" inside a sentence: "część II" (the Roman numeral stays upper case). */
+export function sectionInSentence(section: string): string {
+  return section.charAt(0).toLocaleLowerCase('pl-PL') + section.slice(1);
 }
 
 /**

@@ -43,6 +43,7 @@ describe('correction rules (tryb korekty błędów przez administratora)', () =>
       'Korekta błędu przez administratora (Marek Zając)',
     );
     expect(record.history.at(-1)!.text).toContain(REASON);
+    expect(record.history.at(-1)!.text).toContain('część II, pole');
   });
 
   it('requires a reason', () => {

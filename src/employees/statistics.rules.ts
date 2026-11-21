@@ -171,7 +171,7 @@ export function statisticsCsv(stats: Statistics, today: string): string {
     ['W toku w terminie', stats.timeliness.openOnTrack],
     ['Wnioski o kolejny stopień', stats.promotions.requested],
     [
-      'Obligatoryjny kolejny stopień (art. 89 ust. 2)',
+      'Obowiązkowy kolejny stopień (art. 89 ust. 2)',
       stats.promotions.obligatory,
     ],
     [],
