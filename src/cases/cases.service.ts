@@ -29,7 +29,8 @@ import type { ObservationInput, PatchCase } from './cases.schemas.js';
 import { formatDatePl } from './dates.js';
 import { describeDaysLeft } from './deadlines.rules.js';
 import { addObservation, applyPatch } from './patch.rules.js';
-import { OFFICE_NAME } from './seed/seed.data.js';
+import { ConfigService } from '@nestjs/config';
+import { type OfficeConfig, readOffice } from '../config/office.js';
 
 export interface TodoItem {
   caseId: string;
@@ -54,7 +55,13 @@ export class CasesService {
     private readonly store: CaseStore,
     private readonly auth: AuthenticationContext,
     private readonly authorization: AuthorizationService,
-  ) {}
+    config: ConfigService,
+  ) {
+    this.office = readOffice(config);
+  }
+
+  /** The office printed on the sheets (env OFFICE_*, src/config/office.ts). */
+  readonly office: OfficeConfig;
 
   get today(): string {
     return this.store.today;
@@ -70,7 +77,7 @@ export class CasesService {
       role: user.role,
       position: user.position,
       unit: user.unit,
-      officeName: OFFICE_NAME,
+      officeName: this.office.name,
     };
   }
 
@@ -200,7 +207,7 @@ export class CasesService {
       record,
       this.today,
       this.store.evaluator(record.evaluatorId),
-      OFFICE_NAME,
+      this.office,
       actor,
     );
   }

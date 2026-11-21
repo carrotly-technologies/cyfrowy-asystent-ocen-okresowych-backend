@@ -9,6 +9,8 @@ import type {
   CaseSummary,
   Evaluator,
 } from './case.types.js';
+import type { OfficeConfig } from '../config/office.js';
+import { caseLocks } from './correction.rules.js';
 import { formalCheck } from './formal-check.rules.js';
 import { promotionRequestOf } from './promotion.rules.js';
 import {
@@ -44,14 +46,15 @@ export function toDetail(
   record: CaseRecord,
   today: string,
   evaluator: Evaluator,
-  officeName: string,
+  office: OfficeConfig,
   actor: Actor | null = 'EVALUATOR',
 ): CaseDetailView {
   const { id: _id, ...evaluatorView } = evaluator;
   const detail: CaseDetailView = {
     ...toSummary(record, today),
     evaluator: evaluatorView,
-    officeName,
+    officeName: office.name,
+    office,
     sheetSuggestion: suggestSheet(record.person),
     partI: record.partI,
     observations: record.observations,
@@ -69,6 +72,8 @@ export function toDetail(
     acknowledgedOn: record.acknowledgedOn,
     objectionDeadline: objectionDeadlineOf(record, today),
     history: record.history,
+    corrections: record.corrections ?? [],
+    locks: caseLocks(record),
     availableActions: actor ? availableActions(record, today, actor) : [],
   };
   if (actor !== 'EMPLOYEE') return detail;
@@ -85,6 +90,12 @@ export function toDetail(
           justification: '',
           iprz: '',
           evaluation: null,
+          // Values of part II/III corrections stay hidden until the hand-over.
+          corrections: detail.corrections.map((c) =>
+            c.section === 'Część I'
+              ? c
+              : { ...c, oldValue: '(ukryte)', newValue: '(ukryte)' },
+          ),
           promotionRequest: {
             ...detail.promotionRequest,
             motivation: '',

@@ -19,6 +19,10 @@ cp .env.example .env   # optional, defaults work out of the box
 | `FEATURE_ASSISTANT` | `true`                  | AI assistant chat; `false` hides it and 404s `/api/assistant/*` |
 | `JWT_SECRET`        | dev-only default        | HS256 key for sign-in tokens (32+ bytes: `openssl rand -base64 32`); without it a warning is logged |
 | `DATABASE_URL`      | (unset)                 | PostgreSQL URL; unset = in-memory storage (lost on restart)     |
+| `OFFICE_NAME`       | `Urząd demonstracyjny (dane fikcyjne)` | „NAZWA URZĘDU” on sheets A/B/C (`GET /api/config` → `office`) |
+| `OFFICE_CITY`       | `Warszawa`              | „miejscowość” next to the signatures on the sheets              |
+| `OFFICE_LOGO_URL`   | (unset)                 | Optional logo URL shown on the on-screen sheet                  |
+| `OBJECTION_RECIPIENT_A` | (unset)             | Sheet A „Pouczenie”: whom the objection goes to (blank = dotted line) |
 
 ### Database (optional)
 
@@ -65,6 +69,18 @@ curl localhost:3000/api/me -H "Authorization: Bearer $TOKEN"
 | `GET /api/me`                | The signed-in user: `{ id, login, name, role, position, unit, officeName }`          |
 | `GET /api/admin/users`       | ADMIN: every account (no password hashes)                                            |
 | `PATCH /api/admin/users/:id` | ADMIN: `{ role }`; 409 for removing your own ADMIN role                              |
+| `GET /api/admin/cases`       | ADMIN („tryb korekty”): every case (summary, evaluator, number of corrections)        |
+| `GET /api/admin/cases/:id`   | ADMIN: `{ case, fields }`: the case read-only and its correctable fields with current values |
+| `POST /api/admin/cases/:id/corrections` | ADMIN: `{ field, value, reason }` (reason ≥ 10 chars) → 201 `{ correction, case, fields }`; 400 bad value/field, 409 field not locked yet |
+
+Generic 401 / 403 answer in Polish („Musisz się zalogować…”, „Brak uprawnień do tej operacji.”,
+`src/common/polish-auth-errors.filter.ts`); specific messages (e.g. a wrong password) are kept.
+
+**Tryb korekty błędów przez administratora.** Fields lock after each confirmation (part I after the opening talk,
+part II/III after the signature; `CaseDetail.locks` says why) and, as the form schema requires, can then be changed
+only by an ADMIN in correction mode. Every correction is audited in `CaseDetail.corrections`
+(`{ at, by, field, label, section, oldValue, newValue, reason }`) and as a line in `history`. Rules:
+`src/cases/correction.rules.ts` (correctable fields, validation per kind, part III next grade = current + 1).
 
 | Role         | May                                                                                                   | 403 on                                                    |
 | ------------ | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -133,6 +149,7 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
 | `GET /api/cases`                 | Cases visible to the caller (`CaseSummary[]`): own for a supervisor, own („Moje oceny”) for an employee, all for HR |
 | `GET /api/team`                  | The supervisor's cases (`CaseSummary[]`) and `todo` sorted by deadline                   |
 | `GET /api/cases/:id`             | `CaseDetail`: stages, deadlines, sheet suggestion, part I, observations, part II, formal check |
+| `GET /api/cases/:id/sheet.pdf`   | Sheet A/B/C as PDF, generated on the server (pdfmake, Roboto), `ocena-<nazwisko>-<data>.pdf`; same access as the route above |
 | `PATCH /api/cases/:id`           | Partial update; 400 for invalid values, 409 for parts locked at the current stage       |
 | `POST /api/cases/:id/observations` | Adds an S-D-R observation (201)                                                        |
 | `POST /api/cases/:id/actions`    | State machine (`{ action }`); 403 when the caller is not the actor of the action, 409 with a Polish explanation for an illegal transition |

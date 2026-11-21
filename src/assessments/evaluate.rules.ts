@@ -69,7 +69,8 @@ export function validateEvaluation(
   return errors;
 }
 
-const PERIODIC_BANDS: readonly {
+/** §11 ust. 1 pkt 2 rozp. 2016: average bands of the overall level. */
+export const PERIODIC_BANDS: readonly {
   max: number;
   points: number;
   range: string;
