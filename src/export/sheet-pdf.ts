@@ -1,5 +1,5 @@
 import type { Content, TableCell } from 'pdfmake';
-import type { TDocumentDefinitions } from './pdf-renderer.js';
+import { DOCUMENT_FONT, type TDocumentDefinitions } from './pdf-renderer.js';
 import { PERIODIC_BANDS } from '../assessments/evaluate.rules.js';
 import type { CaseDetail } from '../cases/case.types.js';
 import { formatDatePl } from '../cases/dates.js';
@@ -575,7 +575,7 @@ export function sheetDocument(detail: CaseDetail): TDocumentDefinitions {
     },
     pageSize: 'A4',
     pageMargins: [40, 40, 40, 50],
-    defaultStyle: { font: 'Roboto', fontSize: 9.5, lineHeight: 1.15 },
+    defaultStyle: { font: DOCUMENT_FONT, fontSize: 9.5, lineHeight: 1.15 },
     footer: (page: number, pages: number) => ({
       margin: [40, 10, 40, 0],
       columns: [
