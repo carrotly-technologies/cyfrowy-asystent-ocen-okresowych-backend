@@ -25,58 +25,23 @@ export const isConfident = (hit: SearchHit | undefined): boolean =>
 
 /**
  * Best-matching Q&A entry first (when it matches well), then primary sources
- * (acts, guides, deadline notes, competency model).
+ * (acts, guides, HR standards, deadline notes, use cases).
  */
-const PERIODIC_RE = /okresow/i;
-const FIRST_RE =
-  /pierwsz\p{L}* ocen|ocen\p{L}* pierwsz|nowy pracownik|nowego pracownika|sprawozdani|służb\p{L}* przygotowawcz/iu;
-
-/**
- * Which assessment the question is about, when it names only one: periodic
- * (rozp. 2016, its guide) or first (rozp. 2015, its guide).
- */
-export function questionPath(question: string): 'PERIODIC' | 'FIRST' | null {
-  const periodic = PERIODIC_RE.test(question);
-  const first = FIRST_RE.test(question);
-  if (periodic === first) return null;
-  return periodic ? 'PERIODIC' : 'FIRST';
-}
-
-/** The path a Q&A entry is about, from the sources it cites. */
-function qaPath(hit: SearchHit): 'PERIODIC' | 'FIRST' | null {
-  const source = hit.chunk.qa?.source ?? '';
-  const first = /\[(RP|PP)\]/.test(source);
-  const periodic = /\[(RO|PO)\]/.test(source);
-  if (first === periodic) return null;
-  return first ? 'FIRST' : 'PERIODIC';
-}
-
 export function retrieve(
   kb: KnowledgeBase,
   question: string,
   exclude: KnowledgeDocId[] = [],
 ): Retrieval {
-  const path = questionPath(question);
-  const skip: KnowledgeDocId[] = [
-    ...exclude,
-    ...(path === 'PERIODIC' ? (['RP', 'PP'] as const) : []),
-    ...(path === 'FIRST' ? (['RO', 'PO'] as const) : []),
-  ];
   const qa = exclude.includes('QA')
     ? []
     : kb
-        .searchQaQuestions(question, 3)
-        .filter((h) => {
-          const p = qaPath(h);
-          return !path || !p || p === path;
-        })
-        .slice(0, 1)
+        .searchQaQuestions(question, 1)
         .filter(
           (h) => h.score >= QA_MIN_SCORE && h.coverage >= QA_MIN_COVERAGE,
         );
   const primary = kb.search(question, {
     k: MAX_SOURCES - qa.length,
-    exclude: ['QA', ...skip],
+    exclude: ['QA', ...exclude],
   });
   const hits = [...qa, ...primary];
   const grounded = hits.some(isConfident);
@@ -195,13 +160,13 @@ export function extractiveAnswer(
   return lead + lines.join('\n');
 }
 
-export const SYSTEM_PROMPT = `Jesteś wewnętrznym asystentem AI urzędu administracji rządowej, który pomaga przełożonym i pracownikom w pierwszej ocenie i ocenach okresowych w służbie cywilnej.
+export const SYSTEM_PROMPT = `Jesteś wewnętrznym asystentem AI urzędu administracji rządowej, który pomaga przełożonym i pracownikom w ocenach okresowych w służbie cywilnej oraz w zarządzaniu ludźmi w zespole.
 Zasady, których musisz przestrzegać:
 1. Odpowiadaj wyłącznie po polsku i wyłącznie na podstawie ponumerowanych fragmentów źródeł podanych w wiadomości. Nie korzystaj z wiedzy spoza nich.
 2. Każde zdanie z faktem, terminem lub regułą opatrz numerem fragmentu w nawiasie kwadratowym, np. [1] albo [2][3]. Nie wymyślaj numerów spoza listy.
 3. Jeżeli fragmenty nie zawierają odpowiedzi, napisz dokładnie: "Nie znalazłem tego w bazie wiedzy." i nie zgaduj. Jeżeli źródła mówią, że dana kwestia nie jest uregulowana, powiedz to wprost.
 4. Pełnisz funkcję doradczą. Nigdy nie rozstrzygaj, jaką ocenę, poziom ani liczbę punktów ma otrzymać konkretny pracownik – to decyzja oceniającego. Możesz wyjaśnić zasady i wskazać, co wziąć pod uwagę. Wspominaj o tym tylko wtedy, gdy pytanie dotyczy oceny konkretnej osoby — w pozostałych odpowiedziach nie dopisuj tego zastrzeżenia.
-5. Rozróżniaj pierwszą ocenę (pracownik na umowie na 12 miesięcy) i ocenę okresową (co 24 miesiące). Przepis aktu prawnego ma pierwszeństwo przed poradnikiem; zestaw Q&A to opracowanie źródeł.
+5. Przepis aktu prawnego ma pierwszeństwo przed poradnikiem; zestaw Q&A to opracowanie źródeł.
 6. Pisz zwięźle i konkretnie (do ok. 200 słów), podawaj liczby dni i miesięcy dokładnie tak, jak w źródłach.`;
 
 export function buildMessages(

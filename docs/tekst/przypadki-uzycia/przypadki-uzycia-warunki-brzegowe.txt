@@ -1,0 +1,125 @@
+
+Warunki brzegowe wybranych przypadków użycia:
+Przypadki użycia
+Warunki brzegowe
+powiązane z procesem oceny okresowej
+
+stałe etapy procesu:
+
+wyznaczenie kryteriów oceny
+- nawiązanie stosunku pracy na czas nieokreślony (umowa o pracę lub mianowanie)
+ALBO
+- dokonanie oceny okresowej (poprzedniej)
+(scheduler) przypomnienie o wyznaczeniu kryteriów
+
+(opcjonalnie) zaproszenie na rozmowę
+
+wprowadzenie informacji o wyznaczeniu kryteriów i przeprowadzeniu rozmowy
+wprowadza OCENIAJĄCY
+potwierdzenie odbycia rozmowy i zapoznania z kryteriami
+potwierdza OCENIANY
+rozmowa oceniająca i dokonanie oceny
+
+(scheduler) przypomnienie o zbliżającym się terminie oceny
+- co do zasady – 24 miesiące od poprzedniej oceny
+ALBO
+- 24 miesiące od nawiązania stosunku pracy na czas nieokreślony
+(opcjonalnie) zaproszenie na rozmowę
+
+wprowadzenie informacji o rozmowie i dokonanie oceny
+wprowadza OCENIAJĄCY
+potwierdzenie zapoznania się z oceną
+potwierdza OCENIANY
+(opcjonalnie) stwierdzenie fikcji zapoznania z oceną [potwierdzenie w systemie, że do ocenianego wpłynęła informacja o ocenie, ale nie mógł lub nie chciał potwierdzić, że się z nią zapoznał]
+
+warunkowe lub opcjonalne podprocesy w ramach procesu oceny okresowej
+
+zmiana terminu oceny w związku z długotrwałą nieobecnością
+Nieobecność, która:
+- jest usprawiedliwiona
+- jest ciągła
+- trwa dłużej niż miesiąc
+wprowadzenie informacji o nieobecności trwającej dłużej niż miesiąc
+
+(scheduler) zmiana terminu oceny i rozesłanie informacji o zmianie terminu oceny
+
+zmiana terminu oceny przez oceniającego
+
+zmiana terminu oceny
+
+rozesłanie informacji o zmianie terminu
+
+zmiana terminu oceny na wniosek ocenianego
+- upłynęło 6 miesięcy od poprzedniej oceny / nawiązania stosunku pracy na czas nieokreślony
+złożenie wniosku o zmianę terminu oceny
+przez OCENIANEGO
+rozpatrzenie wniosku
+przez OCENIAJĄCEGO
+(opcjonalnie) informacja o zmianie terminu oceny
+
+wniosek o przyznanie kolejnego stopnia służbowego urzędnikowi
+możliwe tylko jeśli:
+- OCENIANY jest urzędnikiem mianowanym
+ORAZ
+- otrzymał pozytywną ocenę
+złożenie wniosku o przyznanie kolejnego stopnia służbowego
+Przez OCENIAJĄCEGO
+wysłanie powiadomienia o złożeniu wniosku o przyznanie kolejnego stopnia służbowego
+
+obligatoryjne przyznanie kolejnego stopnia służbowego urzędnikowi w związku z oceną
+- OCENIANY jest urzędnikiem mianowanym
+ORAZ
+- otrzymał ocenę drugą (kolejną) ocenę na jednym z dwóch najwyższych poziomów
+(scheduler) wysyła przypomnienie o obowiązku przyznania kolejnego stopnia służbowego
+
+zmiana oceny okresowej w rezultacie uznania odwołania od oceny
+
+dokonanie zmiany oceny w wyniku uznania odwołania od oceny
+
+wysłanie powiadomienia o zmianie oceny w wyniku uznania odwołania
+
+ponowne sporządzenie oceny okresowej w rezultacie uznania odwołania od oceny
+
+polecenie ponownego sporządzenia oceny w wyniku uznania odwołania od oceny
+
+wysłanie powiadomienia o ponownym sporządzeniu oceny, anulowanie oceny i powrót do etapu „rozmowa oceniająca i dokonanie oceny” procesu oceny okresowej
+
+
+ogólne (czynności nieprzypisane do konkretnego procesu oceny):
+
+wprowadzenie danych
+
+wprowadzenie danych pracownika
+
+wprowadzenie podległości służbowej (kto kogo ocenia)
+
+utrzymanie 
+
+edycja (aktualizacja) informacji o pracowniku
+
+zmiany podległości służbowej
+
+aktualizacja danych o nieobecnościach
+
+aktualizacja danych o zastępstwach
+
+pobieranie/archiwizacja danych
+
+generowanie statystyk
+
+użytkowe
+
+wgląd w historię ocen
+
+wgląd w formularz oceny
+
+pobranie formularza oceny
+
+wydruk formularza oceny (najlepiej zgodnego z wzorem z rozporządzenia)
+
+przeglądanie listy pracowników (w tym wyszukiwanie i sortowanie)
+
+zakończenie
+
+usunięcie danych pracownika
+

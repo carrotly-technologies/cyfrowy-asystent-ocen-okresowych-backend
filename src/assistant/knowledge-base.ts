@@ -19,17 +19,13 @@ export interface SearchOptions {
 }
 
 const OFF_TOPIC_PRIOR = 0.75;
-const INDICATOR_PRIOR = 0.5;
 
 /**
  * Most of the civil service act is not about assessments; its articles without
- * an assessment topic label are ranked slightly lower. So are the level
- * descriptions of single indicators of the competency model, so that they do
- * not crowd out the rules (or the competency overview) for general questions.
+ * an assessment topic label are ranked slightly lower.
  */
 const prior = (c: KnowledgeChunk): number => {
   if (c.doc === 'U' && !c.keywords) return OFF_TOPIC_PRIOR;
-  if (c.doc === 'MK' && c.section) return INDICATOR_PRIOR;
   return 1;
 };
 

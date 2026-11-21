@@ -8,7 +8,7 @@ describe('KnowledgeBase retrieval', () => {
   it('ships chunks of every source with a citable ref', () => {
     const docs = new Set(kb.chunks.map((c) => c.doc));
     expect([...docs].sort()).toEqual(
-      ['AB', 'AC', 'AP', 'LT', 'MK', 'PO', 'PP', 'QA', 'RO', 'RP', 'U'].sort(),
+      ['AB', 'AC', 'LT', 'PO', 'QA', 'RO', 'SZ', 'U', 'UC'].sort(),
     );
     for (const c of kb.chunks) {
       expect(c.ref).toBeTruthy();
@@ -16,21 +16,8 @@ describe('KnowledgeBase retrieval', () => {
     }
   });
 
-  it('has the competency model: every competency, every indicator with 5 levels', () => {
-    const mk = kb.chunks.filter((c) => c.doc === 'MK');
-    const competencies = new Set(
-      mk.filter((c) => c.unit !== 'instrukcja').map((c) => c.unit),
-    );
-    expect(competencies.size).toBe(14);
-    const indicators = mk.filter((c) => c.section?.startsWith('Wskaźnik'));
-    expect(indicators).toHaveLength(49);
-    for (const c of indicators) {
-      for (const p of [1, 3, 5, 7, 9]) expect(c.text).toContain(`${p} pkt (`);
-    }
-  });
-
-  it('has the sheets B, C and of the first assessment', () => {
-    for (const doc of ['AB', 'AC', 'AP'] as const) {
+  it('has the sheets B and C', () => {
+    for (const doc of ['AB', 'AC'] as const) {
       expect(kb.chunks.some((c) => c.doc === doc)).toBe(true);
     }
     expect(
@@ -40,10 +27,18 @@ describe('KnowledgeBase retrieval', () => {
     ).toBe(true);
   });
 
-  it('answers a question on indicators from the competency model', () => {
-    const [first] = kb.search('Jakie są wskaźniki kompetencji współpraca?');
-    expect(first.chunk.doc).toBe('MK');
-    expect(first.chunk.ref).toContain('„współpraca”');
+  it('answers a question on feedback from the HR management standards', () => {
+    const hits = kb.search(
+      'Jaka powinna być informacja zwrotna dla pracownika w standardach zarządzania zasobami ludzkimi?',
+      { exclude: ['QA'] },
+    );
+    expect(hits.some((h) => h.chunk.doc === 'SZ')).toBe(true);
+  });
+
+  it('has no first-assessment Q&A entries', () => {
+    expect(kb.chunks.some((c) => c.qa && /\[(RP|PP)\]/.test(c.qa.source))).toBe(
+      false,
+    );
   });
 
   it('chunks acts by legal unit', () => {
@@ -57,8 +52,8 @@ describe('KnowledgeBase retrieval', () => {
     ['Jak często sporządza się ocenę okresową?', 'art. 81 ust. 4'],
     ['W jakim terminie przysługuje sprzeciw od oceny okresowej?', 'art. 83'],
     [
-      'Jakie są warunki pozytywnej pierwszej oceny?',
-      '§ 10 ust. 1 rozporządzenia w sprawie pierwszej',
+      'Co zrobić, gdy pracownik jest nieobecny dłużej niż miesiąc?',
+      'art. 81 ust. 7',
     ],
     ['Kiedy używa się arkusza A, B, a kiedy C?', '§ 3'],
   ])('finds the rule for "%s"', (question, ref) => {

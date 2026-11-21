@@ -2,16 +2,16 @@
 export type KnowledgeDocId =
   | 'U'
   | 'RO'
-  | 'RP'
   | 'PO'
-  | 'PP'
   | 'LT'
   | 'QA'
-  | 'MK'
-  /** Sheets: B and C of the periodic assessment, the first-assessment sheet. */
+  /** Standardy zarządzania zasobami ludzkimi w służbie cywilnej (2020). */
+  | 'SZ'
+  /** Use cases of the periodic assessment process (challenge material). */
+  | 'UC'
+  /** Sheets B and C of the periodic assessment. */
   | 'AB'
-  | 'AC'
-  | 'AP';
+  | 'AC';
 
 export interface QaMeta {
   no: number;

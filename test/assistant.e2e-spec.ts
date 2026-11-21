@@ -31,11 +31,11 @@ describe('Assistant (e2e, no LLM configured)', () => {
   it('answers a rule question extractively with sources', async () => {
     const res = await ask({
       question:
-        'W jakim terminie przeprowadza się rozmowę wstępną w pierwszej ocenie?',
+        'W jakim terminie przeprowadza się rozmowę rozpoczynającą proces oceny okresowej?',
       assistant: 'FORMAL',
     }).expect(200);
     expect(res.body).toMatchObject({ grounded: true, mode: 'EXTRACTIVE' });
-    expect(res.body.answer).toContain('21 dni');
+    expect(res.body.answer).toContain('30 dni');
     const [first] = res.body.sources;
     expect(first).toEqual({
       n: 1,

@@ -3,14 +3,15 @@
 // module with text chunks (src/assistant/data/knowledge.data.ts), so the app
 // needs no runtime reads.
 //
-// Acts are chunked by legal unit (art./§ + ust.), guides by page (split on
-// paragraphs when long), sheets by section, the deadline note by paragraph,
-// Q&A by question, the competency model by competency and by indicator.
+// Acts are chunked by legal unit (art./§ + ust.), guides and the HR
+// management standards by page (split on paragraphs when long), sheets by
+// section, the deadline note by paragraph, use cases by block of lines, Q&A by
+// question.
 //
-// Reads only from docs/ in this repo. The civil service act (U), the deadline
-// note (LT) and the Q&A set (QA) are not in docs/ yet: while a file is missing,
-// the chunks of that document already in knowledge.data.ts are kept as they
-// are. Drop the file at its path below and re-run to re-ingest it.
+// Reads only from docs/ in this repo. The Q&A set (QA) is not in docs/ yet:
+// while a file is missing, the chunks of that document already in
+// knowledge.data.ts are kept (without first-assessment entries, which are out
+// of scope). Drop the file at its path below and re-run to re-ingest it.
 //
 // Requires `pdftotext` (poppler) and `unzip` on PATH.
 // Usage: npm run kb:build
@@ -28,18 +29,19 @@ const target = resolve(
 const P = {
   U: 'akty-prawne/ustawa-o-sluzbie-cywilnej.pdf',
   RO: 'ocena-okresowa/rozporzadzenie-oceny-okresowe-2016.pdf',
-  RP: 'pierwsza-ocena/rozporzadzenie-pierwsza-ocena-2015.pdf',
   PO: 'ocena-okresowa/poradnik-oceny-okresowe.pdf',
-  PP: 'pierwsza-ocena/poradnik-pierwsza-ocena-2016.pdf',
   LT: 'materialy-dodatkowe/zasady-obliczania-terminow.docx',
   QA: 'materialy-dodatkowe/pytania-i-odpowiedzi.md',
   // Sheets: their text versions (docs/tekst/, generated with python-docx),
   // which keep the table layout that the raw document XML loses.
   AB: 'tekst/ocena-okresowa/arkusz-oceny-b.txt',
   AC: 'tekst/ocena-okresowa/arkusz-oceny-c.txt',
-  AP: 'tekst/pierwsza-ocena/arkusz-pierwszej-oceny.txt',
-  // The competency model: the text version of model-kompetencji.xlsx.
-  MK: 'tekst/model-kompetencji/model-kompetencji.txt',
+  // Standardy ZZL (zarządzenie nr 6 Szefa SC z 2020 r.): an OCR text version,
+  // the PDF has no usable text layer.
+  SZ: 'tekst/akty-prawne/standardy-zzl-w-sluzbie-cywilnej.txt',
+  // Use cases of the challenge (two docx files, their text versions).
+  UC: 'tekst/przypadki-uzycia/przypadki-uzycia-opis.txt',
+  UCB: 'tekst/przypadki-uzycia/przypadki-uzycia-warunki-brzegowe.txt',
 };
 
 export const DOCS = {
@@ -53,18 +55,9 @@ export const DOCS = {
       'Rozporządzenie Prezesa Rady Ministrów z dnia 4 kwietnia 2016 r. w sprawie warunków i sposobu przeprowadzania ocen okresowych urzędników służby cywilnej i pracowników służby cywilnej (Dz.U. poz. 470)',
     of: 'rozporządzenia w sprawie ocen okresowych (2016)',
   },
-  RP: {
-    title:
-      'Rozporządzenie Prezesa Rady Ministrów z dnia 23 lipca 2015 r. w sprawie szczegółowych warunków i sposobu dokonywania pierwszej oceny w służbie cywilnej (Dz.U. poz. 1144)',
-    of: 'rozporządzenia w sprawie pierwszej oceny (2015)',
-  },
   PO: {
     title: 'Poradnik KPRM „Oceny okresowe w służbie cywilnej” (2016)',
     of: 'Poradnik „Oceny okresowe w służbie cywilnej”',
-  },
-  PP: {
-    title: 'Poradnik KPRM „Pierwsza ocena w służbie cywilnej” (2016)',
-    of: 'Poradnik „Pierwsza ocena w służbie cywilnej”',
   },
   LT: {
     title: 'Zasady obliczania terminów stosowane przy dokonywaniu ocen',
@@ -84,14 +77,15 @@ export const DOCS = {
       'Arkusz C oceny okresowej – wzór (zał. nr 4 do rozporządzenia w sprawie ocen okresowych 2016): pozostałe stanowiska',
     of: 'arkusza C oceny okresowej',
   },
-  AP: {
+  SZ: {
     title:
-      'Arkusz pierwszej oceny w służbie cywilnej – wzór (zał. nr 2 do rozporządzenia w sprawie pierwszej oceny 2015)',
-    of: 'arkusza pierwszej oceny',
+      'Standardy zarządzania zasobami ludzkimi w służbie cywilnej (załącznik do zarządzenia nr 6 Szefa Służby Cywilnej z 2020 r.)',
+    of: 'Standardów zarządzania zasobami ludzkimi w służbie cywilnej',
   },
-  MK: {
-    title: 'Model kompetencji w służbie cywilnej',
-    of: 'Model kompetencji',
+  UC: {
+    title:
+      'Przypadki użycia procesu oceny okresowej (opis i warunki brzegowe, materiał wyzwania KPRM)',
+    of: 'przypadków użycia oceny okresowej',
   },
 };
 
@@ -224,32 +218,7 @@ const TOPICS = {
       'zapoznanie ocenianego z oceną, podpis, oryginał do akt osobowych, kopia arkusza, odmowa podpisu',
     '§ 13': 'przepisy przejściowe, stare przepisy',
   },
-  RP: {
-    '§ 2':
-      'elementy pierwszej oceny, kryteria pierwszej oceny, postawa, zaangażowanie, egzamin, sprawozdanie',
-    '§ 3':
-      'rozmowa wstępna, 21 dni od nawiązania stosunku pracy, termin rozmowy wstępnej, zastępstwo',
-    '§ 4':
-      'termin na złożenie sprawozdania, po 8 miesiącach, arkusz pierwszej oceny część I II',
-    '§ 5':
-      'nowy termin sprawozdania, nieobecność usprawiedliwiona, przedłużenie umowy, delegacja',
-    '§ 6': 'sprawozdanie, 7 miesięcy, treść sprawozdania',
-    '§ 7':
-      'dokonanie pierwszej oceny, rozmowa oceniająca, oceny cząstkowe, ocena łączna średnia',
-    '§ 8':
-      'rozmowa oceniająca pierwsza ocena, po złożeniu sprawozdania, kierujący komórką',
-    '§ 9': 'skala pierwszej oceny 3 5 7 punktów',
-    '§ 10':
-      'warunki pozytywnej pierwszej oceny, ocena negatywna, egzamin ze służby przygotowawczej, sprawozdanie w terminie, najwyżej jedna ocena 3 punkty, średnia co najmniej 5, uzasadnienie, wnioski rozwojowe, wynik pierwszej oceny',
-    '§ 11': 'zapoznanie z pierwszą oceną, akta osobowe, kopia arkusza',
-  },
   U: {
-    'art. 35':
-      'umowa na czas określony 12 miesięcy, nowy pracownik, przedłużenie umowy nieobecność, pierwsza ocena negatywna rozwiązanie umowy',
-    'art. 36': 'służba przygotowawcza, egzamin',
-    'art. 37': 'pierwsza ocena, kto podlega pierwszej ocenie',
-    'art. 38':
-      'pierwsza ocena termin, 8 miesięcy, miesiąc przed upływem umowy, kto dokonuje, kierujący komórką, pozytywna ocena umowa na czas nieokreślony',
     'art. 81': 'ocena okresowa',
     'art. 81 ust. 1':
       'kto podlega ocenie okresowej, kto ocenia, bezpośredni przełożony, umowa na czas nieokreślony',
@@ -567,72 +536,63 @@ function ingestSheet(doc) {
   flush();
 }
 
-// ---------------------------------------------------- competency model
+// ------------------------------------------------- page-split text files
 
-const LEVELS = [
-  [1, 'znacznie poniżej oczekiwań'],
-  [3, 'poniżej oczekiwań'],
-  [5, 'na poziomie oczekiwań'],
-  [7, 'powyżej oczekiwań'],
-  [9, 'znacznie powyżej oczekiwań'],
-];
-
-/**
- * The xlsx text version: a "Model kompetencji" sheet with the instructions,
- * then one sheet per competency with a row per indicator (name, 5 levels).
- * Chunks: the instructions and scale, one overview per competency (its
- * indicators), one per indicator with the descriptions of all 5 levels.
- */
-function ingestModel() {
-  const sheets = readFileSync(resolve(root, P.MK), 'utf8')
-    .split(/^### SHEET: .*\n/m)
-    .filter((s) => s.trim())
-    .map((s) =>
-      s
-        .trim()
-        .split('\n')
-        .map((row) =>
-          row.split(' | ').map((cell) => cell.replace(/ \/ /g, ' ').trim()),
-        ),
-    );
-  const [intro, ...competencies] = sheets;
-  const instructions = intro
-    .slice(2)
-    .map((row) => row[0])
-    .filter((t) => t && !/^Lp\.$/.test(t) && !/^\d+$/.test(t))
-    .slice(0, 3);
-  const scale = LEVELS.map(([p, l]) => `${p} – ${l}`).join('; ');
-  push(
-    'MK',
-    `${DOCS.MK.of}, instrukcja i skala`,
-    `${instructions.join('\n')}\nSkala ocen: ${scale}.`,
-    { unit: 'instrukcja' },
-  );
-  for (const rows of competencies) {
-    const name = rows[0][0].toLowerCase();
-    const indicators = rows.slice(2).filter((r) => r.length >= 6 && r[0]);
-    const ref = `${DOCS.MK.of}, kryterium „${name}”`;
-    push(
-      'MK',
-      ref,
-      [
-        `Kryterium: ${name}. Wskaźniki:`,
-        ...indicators.map((r) => `- ${r[0]} (na poziomie oczekiwań: ${r[3]})`),
-      ].join('\n'),
-      { unit: name },
-    );
-    indicators.forEach((r, i) => {
-      push(
-        'MK',
-        `${ref}, wskaźnik ${i + 1}`,
-        [
-          `Kryterium: ${name}. Wskaźnik ${i + 1}: ${r[0]}`,
-          ...LEVELS.map(([p, l], n) => `${p} pkt (${l}): ${r[n + 1]}`),
-        ].join('\n'),
-        { unit: name, section: `Wskaźnik ${i + 1}` },
-      );
-    });
+/** A text version with `--- page N ---` headers, chunked by page. */
+function ingestTextPages(doc) {
+  const text = readFileSync(resolve(root, P[doc]), 'utf8');
+  let heading = '';
+  for (const part of text
+    .split(/^--- page (\d+) ---$/m)
+    .slice(1)
+    .reduce(
+      (acc, cur, i, arr) =>
+        i % 2 === 0 ? [...acc, [Number(cur), arr[i + 1]]] : acc,
+      [],
+    )) {
+    const [no, body] = part;
+    const first = heading;
+    // Chapters of the standards: "V. WORK-LIFE BALANCE", "VI. SZKOLENIA".
+    for (const l of body.split('\n')) {
+      const h = /^\s*([IVX]{1,4})\.\s+(\p{Lu}[\p{Lu}\s-]{3,80})$/u.exec(l);
+      if (h) heading = `rozdz. ${h[1]} „${h[2].trim()}”`;
+    }
+    for (const chunk of splitLong(body.trim(), 1800)) {
+      push(doc, `${DOCS[doc].of}, s. ${no}`, chunk, {
+        page: no,
+        section: first || heading || undefined,
+      });
+    }
   }
+}
+
+/** Plain line-based notes (use cases): blocks of lines up to ~1200 chars. */
+function ingestLines(doc, rels, label) {
+  rels.forEach((rel, n) => {
+    const lines = readFileSync(resolve(root, rel), 'utf8')
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const title = lines[0].replace(/:$/, '');
+    let cur = [];
+    let part = 0;
+    const flush = () => {
+      if (!cur.length) return;
+      part += 1;
+      push(doc, `${DOCS[doc].of}, „${title}” cz. ${part}`, cur.join('\n'), {
+        unit: `${label[n]} ${part}`,
+        section: title,
+        keywords:
+          'przypadki użycia, use case, proces oceny okresowej, etapy, warunki brzegowe, przypomnienie, scheduler',
+      });
+      cur = [];
+    };
+    for (const line of lines.slice(1)) {
+      if (cur.join('\n').length + line.length > 1200) flush();
+      cur.push(line);
+    }
+    flush();
+  });
 }
 
 // ------------------------------------------------------------- fallback
@@ -648,10 +608,17 @@ function existingChunks(doc) {
 }
 
 const kept = [];
+/** First assessment (rozp. 2015) is out of scope: its Q&A entries are dropped. */
+const inScope = (c) =>
+  !(
+    c.qa &&
+    (/\[(RP|PP)\]/.test(c.qa.source) ||
+      /pierwsz\p{L}* ocen/iu.test(c.qa.question))
+  );
 /** Ingests a document from docs/, or keeps its chunks while the file is missing. */
 function ingestOrKeep(doc, ingest) {
   if (existsSync(resolve(root, P[doc]))) return ingest();
-  const old = existingChunks(doc);
+  const old = existingChunks(doc).filter(inScope);
   if (old.length === 0) {
     throw new Error(
       `docs/${P[doc]} is missing and knowledge.data.ts has no ${doc} chunks`,
@@ -663,34 +630,25 @@ function ingestOrKeep(doc, ingest) {
 
 // ----------------------------------------------------------------- run
 
-ingestOrKeep('U', () =>
-  ingestAct('U', {
-    unitRe: /^\s*Art\. (\d+[a-z]*)\.\s/,
-    unitLabel: 'art.',
-    pageLabel: (p) => `s. ${p}/71`,
-    marginCol: 84,
-  }),
-);
+ingestAct('U', {
+  unitRe: /^\s*Art\. (\d+[a-z]*)\.\s/,
+  unitLabel: 'art.',
+  pageLabel: (p) => `s. ${p}/71`,
+  marginCol: 84,
+});
 ingestAct('RO', {
   unitRe: /^[a-z\s]{0,8}§ (\d+[a-z]*)\.\s/,
   unitLabel: '§',
   pageLabel: (p) => `Dz.U. s. ${p}`,
   annexRe: /Załączniki do rozporządzenia Prezesa Rady Ministrów/,
 });
-ingestAct('RP', {
-  unitRe: /^[a-z\s]{0,8}§ (\d+[a-z]*)\.\s/,
-  unitLabel: '§',
-  pageLabel: (p) => `Dz.U. s. ${p}`,
-  annexRe: /^\s*Załączniki\s*$/,
-});
 ingestGuide('PO', { skipPages: [1, 2] });
-ingestGuide('PP', { skipPages: [1, 2] });
-ingestOrKeep('LT', ingestDeadlines);
+ingestDeadlines();
 ingestOrKeep('QA', ingestQa);
 ingestSheet('AB');
 ingestSheet('AC');
-ingestSheet('AP');
-ingestModel();
+ingestTextPages('SZ');
+ingestLines('UC', [P.UC, P.UCB], ['opis', 'warunki brzegowe']);
 
 if (kept.length) {
   console.warn(

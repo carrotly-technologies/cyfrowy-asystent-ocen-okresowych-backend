@@ -1,0 +1,10 @@
+
+Zasady obliczania terminów, stosowane przy dokonywaniu ocen:
+Terminy określone w miesiącach kończą się z upływem tego dnia w ostatnim miesiącu, który odpowiada początkowemu dniowi terminu;PRZYKŁAD: termin 24 miesięcy od 16 marca 2024, upłynie 16 marca 2026 (po 23:59)
+a gdyby takiego dnia nie było – w ostatnim dniu tego miesiącaPRZYKŁAD: termin 13 miesięcy od 31 stycznia 2024 upłynie 28 lutego 2025 (gdyby był to rok przestępny, np. 1 miesiąc od 31 stycznia 2024, wówczas termin upłynąłby 29 lutego 2024)
+Jeżeli koniec terminu wypada w dzień uznany za wolny od pracy (np. święto lub niedziela) lub na sobotę, termin upływa następnego dnia, który nie jest dniem wolnym od pracy ani sobotą
+Jeżeli początkiem terminu określonego w dniach jest pewne zdarzenie, przy obliczaniu tego terminu nie uwzględnia się dnia, w którym zdarzenie nastąpiło. Upływ ostatniego z wyznaczonej liczby dni uważa się za koniec terminu.
+Nieobecności:
+Nieobecności usprawiedliwione to np. zwolnienie lekarskie, urlop wypoczynkowy, urlopy związane z rodzicielstwem
+Nieobecności ciągłe liczy się od pierwszego dnia pierwszej usprawiedliwionej nieobecności do ostatniego dnia ostatniej usprawiedliwionej nieobecności następujących po sobie
+Dni wolne od pracy, wypadające pomiędzy okresami usprawiedliwionej nieobecności, nie przerywają ciągłości tej nieobecnościPRZYKŁAD: jeżeli osoba miała zwolnienie lekarskie od 5 października 2026 (poniedziałek) do 16 października 2026 (piątek) oraz urlop od 19 października 2026 (poniedziałek) do 6 listopada 2026 (piątek), to okres trwania tej nieobecności będzie liczony łącznie od 5 października 2026 do 6 listopada 2026, a więc będzie trwała dłużej niż miesiąc – ponieważ dni 17 i 18 października (sobota i niedziela) są dniami wolnymi od pracy

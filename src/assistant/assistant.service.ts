@@ -22,7 +22,6 @@ import {
   STAGE_SUGGESTIONS,
 } from './conversation.rules.js';
 import { KnowledgeBase } from './knowledge-base.js';
-import type { KnowledgeDocId } from './knowledge.types.js';
 import { LlmClient } from './llm.client.js';
 
 @Injectable()
@@ -93,11 +92,9 @@ export class AssistantService {
     detail: CaseDetail,
   ): Promise<AskResponse> {
     const stage = input.stageId ?? detail.currentStage;
-    // Only the periodic rules (RO, PO); the first-assessment ones (RP, PP) are out.
-    const otherPath: KnowledgeDocId[] = ['RP', 'PP'];
-    let retrieval: Retrieval = retrieve(this.kb, input.question, otherPath);
+    let retrieval: Retrieval = retrieve(this.kb, input.question);
     if (!retrieval.grounded) {
-      retrieval = retrieve(this.kb, STAGE_RULE_QUERY[stage], otherPath);
+      retrieval = retrieve(this.kb, STAGE_RULE_QUERY[stage]);
     }
     const sources = toSources(retrieval.hits, input.question);
     const messages = buildMessages(
