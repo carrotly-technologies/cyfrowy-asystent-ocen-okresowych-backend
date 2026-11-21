@@ -5,6 +5,7 @@ import { InMemoryNotificationsRepository } from './notifications.repository.js';
 import { recipientsOf } from './notifications.service.js';
 import { USER_SEED } from '../auth/users.seed.js';
 import {
+  manualAckReminder,
   caseReminders,
   dueSoonBucket,
   generateReminders,
@@ -143,5 +144,18 @@ describe('ics', () => {
     expect(ics).toContain('TZID:Europe/Warsaw');
     expect(ics).toContain('SUMMARY:Rozmowa\\; oceniająca');
     expect(ics).toContain('LOCATION:Pokój 101\\, II piętro');
+  });
+});
+
+describe('manualAckReminder', () => {
+  it('reminds about part I or the assessment only when the evaluee has something to confirm', () => {
+    const seed = buildSeed('2026-11-21');
+    const partI = seed.find((c) => c.stage === 'PART_I_ACK')!;
+    expect(manualAckReminder(partI, '2026-11-21', 'J. K.')).toMatchObject({
+      audience: 'EMPLOYEE',
+      key: `${partI.id}:REMIND_PART_I:2026-11-21`,
+    });
+    const sheet = seed.find((c) => c.stage === 'SHEET_SELECTION')!;
+    expect(manualAckReminder(sheet, '2026-11-21', 'J. K.')).toBeNull();
   });
 });

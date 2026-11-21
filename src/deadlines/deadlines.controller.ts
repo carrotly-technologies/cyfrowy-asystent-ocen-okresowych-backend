@@ -94,6 +94,20 @@ export class DeadlinesController {
     return this.deadlines.inviteToTalk(id, body);
   }
 
+  @Post('cases/:id/remind')
+  @ApiOperation({
+    summary: 'Przypomnienie dla ocenianego',
+    description:
+      'Oceniający przypomina o potwierdzeniu części I albo o zapoznaniu się z oceną (powiadomienie w aplikacji, jedno dziennie).',
+  })
+  @ApiOkResponse({ description: 'Teczka oceny z wpisem w historii.' })
+  @ApiErrors(404, 409)
+  @Roles('SUPERVISOR')
+  @HttpCode(200)
+  remind(@Param('id') id: string): Promise<CaseDetail> {
+    return this.deadlines.remindEmployee(id);
+  }
+
   @Get('cases/:id/talk-invitations/:invitationId/ics')
   @ApiOperation({
     summary: 'Dodaj do kalendarza (.ics)',

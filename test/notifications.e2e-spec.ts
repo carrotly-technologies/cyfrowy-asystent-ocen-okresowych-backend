@@ -76,6 +76,24 @@ describe('Notifications, scheduler and due-date changes (e2e)', () => {
     );
   });
 
+  it('the evaluator reminds the evaluee to confirm part I (once a day); nothing to remind is 409', async () => {
+    const res = await as('j.kaminska')
+      .post('/api/cases/c-002/remind')
+      .expect(200);
+    expect(res.body.history.at(-1).text).toContain('przypomniał');
+    const items = (await inbox('p.wojcik')).items;
+    expect(items.some((n) => n.title.startsWith('Przypomnienie'))).toBe(true);
+    await as('j.kaminska').post('/api/cases/c-002/remind').expect(200);
+    expect(
+      (await inbox('p.wojcik')).items.filter((n) =>
+        n.title.startsWith('Przypomnienie'),
+      ),
+    ).toHaveLength(1);
+    await as('j.kaminska').post('/api/cases/c-004/remind').expect(409);
+    await as('r.sikora').post('/api/cases/c-002/remind').expect(403);
+    await as('p.wojcik').post('/api/cases/c-002/remind').expect(403);
+  });
+
   it('the scheduler is idempotent: a second run creates nothing', async () => {
     const before = (await inbox('j.kaminska')).items.length;
     const run = await as('a.lis').post('/api/notifications/run').expect(200);
