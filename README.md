@@ -27,7 +27,7 @@ cp .env.example .env   # optional, defaults work out of the box
 ### Database (optional)
 
 ```bash
-docker compose up -d db   # PostgreSQL 17 on localhost:5432
+docker compose up -d db   # PostgreSQL 17 on localhost:5432 (whole stack: see „Wdrożenie w urzędzie”)
 DATABASE_URL=postgres://hacknation:hacknation@localhost:5432/hacknation npm run start:dev
 ```
 
@@ -376,6 +376,135 @@ npm run test:e2e   # e2e tests (Vitest + supertest)
 npm run test:cov
 ```
 
+## Wdrożenie w urzędzie
+
+Cyfrowy Asystent Ocen Okresowych działa w całości na infrastrukturze urzędu: bez płatnych licencji, bez usług
+chmurowych i bez dostępu do internetu (asystent AI jest opcjonalny i może korzystać z lokalnego modelu).
+
+### Wymagania
+
+- Serwer lub maszyna wirtualna z Linuxem, Windowsem albo macOS: 2 vCPU, 2 GB RAM, 5 GB dysku
+  (z lokalnym modelem językowym: +8 GB RAM i ok. 10 GB dysku).
+- Docker z Docker Compose v2 (Docker Engine albo Docker Desktop / Podman z obsługą compose).
+- Oba repozytoria obok siebie: `cyfrowy-asystent-ocen-okresowych-backend` i `cyfrowy-asystent-ocen-okresowych-frontend`.
+
+### Instalacja w 3 krokach
+
+```bash
+# 1. Pobierz oba repozytoria do jednego katalogu
+git clone <adres>/cyfrowy-asystent-ocen-okresowych-backend
+git clone <adres>/cyfrowy-asystent-ocen-okresowych-frontend
+cd cyfrowy-asystent-ocen-okresowych-backend
+
+# 2. Skonfiguruj urząd (nazwa, miejscowość, hasła)
+cp .env.example .env
+#   ustaw: OFFICE_NAME, OFFICE_CITY, JWT_SECRET (openssl rand -base64 32), POSTGRES_PASSWORD,
+#   PUBLIC_API_URL i FRONTEND_URL (adresy, pod którymi pracownicy otwierają aplikację)
+
+# 3. Uruchom
+docker compose up -d --build
+```
+
+Aplikacja: `http://<serwer>:8080`, API: `http://<serwer>:3000/api/health`. Migracje bazy uruchamiają się same przy
+starcie. Lokalny model językowy (opcjonalnie): `docker compose --profile llm up -d`, potem
+`docker compose exec ollama ollama pull qwen2.5:7b` i w `.env`: `LLM_BASE_URL=http://ollama:11434/v1`,
+`LLM_MODEL=qwen2.5:7b`. Bez modelu asystent odpowiada cytatami z bazy wiedzy (tryb ekstraktywny).
+
+### Konfiguracja
+
+Cała konfiguracja to zmienne środowiskowe w `.env` (opis każdej w `.env.example` i w tabeli w sekcji „Setup”):
+
+| Zmienna                  | Do czego służy                                                                      |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `OFFICE_NAME`            | „NAZWA URZĘDU” na arkuszach A/B/C                                                   |
+| `OFFICE_CITY`            | „miejscowość” przy podpisach na arkuszach                                           |
+| `OFFICE_LOGO_URL`        | Logo urzędu w podglądzie arkusza (opcjonalnie)                                      |
+| `OBJECTION_RECIPIENT_A`  | Arkusz A: do kogo składa się sprzeciw (wzór zostawia to pole puste)                 |
+| `JWT_SECRET`             | Klucz podpisu sesji (32+ losowe bajty), obowiązkowo w produkcji                    |
+| `POSTGRES_PASSWORD`      | Hasło bazy danych                                                                   |
+| `FEATURE_ASSISTANT`      | `false` wyłącza asystenta AI                                                        |
+| `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY` | Dowolny serwer zgodny z API OpenAI (np. lokalna Ollama); bez nich tryb bez LLM |
+| `FRONTEND_PORT`, `BACKEND_PORT`, `PUBLIC_API_URL`, `FRONTEND_URL` | Porty i adresy (za reverse proxy urzędu: adresy HTTPS) |
+
+Konta demonstracyjne (`src/auth/users.seed.ts`) należy w produkcji zastąpić kontami urzędu: repozytorium kont
+(`UsersRepository`) jest jednym wymiennym modułem (np. na LDAP/AD albo system kadrowy przez udokumentowane API);
+na stronie logowania ukrywa je `VITE_DEMO_ACCOUNTS=false`. Role (przełożony, oceniany, kadry, administrator)
+nadaje administrator w aplikacji („Użytkownicy”).
+
+### Aktualizacja
+
+```bash
+git -C ../cyfrowy-asystent-ocen-okresowych-frontend pull
+git pull
+docker compose up -d --build   # nowe obrazy, migracje bazy wykonają się same
+```
+
+Aktualizacja nie wymaga ręcznych zmian na serwerze; dane w wolumenie `db-data` zostają.
+
+### Kopie zapasowe
+
+```bash
+# kopia
+docker compose exec -T db pg_dump -U hacknation hacknation > kopia-$(date +%F).sql
+# odtworzenie
+docker compose exec -T db psql -U hacknation hacknation < kopia-RRRR-MM-DD.sql
+```
+
+Kopię wykonuj codziennie (np. cron / Harmonogram zadań) i przechowuj zgodnie z polityką urzędu. W PostgreSQL są
+notatki i obserwacje przełożonych oraz ankiety pulsu. Uwaga: w obecnej wersji (POC) teczki ocen trzymane są
+w pamięci (`CaseStore`) i odtwarzane z danych demonstracyjnych przy restarcie; przeniesienie ich do bazy to
+podmiana jednej klasy (`src/cases/case-store.service.ts`).
+
+### Bezpieczeństwo i RODO
+
+- Wszystko działa lokalnie; żadne dane nie opuszczają urzędu, o ile nie wskażesz zewnętrznego LLM. Z lokalnym
+  modelem (profil `llm`) albo bez modelu aplikacja działa offline.
+- Do modelu językowego trafia tylko pytanie i potrzebny kontekst, bez imion i nazwisk (anonimizacja w
+  `src/assistant`); ankiety pulsu są anonimowe i raportowane tylko powyżej progu liczby odpowiedzi.
+- Dostęp według ról: przełożony widzi wyłącznie swój zespół, oceniany tylko własne oceny (część II dopiero po
+  przekazaniu), kadry monitoring, administrator konta i tryb korekty. Każda korekta pola zablokowanego po
+  potwierdzeniu wymaga powodu i jest zapisywana (kto, kiedy, stara → nowa wartość) w historii teczki.
+- Żadnych danych osobowych w logach. Baza nasłuchuje tylko na `127.0.0.1`. Udostępniaj aplikację przez reverse
+  proxy urzędu z HTTPS; ustaw własne `JWT_SECRET` i `POSTGRES_PASSWORD`.
+- AI i reguły są doradcze: ostateczną ocenę zawsze ustala oceniający.
+- Licencja EUPL-1.2 (plik `LICENSE`), wszystkie zależności open source (MIT, Apache-2.0, BSD, ISC); brak płatnych
+  licencji i usług. PDF arkusza powstaje na serwerze (pdfmake, czcionka Roboto), bez przeglądarki i internetu.
+
+### Architektura
+
+```mermaid
+flowchart LR
+  U[Przeglądarka: przełożony, oceniany, kadry, administrator] -->|HTTPS| F[frontend: React + nginx]
+  U -->|HTTPS /api| B[backend: NestJS]
+  B --> R[Reguły prawne: *.rules.ts + data/*.data.ts]
+  B --> P[(PostgreSQL)]
+  B --> X[PDF arkusza A/B/C: pdfmake]
+  B -.->|opcjonalnie, API zgodne z OpenAI| L[LLM: lokalna Ollama lub inny]
+  B -.->|opcjonalnie, udokumentowane API| E[EZD / system kadrowy]
+```
+
+### Zmiana przepisów: gdzie są reguły
+
+Logika wynikająca z przepisów jest odizolowana w czystych funkcjach z testami (`*.rules.ts` + `*.spec.ts`) i w
+plikach danych (`data/*.data.ts`); kontrolery i serwisy tylko je wywołują. Zmiana przepisu to edycja jednego pliku i
+jego testu:
+
+| Obszar                                                   | Plik                                                  |
+| -------------------------------------------------------- | ----------------------------------------------------- |
+| Wykaz kryteriów oceny (zał. nr 1), skala 1–9            | `src/criteria/data/criteria.data.ts`                  |
+| Arkusze A/B/C: kryteria obowiązkowe, teksty wzorów (zał. nr 2–4) | `src/sheets/sheets.data.ts`                   |
+| Dobór arkusza (§3)                                      | `src/sheets/sheet-suggestion.rules.ts`                |
+| Średnia, poziom, wynik pozytywny/negatywny (§11)         | `src/assessments/evaluate.rules.ts`                   |
+| Terminy (KC, dni wolne, 24/6 miesięcy, 7 dni na sprzeciw) | `src/cases/deadlines.rules.ts`, `src/cases/dates.ts` |
+| Etapy i akcje procesu                                    | `src/cases/stages.rules.ts`, `src/cases/actions.rules.ts` |
+| Blokady pól i tryb korekty administratora               | `src/cases/patch.rules.ts`, `src/cases/correction.rules.ts` |
+| Kontrola formalna przed podpisem                         | `src/cases/formal-check.rules.ts`                     |
+| Stopnie służbowe i wniosek (art. 86, 89)                 | `src/civil-service-grades/data/grades.data.ts`, `src/cases/promotion.rules.ts` |
+| Układ PDF arkusza                                        | `src/export/sheet-pdf.ts` (teksty bierze z `sheets.data.ts`) |
+
+Frontend nie powiela stałych prawnych: skale, progi, teksty wzorów i terminy pobiera z API, więc po zmianie
+przepisu wystarczy nowy obraz backendu.
+
 ## Deploy
 
 `main` is auto-deployed to Coolify from this repo's `Dockerfile` (one image, no manual steps on the server).
@@ -396,3 +525,7 @@ The container listens on `0.0.0.0:$PORT` and has a Docker `HEALTHCHECK` on
 `/api/health`. The Coolify healthcheck host is set to `127.0.0.1`, not
 `localhost`: on Alpine `localhost` resolves to `::1` first, and the app listens
 on IPv4 only.
+
+## Licencja
+
+EUPL-1.2 (European Union Public Licence), plik [`LICENSE`](LICENSE).
