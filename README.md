@@ -195,6 +195,7 @@ due date only through `DeadlinesService.changeDueDate(caseId, newDate, reason, b
 | `POST /api/cases/:id/due-date`                     | Evaluator: `{ date, reason, note? }` (reason of art. 81 ust. 8 pkt 1–4); 409 within 6 months of the last assessment or after a negative one; records the §8 notice |
 | `POST /api/cases/:id/talk-invitations`             | Evaluator: `{ kind: OPENING\|ASSESSMENT, date, time, place, note? }` (201), notifies the evaluee |
 | `GET /api/cases/:id/talk-invitations/:invId/ics`   | Evaluator or evaluee: the invitation as an `.ics` calendar file               |
+| `POST /api/cases/:id/remind`                      | Evaluator: reminds the evaluee to confirm part I or acknowledge the assessment (one in-app notice a day, history line); 409 when nothing waits |
 | `POST /api/cases/:id/position-change`              | Evaluator or HR: `{ date }`; §9 ust. 1 (part I again in 30 days) or ust. 2 (assessment window, due date set) |
 | `POST /api/cases/:id/evaluator`                    | HR: `{ evaluatorId }`; change of evaluator, criteria kept (§9 ust. 3)         |
 | `GET /api/evaluators`                              | HR: evaluators to choose from                                                 |

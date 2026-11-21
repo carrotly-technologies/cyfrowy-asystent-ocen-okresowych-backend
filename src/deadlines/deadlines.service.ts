@@ -35,6 +35,7 @@ import { NotificationsService } from '../notifications/notifications.service.js'
 import { RemindersService } from '../notifications/reminders.service.js';
 import {
   DUE_SOON_THRESHOLDS,
+  manualAckReminder,
   type NotificationDraft,
   talkInvitationDraft,
   talkName,
@@ -145,6 +146,29 @@ export class DeadlinesService {
     await this.notify([
       talkInvitationDraft(next, invitation, this.cases.evaluatorName(next)),
     ]);
+    return this.cases.view(id);
+  }
+
+  /** The evaluator reminds the assessed person to confirm part I or to acknowledge the assessment. */
+  async remindEmployee(id: string): Promise<CaseDetail> {
+    const record = this.ownCase(id);
+    const draft = manualAckReminder(
+      record,
+      this.cases.today,
+      this.cases.evaluatorName(record),
+    );
+    if (!draft) {
+      throw new ConflictException(
+        'Nie ma teraz czego przypominać: oceniany nie musi niczego potwierdzać.',
+      );
+    }
+    const next = structuredClone(record);
+    next.history.push({
+      date: this.cases.today,
+      text: `Oceniający przypomniał ocenianemu: ${draft.title.replace(/^Przypomnienie: /, '')}.`,
+    });
+    await this.cases.save(next);
+    await this.notify([draft]);
     return this.cases.view(id);
   }
 

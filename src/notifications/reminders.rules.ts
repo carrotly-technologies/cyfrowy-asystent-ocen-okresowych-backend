@@ -374,3 +374,40 @@ export function talkInvitationDraft(
 export function talkName(kind: TalkInvitation['kind']): string {
   return TALK_NAMES[kind];
 }
+
+/**
+ * The evaluator's manual reminder to the assessed person: confirm part I (§6 ust. 2 rozp. 2016) or acknowledge the
+ * assessment. One per case, stage and day (the key). Null when nothing waits for the assessed person.
+ */
+export function manualAckReminder(
+  record: CaseRecord,
+  today: string,
+  evaluatorName: string,
+): NotificationDraft | null {
+  const id = record.id;
+  if (record.stage === 'PART_I_ACK' && !record.partI.acknowledgedByEmployeeOn) {
+    return {
+      key: `${id}:REMIND_PART_I:${today}`,
+      audience: 'EMPLOYEE',
+      caseId: id,
+      type: 'PENDING_ACK',
+      title: 'Przypomnienie: potwierdź część I oceny',
+      body: `${evaluatorName} przypomina o potwierdzeniu rozmowy rozpoczynającej oraz zapoznania z kryteriami i terminem oceny (§6 ust. 2 ${RO_2016}).`,
+    };
+  }
+  if (
+    record.stage === 'ACKNOWLEDGEMENT' &&
+    record.sentForAckOn &&
+    !record.acknowledgedOn
+  ) {
+    return {
+      key: `${id}:REMIND_ACK:${today}`,
+      audience: 'EMPLOYEE',
+      caseId: id,
+      type: 'PENDING_ACK',
+      title: 'Przypomnienie: zapoznaj się z oceną okresową',
+      body: `${evaluatorName} przypomina o zapoznaniu się z oceną przekazaną ${formatDatePl(record.sentForAckOn)} i potwierdzeniu tego na koncie.`,
+    };
+  }
+  return null;
+}
