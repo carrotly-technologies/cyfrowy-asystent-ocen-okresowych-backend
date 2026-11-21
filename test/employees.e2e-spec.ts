@@ -171,6 +171,33 @@ describe('HR register: employees, absences, history, statistics (e2e)', () => {
     });
   });
 
+  describe('obligatory next grade', () => {
+    it('one answer in the register and the HR inbox, with a date and the next step', async () => {
+      const list = await as(hr).get('/api/employees').expect(200);
+      const due = list.body.filter(
+        (e: { obligatoryPromotion: { due: boolean } }) =>
+          e.obligatoryPromotion.due,
+      );
+      expect(due.map((e: { id: string }) => e.id)).toEqual(
+        expect.arrayContaining(['p-jasinska', 'p-dabrowska']),
+      );
+      for (const e of due) {
+        expect(e.obligatoryPromotion.deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(e.obligatoryPromotion.nextStep).toContain(
+          'dyrektora generalnego',
+        );
+      }
+      const inbox = await as(hr).get('/api/notifications').expect(200);
+      const titles = inbox.body.items
+        .filter((n: { type: string }) => n.type === 'OBLIGATORY_GRADE')
+        .map((n: { title: string }) => n.title);
+      expect(titles.some((t: string) => t.includes('Ewa Jasińska'))).toBe(true);
+      expect(
+        titles.filter((t: string) => t.includes('Ewa Dąbrowska')),
+      ).toHaveLength(1);
+    });
+  });
+
   describe('assessment cycle', () => {
     it('previews the opening-talk term before a cycle is started', async () => {
       const res = await as(hr).get('/api/employees/p-pietrzak').expect(200);

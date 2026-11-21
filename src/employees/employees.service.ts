@@ -359,6 +359,8 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
       ...rule,
       due,
       reason: fromCase ? fromCase.message : rule.reason,
+      /** CASE: the reminders scheduler already notifies; HISTORY: imports. */
+      source: fromCase ? ('CASE' as const) : ('HISTORY' as const),
       deadline: due ? deadline : null,
       nextStep: due
         ? obligatoryPromotionNextStep(deadline, this.today, formatDatePl)
@@ -376,7 +378,7 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
         substitutions,
         history.filter((h) => h.employeeId === e.id),
       ).obligatoryPromotion;
-      if (!promotion.due) return [];
+      if (!promotion.due || promotion.source === 'CASE') return [];
       return [
         {
           key: `employee:${e.id}:OBLIGATORY_GRADE:${promotion.deadline ?? ''}`,
