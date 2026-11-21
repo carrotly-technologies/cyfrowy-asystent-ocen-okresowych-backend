@@ -122,6 +122,16 @@ Every demo account has the password `Ocena2026!`.
 
 ## API
 
+Every route is documented (OpenAPI 3, descriptions in Polish) and the documentation needs no sign-in:
+
+| Route                   | What it does                                    |
+| ----------------------- | ----------------------------------------------- |
+| `GET /api/docs-api`     | Swagger UI: every route with its schemas; „Authorize” takes the token from `POST /api/auth/login` |
+| `GET /api/openapi.json` | The OpenAPI document (`/api/openapi.yaml` in YAML), e.g. to generate a client |
+
+Annotations live on the controllers (`@nestjs/swagger`); request bodies come from the same Zod schemas that validate
+them, so the document can't drift from the validation. Setup: `src/openapi/openapi.ts`.
+
 Static data and pure functions.
 
 | Route                                 | What it does                                                                                       |
@@ -155,6 +165,7 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
 | `GET /api/team`                  | The supervisor's cases (`CaseSummary[]`) and `todo` sorted by deadline                   |
 | `GET /api/cases/:id`             | `CaseDetail`: stages, deadlines, sheet suggestion, part I, observations, part II, formal check |
 | `GET /api/cases/:id/sheet.pdf`   | Sheet A/B/C as PDF, generated on the server (pdfmake, Roboto), `ocena-<nazwisko>-<data>.pdf`; same access as the route above |
+| `GET /api/cases/:id/export?format=json` | The sheet's fields (parts I, II, III) in the versioned export format (`schemaVersion`), same access as `GET /api/cases/:id`; see [Integracja z EZD](#integracja-z-ezd) |
 | `PATCH /api/cases/:id`           | Partial update; 400 for invalid values, 409 for parts locked at the current stage       |
 | `POST /api/cases/:id/observations` | Adds an S-D-R observation (201)                                                        |
 | `POST /api/cases/:id/actions`    | State machine (`{ action }`); 403 when the caller is not the actor of the action, 409 with a Polish explanation for an illegal transition |
@@ -324,6 +335,36 @@ person data, evaluator and absences in step.
   `GET /api/config` returns `{ "features": { "assistant": boolean } }` and the frontend reads it on start; with the
   flag off every `/api/assistant/*` route returns 404.
 - `npm run eval:assistant`: hit@5 of the 72 Q&A questions against their expected sources.
+
+## Integracja z EZD
+
+Asystent działa samodzielnie; system EZD (elektroniczne zarządzanie dokumentacją) albo system kadrowy urzędu może
+pobierać z niego gotowe oceny przez udokumentowane API. Konkretne EZD nie jest tu zintegrowane: to po stronie urzędu.
+
+1. Załóż konto techniczne z rolą `HR` (widzi wszystkie oceny w urzędzie) albo używaj konta osoby, która przekazuje
+   ocenę. Konto loguje się przez `POST /api/auth/login` i dostaje token JWT ważny 8 godzin.
+2. `GET /api/cases` zwraca listę ocen ze statusem (`status`: `W_TOKU`, `DO_ZAPOZNANIA`, `OKRES_SPRZECIWU`, `SPRZECIW_W_ROZPATRZENIU`,
+   `ZAKONCZONA`). Do EZD zwykle trafia ocena po zapoznaniu się ocenianego (`acknowledgedOn` w eksporcie).
+3. `GET /api/cases/:id/export?format=json` zwraca komplet pól arkusza A, B albo C:
+   - `schemaVersion` (teraz `1.0`) i `format` (`caoo.ocena-okresowa`): integracja sprawdza wersję przed odczytem.
+     Nowe pola podnoszą część po kropce (zgodnie wstecz), usunięcie lub zmiana nazwy pola podnosi część główną;
+   - `case`, `office`, `sheet` (arkusz i załącznik rozporządzenia), `assessed`, `evaluator`;
+   - `partI`: kryteria (obowiązkowe i dodatkowe), termin oceny, omówione zagadnienia, oczekiwania, potwierdzenia;
+   - `partII`: poprzednia ocena, data rozmowy oceniającej, oceny cząstkowe z uzasadnieniami odchyleń, wynik
+     (średnia, poziom, pozytywna/negatywna), uzasadnienie, IPRZ, podpis, przekazanie, zapoznanie, termin sprzeciwu;
+   - `partIII`: wniosek o przyznanie kolejnego stopnia służbowego (art. 89 ust. 1 ustawy).
+
+   Pełny schemat (z opisem każdego pola) jest w `/api/openapi.json` jako `EksportOcenyOkresowej`, a jego źródłem jest
+   `src/cases/case-export.schema.ts`.
+4. Uprawnienia są takie same jak w aplikacji: oceniany eksportuje tylko swoje oceny (część II dopiero po przekazaniu
+   mu oceny), przełożony oceny swojego zespołu, HR wszystkie; inaczej 403. Eksport zawiera tylko pola arkusza
+   (bez notatek, obserwacji i historii), zgodnie z zasadą minimalizacji danych.
+
+```bash
+TOKEN=$(curl -s localhost:3000/api/auth/login -H 'content-type: application/json' \
+  -d '{"login":"a.lis","password":"Ocena2026!"}' | jq -r .accessToken)
+curl -s "localhost:3000/api/cases/c-001/export?format=json" -H "Authorization: Bearer $TOKEN"
+```
 
 ## Quality
 

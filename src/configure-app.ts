@@ -1,5 +1,6 @@
 import { INestApplication, StandardSchemaValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { setupOpenApi } from './openapi/openapi.js';
 
 export const DEFAULT_FRONTEND_URL = 'http://localhost:5173';
 
@@ -11,4 +12,5 @@ export function configureApp(app: INestApplication): void {
   app.enableCors({
     origin: config.get<string>('FRONTEND_URL', DEFAULT_FRONTEND_URL),
   });
+  setupOpenApi(app);
 }
