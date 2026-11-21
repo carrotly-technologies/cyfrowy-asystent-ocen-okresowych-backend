@@ -1,0 +1,172 @@
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { applyAction } from './actions.rules.js';
+import { fullName } from './case.rules.js';
+import { CaseRuleError, CaseValidationError } from './case-rule.error.js';
+import { CaseStore } from './case-store.service.js';
+import type {
+  CaseAction,
+  CaseDetail,
+  CaseRecord,
+  CaseSummary,
+  Deadline,
+  StageId,
+} from './case.types.js';
+import { toDetail, toSummary } from './case-view.js';
+import type { ObservationInput, PatchCase } from './cases.schemas.js';
+import { formatDatePl } from './dates.js';
+import { describeDaysLeft } from './deadlines.rules.js';
+import { addObservation, applyPatch } from './patch.rules.js';
+import { OFFICE_NAME, SUPERVISOR_ID } from './seed/seed.data.js';
+
+export interface TodoItem {
+  caseId: string;
+  stageId: StageId;
+  text: string;
+  deadline: Deadline;
+}
+
+const TODO_TEXT: Partial<Record<StageId, string>> = {
+  OSP_ANALYSIS: 'przeanalizuj opis stanowiska i wybierz arkusz',
+  OPENING_TALK: 'przeprowadź rozmowę rozpoczynającą (część I)',
+  OBSERVATION: 'zaplanuj rozmowę oceniającą przed terminem oceny',
+  ASSESSMENT: 'przeprowadź rozmowę oceniającą i oceń kryteria',
+  JUSTIFICATION: 'uzupełnij uzasadnienie i IPRZ, zatwierdź ocenę',
+  INTRO_TALK: 'przeprowadź rozmowę wstępną i wyznacz termin sprawozdania',
+  REPORT: 'odbierz sprawozdanie pracownika',
+  FIRST_ASSESSMENT: 'przeprowadź rozmowę oceniającą i oceń 5 elementów',
+  FIRST_CONDITIONS: 'uzupełnij warunki pierwszej oceny i zatwierdź ocenę',
+};
+
+@Injectable()
+export class CasesService {
+  constructor(private readonly store: CaseStore) {}
+
+  get today(): string {
+    return this.store.today;
+  }
+
+  me() {
+    const supervisor = this.store.evaluator(SUPERVISOR_ID);
+    return {
+      name: fullName(supervisor),
+      position: supervisor.position,
+      unit: supervisor.unit,
+      officeName: OFFICE_NAME,
+    };
+  }
+
+  team(): { cases: CaseSummary[]; todo: TodoItem[] } {
+    const records = this.store
+      .all()
+      .filter((c) => c.evaluatorId === SUPERVISOR_ID);
+    const cases = records.map((r) => toSummary(r, this.today));
+    const todo = cases
+      .flatMap((c): TodoItem[] => {
+        const deadline = c.nextDeadline;
+        if (!deadline?.date) return [];
+        const name = fullName(c.person);
+        let text: string;
+        if (c.status === 'OKRES_SPRZECIWU') {
+          text = `${name}: biegnie termin na sprzeciw od oceny`;
+        } else if (c.status === 'ZAKONCZONA') {
+          text = `${name}: przeprowadź rozmowę rozpoczynającą nowego cyklu`;
+        } else {
+          const action = TODO_TEXT[c.currentStage];
+          if (!action) return [];
+          text = `${name}: ${action}`;
+        }
+        text += ` do ${formatDatePl(deadline.date)} (${describeDaysLeft(deadline.daysLeft!)}) · ${deadline.legalBasis.split(/[:;(]/)[0].trim()}`;
+        return [{ caseId: c.id, stageId: c.currentStage, text, deadline }];
+      })
+      .sort((a, b) => a.deadline.date!.localeCompare(b.deadline.date!));
+    return { cases, todo };
+  }
+
+  all(): CaseRecord[] {
+    return this.store.all();
+  }
+
+  summary(record: CaseRecord): CaseSummary {
+    return toSummary(record, this.today);
+  }
+
+  detail(id: string): CaseDetail {
+    const record = this.record(id);
+    return toDetail(
+      record,
+      this.today,
+      this.store.evaluator(record.evaluatorId),
+      OFFICE_NAME,
+    );
+  }
+
+  patch(id: string, patch: PatchCase): CaseDetail {
+    const record = this.record(id);
+    this.store.save(this.run(() => applyPatch(record, patch, this.today)));
+    return this.detail(id);
+  }
+
+  addObservation(id: string, input: ObservationInput): CaseDetail {
+    const record = this.record(id);
+    const next = this.run(() =>
+      addObservation(
+        record,
+        input,
+        this.store.nextObservationId(id),
+        this.today,
+      ),
+    );
+    this.store.save(next);
+    return this.detail(id);
+  }
+
+  action(id: string, action: CaseAction): CaseDetail {
+    const record = this.record(id);
+    this.store.save(this.run(() => applyAction(record, action, this.today)));
+    return this.detail(id);
+  }
+
+  reset(): void {
+    this.store.reset();
+  }
+
+  record(id: string): CaseRecord {
+    const record = this.store.find(id);
+    if (!record)
+      throw new NotFoundException(`Nie znaleziono teczki oceny „${id}”.`);
+    return record;
+  }
+
+  save(record: CaseRecord): void {
+    this.store.save(record);
+  }
+
+  evaluatorName(record: CaseRecord): string {
+    return fullName(this.store.evaluator(record.evaluatorId));
+  }
+
+  /** Domain errors -> HTTP: 409 for rules and locks, 400 for bad values. */
+  private run<T>(fn: () => T): T {
+    try {
+      return fn();
+    } catch (error) {
+      if (error instanceof CaseRuleError) {
+        throw new ConflictException({
+          statusCode: 409,
+          error: 'Conflict',
+          message: error.message,
+          ...(error.formalCheck ? { formalCheck: error.formalCheck } : {}),
+        });
+      }
+      if (error instanceof CaseValidationError) {
+        throw new BadRequestException(error.messages);
+      }
+      throw error;
+    }
+  }
+}
