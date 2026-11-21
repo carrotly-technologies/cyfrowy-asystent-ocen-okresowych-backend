@@ -60,3 +60,7 @@ pod wskazaną ścieżką `kb:build` przetworzy go od nowa:
 | Zestaw pytań i odpowiedzi (`QA`) | `materialy-dodatkowe/pytania-i-odpowiedzi.md` | bez linku, „brak pliku źródłowego” |
 
 Opis zadania wymienia też materiały ze strony KPRM poza dwoma poradnikami; nie było ich w paczce.
+
+## Pokaz dla jury
+
+Scenariusz pokazu (≤ 2 min), konta demo i link do nagrania: [`demo/scenariusz.md`](demo/scenariusz.md).
