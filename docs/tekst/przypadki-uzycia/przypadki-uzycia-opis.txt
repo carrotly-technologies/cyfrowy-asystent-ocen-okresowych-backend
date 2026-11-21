@@ -1,0 +1,56 @@
+
+Ocena okresowa obejmuje takie przypadki użycia:
+powiązane z procesem oceny okresowej
+stałe etapy procesu:
+wyznaczenie kryteriów oceny
+(scheduler) przypomnienie o wyznaczeniu kryteriów
+(opcjonalnie) zaproszenie na rozmowę
+wprowadzenie informacji o wyznaczeniu kryteriów i przeprowadzeniu rozmowy
+potwierdzenie odbycia rozmowy i zapoznania z kryteriami
+rozmowa oceniająca i dokonanie oceny
+(scheduler) przypomnienie o zbliżającym się terminie oceny
+(opcjonalnie) zaproszenie na rozmowę
+wprowadzenie informacji o rozmowie i dokonanie oceny
+potwierdzenie zapoznania się z oceną
+(opcjonalnie) stwierdzenie fikcji zapoznania z oceną [potwierdzenie w systemie, że do ocenianego wpłynęła informacja o ocenie, ale nie mógł lub nie chciał potwierdzić, że się z nią zapoznał]
+warunkowe lub opcjonalne podprocesy w ramach procesu oceny okresowej
+zmiana terminu oceny w związku z długotrwałą nieobecnością
+wprowadzenie informacji o nieobecności trwającej dłużej niż miesiąc
+(scheduler) zmiana terminu oceny i rozesłanie informacji o zmianie terminu oceny
+zmiana terminu oceny przez oceniającego
+zmiana terminu oceny
+rozesłanie informacji o zmianie terminu
+zmiana terminu oceny na wniosek ocenianego
+złożenie wniosku o zmianę terminu oceny
+rozpatrzenie wniosku
+(opcjonalnie) informacja o zmianie terminu oceny
+wniosek o przyznanie kolejnego stopnia służbowego urzędnikowi
+złożenie wniosku o przyznanie kolejnego stopnia służbowego
+wysłanie powiadomienia o złożeniu wniosku o przyznanie kolejnego stopnia służbowego
+obligatoryjne przyznanie kolejnego stopnia służbowego urzędnikowi w związku z oceną
+(scheduler) wysyła przypomnienie o obowiązku przyznania kolejnego stopnia służbowego
+zmiana oceny okresowej w rezultacie uznania odwołania od oceny
+dokonanie zmiany oceny w wyniku uznania odwołania od oceny
+wysłanie powiadomienia o zmianie oceny w wyniku uznania odwołania
+ponowne sporządzenie oceny okresowej w rezultacie uznania odwołania od oceny
+polecenie ponownego sporządzenia oceny w wyniku uznania odwołania od oceny
+wysłanie powiadomienia o ponownym sporządzeniu oceny, anulowanie oceny i powrót do etapu „rozmowa oceniająca i dokonanie oceny” procesu oceny okresowej
+ogólne (czynności nieprzypisane do konkretnego procesu oceny):
+wprowadzenie
+wprowadzenie danych pracownika
+wprowadzenie podległości służbowej (kto kogo ocenia)
+utrzymanie 
+edycja (aktualizacja) informacji o pracowniku
+zmiany podległości służbowej
+aktualizacja danych o nieobecnościach
+aktualizacja danych o zastępstwach
+pobieranie/archiwizacja danych
+generowanie statystyk
+użytkowe
+wgląd w historię ocen
+wgląd w formularz oceny
+pobranie formularza oceny
+wydruk formularza oceny (najlepiej zgodnego z wzorem z rozporządzenia)
+przeglądanie listy pracowników (w tym wyszukiwanie i sortowanie)
+zakończenie
+usunięcie danych pracownika

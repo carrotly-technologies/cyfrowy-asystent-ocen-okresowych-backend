@@ -28,7 +28,7 @@ export function parseSources(line: string): Expected[] {
       if (doc === 'U') {
         for (const m of seg.matchAll(/art\. (\d+[a-z]?)/g))
           units.push(`art. ${m[1]}`);
-      } else if (doc === 'RO' || doc === 'RP') {
+      } else if (doc === 'RO') {
         for (const m of seg.matchAll(/§ (\d+)/g)) units.push(`§ ${m[1]}`);
         for (const m of seg.matchAll(/zał\. (\d+)/g))
           units.push(`zał. nr ${m[1]}`);
@@ -64,10 +64,6 @@ const HELD_OUT: [string, string][] = [
     '[U] art. 83',
   ],
   [
-    'Kiedy najwcześniej i najpóźniej można dokonać pierwszej oceny?',
-    '[U] art. 38; [RP] § 4; [PP] s. 8',
-  ],
-  [
     'Ile czasu mija między kolejnymi ocenami okresowymi?',
     '[U] art. 81; [PO] s. 8',
   ],
@@ -75,8 +71,6 @@ const HELD_OUT: [string, string][] = [
     'Po jakim czasie od negatywnej oceny okresowej sporządza się ponowną ocenę?',
     '[U] art. 81; [PO] s. 13–14',
   ],
-  ['Jaka skala punktowa obowiązuje w pierwszej ocenie?', '[RP] § 9'],
-  ['Co nowy pracownik opisuje w sprawozdaniu?', '[RP] § 6'],
   [
     'Czy można wybrać więcej niż trzy kryteria dodatkowe?',
     '[RO] § 5; [PO] s. 21–22',
@@ -85,18 +79,10 @@ const HELD_OUT: [string, string][] = [
     'Jakie kryteria obowiązkowe ma arkusz B dla naczelnika wydziału?',
     '[RO] § 4, § 3; [PO] s. 19',
   ],
-  [
-    'Do kiedy trzeba przeprowadzić rozmowę wstępną z nowym pracownikiem?',
-    '[RP] § 3; [PP] s. 6–7',
-  ],
   ['Kiedy ocena okresowa jest negatywna?', '[RO] § 11; [PO] s. 26–27'],
   [
     'Czy długie zwolnienie lekarskie wydłuża termin oceny okresowej?',
     '[U] art. 81; [PO] s. 11–12; [LT]',
-  ],
-  [
-    'Czy kierownik komórki może uczestniczyć w rozmowie oceniającej w pierwszej ocenie?',
-    '[RP] § 8; [U] art. 38',
   ],
   [
     'Jak liczyć termin 30 dni od zatrudnienia na czas nieokreślony?',
@@ -166,6 +152,6 @@ describe('assistant retrieval eval', () => {
           : `Misses: ${misses.length} (EVAL_VERBOSE=1 lists them)`,
       ].join('\n') + '\n',
     );
-    expect(n).toBe(72);
+    expect(n).toBe(59);
   });
 });

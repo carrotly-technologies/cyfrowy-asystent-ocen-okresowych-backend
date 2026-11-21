@@ -29,11 +29,28 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     title:
       'Ustawa z dnia 21 listopada 2008 r. o służbie cywilnej (tekst jednolity)',
     description:
-      'art. 35–38 (pierwsza ocena), art. 81–83 (ocena okresowa, sprzeciw), art. 89, art. 108',
-    file: null,
+      'tekst jednolity Dz.U. z 2026 r. poz. 590: art. 81–83 (ocena okresowa, sprzeciw), art. 89, art. 108',
+    file: 'akty-prawne/ustawa-o-sluzbie-cywilnej.pdf',
     externalUrl: CIVIL_SERVICE_ACT_ISAP_URL,
     indexed: true,
-    note: 'oficjalny tekst w ISAP (sejm.gov.pl)',
+  },
+  {
+    id: 'ustawa-wyciag',
+    title: 'Ustawa o służbie cywilnej – wyciąg przepisów o ocenach okresowych',
+    description: 'art. 81–83 i powiązane przepisy w jednym miejscu',
+    file: 'akty-prawne/ustawa-o-sluzbie-cywilnej-wyciag.docx',
+    indexed: false,
+    note: 'treść w bazie z pełnego tekstu ustawy',
+  },
+  {
+    id: 'SZ',
+    title:
+      'Standardy zarządzania zasobami ludzkimi w służbie cywilnej (zarządzenie nr 6 Szefa Służby Cywilnej z 2020 r.)',
+    description:
+      'organizacja ZZL, informacja zwrotna, work-life balance, szkolenia i rozwój, zarządzanie wiedzą',
+    file: 'akty-prawne/standardy-zzl-w-sluzbie-cywilnej.pdf',
+    indexed: true,
+    note: 'tekst do bazy wiedzy z OCR skanu',
   },
   {
     id: 'RO',
@@ -66,42 +83,26 @@ export const SOURCE_DOCUMENTS: SourceDocument[] = [
     indexed: true,
   },
   {
-    id: 'RP',
-    title:
-      'Rozporządzenie PRM z 23 lipca 2015 r. w sprawie pierwszej oceny (Dz.U. poz. 1144)',
-    description:
-      'pierwsza ocena w służbie cywilnej (Dz.U. poz. 1144), arkusz i sprawozdanie',
-    file: 'pierwsza-ocena/rozporzadzenie-pierwsza-ocena-2015.pdf',
-    indexed: true,
-  },
-  {
-    id: 'PP',
-    title: 'Poradnik KPRM „Pierwsza ocena w służbie cywilnej” (2016)',
-    description: 'pierwsza ocena: interpretacje i przykłady',
-    file: 'pierwsza-ocena/poradnik-pierwsza-ocena-2016.pdf',
-    indexed: true,
-  },
-  {
-    id: 'AP',
-    title: 'Arkusz pierwszej oceny w służbie cywilnej',
-    description: 'wzór arkusza pierwszej oceny',
-    file: 'pierwsza-ocena/arkusz-pierwszej-oceny.docx',
-    indexed: true,
-  },
-  {
-    id: 'MK',
-    title: 'Model kompetencji (14 kompetencji, 49 wskaźników, 5 poziomów)',
-    description: '14 kompetencji, 49 wskaźników behawioralnych, 5 poziomów',
-    file: 'model-kompetencji/model-kompetencji.xlsx',
-    indexed: true,
-  },
-  {
     id: 'LT',
     title: 'Zasady obliczania terminów stosowane przy dokonywaniu ocen',
     description: 'jak liczyć terminy w procedurze ocen',
-    file: null,
+    file: 'materialy-dodatkowe/zasady-obliczania-terminow.docx',
     indexed: true,
-    note: NO_SOURCE_FILE,
+  },
+  {
+    id: 'UC',
+    title: 'Przypadki użycia procesu oceny okresowej (opis)',
+    description: 'etapy procesu, przypomnienia, zmiany terminów, wnioski',
+    file: 'przypadki-uzycia/przypadki-uzycia-opis.docx',
+    indexed: true,
+  },
+  {
+    id: 'use-cases-warunki',
+    title: 'Przypadki użycia – warunki brzegowe',
+    description: 'warunki brzegowe wybranych przypadków użycia',
+    file: 'przypadki-uzycia/przypadki-uzycia-warunki-brzegowe.docx',
+    indexed: false,
+    note: 'w bazie razem z opisem przypadków użycia',
   },
   {
     id: 'QA',
