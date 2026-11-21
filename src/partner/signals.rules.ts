@@ -128,7 +128,7 @@ export function computeSignals(input: SignalInput): SignalsResult {
     !!p && p.answers[q] <= R.lowAnswer;
   const pulseReason = (text: string): SignalReason => ({
     source: 'PULSE',
-    text: `Puls ${formatDatePl(latest!.date)}: ${text}`,
+    text: `${formatDatePl(latest!.date)}: ${text}`,
   });
 
   const recentObs = observations.filter(
