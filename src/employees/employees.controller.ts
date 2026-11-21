@@ -1,3 +1,4 @@
+import { ApiOperation } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -36,24 +37,28 @@ export class EmployeesController {
   constructor(private readonly employees: EmployeesService) {}
 
   @Get('employees')
+  @ApiOperation({ summary: 'Rejestr pracowników' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   list(@Query() query: ListQuery) {
     return this.employees.list(query);
   }
 
   @Get('employees/evaluators')
+  @ApiOperation({ summary: 'Lista oceniających' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   evaluators() {
     return this.employees.evaluators();
   }
 
   @Get('employees/absence-types')
+  @ApiOperation({ summary: 'Rodzaje nieobecności' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   absenceTypes() {
     return this.employees.absenceTypes();
   }
 
   @Get('employees/export.csv')
+  @ApiOperation({ summary: 'Eksport rejestru pracowników do CSV' })
   @Roles('HR', 'ADMIN')
   @Header('Content-Type', CSV)
   @Header(
@@ -65,6 +70,7 @@ export class EmployeesController {
   }
 
   @Post('employees/history/import')
+  @ApiOperation({ summary: 'Import historii ocen' })
   @Roles('HR', 'ADMIN')
   @HttpCode(200)
   importHistory(
@@ -74,18 +80,21 @@ export class EmployeesController {
   }
 
   @Post('employees')
+  @ApiOperation({ summary: 'Dodanie pracownika' })
   @Roles('HR', 'ADMIN')
   create(@Body({ schema: employeeSchema }) body: EmployeeInput) {
     return this.employees.create(body);
   }
 
   @Get('employees/:id')
+  @ApiOperation({ summary: 'Dane pracownika' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   get(@Param('id') id: string) {
     return this.employees.get(id);
   }
 
   @Patch('employees/:id')
+  @ApiOperation({ summary: 'Zmiana danych pracownika' })
   @Roles('HR', 'ADMIN')
   update(
     @Param('id') id: string,
@@ -95,6 +104,7 @@ export class EmployeesController {
   }
 
   @Delete('employees/:id')
+  @ApiOperation({ summary: 'Usunięcie pracownika' })
   @Roles('HR', 'ADMIN')
   @HttpCode(204)
   remove(@Param('id') id: string) {
@@ -102,24 +112,28 @@ export class EmployeesController {
   }
 
   @Post('employees/:id/cycles')
+  @ApiOperation({ summary: 'Rozpoczęcie nowego cyklu oceny' })
   @Roles('HR', 'ADMIN')
   startCycle(@Param('id') id: string) {
     return this.employees.startCycle(id);
   }
 
   @Get('employees/:id/history')
+  @ApiOperation({ summary: 'Historia ocen pracownika' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   history(@Param('id') id: string) {
     return this.employees.history(id);
   }
 
   @Get('employees/:id/absences')
+  @ApiOperation({ summary: 'Nieobecności pracownika' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   absences(@Param('id') id: string) {
     return this.employees.absences(id);
   }
 
   @Post('employees/:id/absences')
+  @ApiOperation({ summary: 'Dodanie nieobecności' })
   @Roles('HR', 'ADMIN')
   addAbsence(
     @Param('id') id: string,
@@ -129,6 +143,7 @@ export class EmployeesController {
   }
 
   @Delete('employees/:id/absences/:absenceId')
+  @ApiOperation({ summary: 'Usunięcie nieobecności' })
   @Roles('HR', 'ADMIN')
   @HttpCode(204)
   removeAbsence(
@@ -139,12 +154,14 @@ export class EmployeesController {
   }
 
   @Get('substitutions')
+  @ApiOperation({ summary: 'Zastępstwa oceniających' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   substitutions() {
     return this.employees.substitutions();
   }
 
   @Post('substitutions')
+  @ApiOperation({ summary: 'Dodanie zastępstwa' })
   @Roles('HR', 'ADMIN')
   addSubstitution(
     @Body({ schema: substitutionSchema }) body: SubstitutionInput,
@@ -153,6 +170,7 @@ export class EmployeesController {
   }
 
   @Delete('substitutions/:id')
+  @ApiOperation({ summary: 'Usunięcie zastępstwa' })
   @Roles('HR', 'ADMIN')
   @HttpCode(204)
   removeSubstitution(@Param('id') id: string) {
@@ -160,12 +178,14 @@ export class EmployeesController {
   }
 
   @Get('statistics')
+  @ApiOperation({ summary: 'Statystyki ocen okresowych' })
   @Roles('HR', 'ADMIN', 'DIRECTOR')
   statistics(@Query('unit') unit?: string) {
     return this.employees.statistics(unit || undefined);
   }
 
   @Get('statistics/export.csv')
+  @ApiOperation({ summary: 'Eksport statystyk do CSV' })
   @Roles('HR', 'ADMIN', 'DIRECTOR')
   @Header('Content-Type', CSV)
   @Header('Content-Disposition', 'attachment; filename="statystyki-ocen.csv"')
