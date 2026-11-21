@@ -138,4 +138,17 @@ export const USER_SEED: readonly (User & { passwordHash: string })[] = [
     passwordHash:
       '$scrypt$ln=17,r=8,p=1$UIkbhF06+yyEc5rD2KTxRw$1kaE05GKFI2pStrCgcd/iMbs0rJLGD68OQsT7CXYmCA',
   },
+  {
+    id: 'u-mazur',
+    login: 'j.mazur',
+    firstName: 'Julia',
+    lastName: 'Mazur',
+    role: 'EMPLOYEE',
+    position: 'Specjalista do spraw analiz danych',
+    unit: 'Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych',
+    evaluatorId: null,
+    personId: 'p-mazur',
+    passwordHash:
+      '$scrypt$ln=17,r=8,p=1$dskU4vBTmN5FQD+gj0z/Sg$Ve5p4jKyDy+PJjJketsh68S886ZZgv0USBCHgMTtaZQ',
+  },
 ];

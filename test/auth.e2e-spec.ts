@@ -237,6 +237,7 @@ describe('Authentication, roles and permissions (e2e)', () => {
         'b.wisniewska',
         'e.dabrowska',
         't.jankowski',
+        'j.mazur',
       ]);
       expect(JSON.stringify(res.body)).not.toContain('scrypt');
     });
