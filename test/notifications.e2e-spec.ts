@@ -10,6 +10,7 @@ interface Inbox {
     id: string;
     type: string;
     caseId: string | null;
+    title: string;
     readAt: string | null;
   }[];
   unread: number;
