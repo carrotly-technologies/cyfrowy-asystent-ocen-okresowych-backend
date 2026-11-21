@@ -70,7 +70,10 @@ export class CasesController {
     description:
       'Bieżące oceny pracowników przełożonego i lista zadań posortowana wg terminów. Tylko SUPERVISOR.',
   })
-  @ApiOkResponse({ description: '`{ cases: CaseSummary[], todo }`.' })
+  @ApiOkResponse({
+    description:
+      '`{ cases: CaseSummary[], todo }`. `nextEvaluationDueOn` (`YYYY-MM-DD` albo null): przewidywana data następnej oceny = data podpisania ostatniej oceny + 24 miesiące (art. 81 ust. 1).',
+  })
   @ApiErrors(403)
   team() {
     return this.cases.team();
@@ -85,7 +88,7 @@ export class CasesController {
   })
   @ApiOkResponse({
     description:
-      'Lista teczek (`CaseSummary[]`): oceniany, arkusz, etapy, najbliższy termin, status.',
+      'Lista teczek (`CaseSummary[]`): oceniany, arkusz, etapy, najbliższy termin, przewidywana data następnej oceny (`nextEvaluationDueOn`), status.',
   })
   @ApiErrors(403)
   list(): CaseSummary[] {

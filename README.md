@@ -168,7 +168,7 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
 | Route                            | What it does                                                                             |
 | -------------------------------- | ---------------------------------------------------------------------------------------- |
 | `GET /api/cases`                 | Cases visible to the caller (`CaseSummary[]`): own for a supervisor, own („Moje oceny”) for an employee, all for HR |
-| `GET /api/team`                  | The supervisor's cases (`CaseSummary[]`) and `todo` sorted by deadline                   |
+| `GET /api/team`                  | The supervisor's cases (`CaseSummary[]`, each with `nextEvaluationDueOn`: last signed assessment + 24 months, or null) and `todo` sorted by deadline |
 | `GET /api/cases/:id`             | `CaseDetail`: stages, deadlines, sheet suggestion, part I, observations, part II, formal check |
 | `GET /api/cases/:id/sheet.pdf`   | Sheet A/B/C as PDF, generated on the server (pdfmake, Liberation Serif), `ocena-<nazwisko>-<data>.pdf`; same access as the route above |
 | `GET /api/cases/:id/export?format=json` | The sheet's fields (parts I, II, III) in the versioned export format (`schemaVersion`), same access as `GET /api/cases/:id`; see [Integracja z EZD](#integracja-z-ezd) |

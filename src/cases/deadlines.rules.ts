@@ -88,6 +88,17 @@ export function rawAssessmentDue(anchor: string): string {
 }
 
 /**
+ * Predicted date of the person's next periodic assessment: 24 months from the
+ * day the last one was made in writing (art. 81 ust. 1 i 4 ustawy o służbie
+ * cywilnej), before R3. null while no assessment has been signed.
+ */
+export function nextEvaluationDueOn(
+  lastSignedOn: string | null,
+): string | null {
+  return lastSignedOn ? rawAssessmentDue(lastSignedOn) : null;
+}
+
+/**
  * Default "termin sporządzenia oceny" written in part I: 24 months from
  * `anchor` (see cycleAnchor), moved to the next working day.
  */

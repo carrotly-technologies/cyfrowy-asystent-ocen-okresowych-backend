@@ -108,7 +108,7 @@ export class CasesService {
           isAssessedIn(user, r) ||
           isDirectorFor(user, r),
       )
-      .map((r) => toSummary(r, this.today));
+      .map((r) => this.summary(r));
   }
 
   team(): { cases: CaseSummary[]; todo: TodoItem[] } {
@@ -116,7 +116,7 @@ export class CasesService {
     const records = this.store
       .all()
       .filter((c) => isEvaluatorOf(user, c) && !c.nextCaseId);
-    const cases = records.map((r) => toSummary(r, this.today));
+    const cases = records.map((r) => this.summary(r));
     const todo = cases
       .flatMap((c): TodoItem[] => {
         const deadline = c.nextDeadline;
@@ -177,7 +177,12 @@ export class CasesService {
   }
 
   summary(record: CaseRecord): CaseSummary {
-    return toSummary(record, this.today);
+    return toSummary(record, this.today, this.previousOf(record));
+  }
+
+  /** The person's case before this one (the one whose nextCaseId is it). */
+  private previousOf(record: CaseRecord): CaseRecord | null {
+    return this.store.all().find((r) => r.nextCaseId === record.id) ?? null;
   }
 
   /** GET /api/cases/:id: 404 for an unknown case, 403 for someone else's. */
@@ -299,6 +304,7 @@ export class CasesService {
         this.store.evaluator(record.evaluatorId),
         this.office,
         actor,
+        this.previousOf(record),
       ),
       legalActions: user
         ? legalActions(record, this.today, this.viewerOf(record), addressee)
