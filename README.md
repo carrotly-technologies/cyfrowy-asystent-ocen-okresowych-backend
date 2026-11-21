@@ -329,6 +329,7 @@ person data, evaluator and absences in step.
 | `GET /api/employees/:id/history` | `{ cases, imported }`: every system cycle (result, level) and imported assessments |
 | `GET/POST /api/employees/:id/absences`, `DELETE …/absences/:absenceId` | `{ type, from, to, justified?, note? }`; GET also returns `continuous` (merged periods with `longerThanMonth`) |
 | `GET /api/employees/absence-types`, `GET /api/employees/evaluators` | Absence kinds (`data/absence-types.data.ts`) and evaluators to pick from |
+| `POST /api/employees/import` | HR only. `{ csv, dryRun? }`: the register from CSV (`;`, UTF-8; sample `docs/import/pracownicy-wzor.csv`, also served at `/api/docs/import/pracownicy-wzor.csv`). Columns: identyfikator (optional, becomes the register id), imię, nazwisko, komórka, stanowisko, kierownik urzędu, kieruje ludźmi, urzędnik mianowany (tak/nie), rok mianowania, stopień (I–IX), data nadania stopnia (optional), data zatrudnienia na czas nieokreślony, oceniający (login or „Imię Nazwisko”). Matches by identyfikator, else by name + unit: updates matched people, creates the rest. Bad rows are skipped, not fatal. `dryRun: true` saves nothing (preview). `{ dryRun, created, updated, unchanged, failed, rows: [{ line, action: CREATE\|UPDATE\|UNCHANGED, employeeId, name, unit, evaluatorName, sheetId }], errors: [{ line, message }] }`; 400 only when the header is unusable |
 | `POST /api/employees/history/import` | `{ csv }`: past assessments; all-or-nothing, 400 with a Polish message per bad row, duplicates (same person and date) skipped; `{ imported, skipped, rows: [{ line, employeeId, name, assessedOn, result, level, skipped }] }`. Sample: `docs/import/oceny-historyczne-przyklad.csv` |
 | `GET/POST /api/substitutions`, `DELETE /api/substitutions/:id` | Evaluator substitutions `{ evaluatorId, substituteId, from, to, note? }` |
 | `GET /api/statistics?unit=` | Results, levels, negative %, signed on time vs late, open overdue, cases per stage, promotions requested / obligatory (art. 89 ust. 2), per unit |
@@ -338,7 +339,7 @@ person data, evaluator and absences in step.
   work (5–16.10.2026 + 19.10–6.11.2026 = one 33-day absence), `isLongerThanMonth` uses the month of art. 112 KC,
   `extendAssessmentDue` / `withAbsenceExtension` extend the assessment due date by such absences (art. 81 ust. 7);
   not after a negative assessment (ust. 9). Applied to the deadlines of stages 4–6 of every case.
-- Rules: `employees.rules.ts` (cycle start, obligatory promotion, substitution), `history-import.rules.ts`,
+- Rules: `employees.rules.ts` (cycle start, obligatory promotion, substitution), `history-import.rules.ts`, `employees-import.rules.ts`,
   `statistics.rules.ts`.
 
 ### AI assistant (source-grounded)

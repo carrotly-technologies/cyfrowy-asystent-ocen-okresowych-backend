@@ -1,0 +1,26 @@
+identyfikator;imię;nazwisko;komórka;stanowisko;kierownik urzędu;kieruje ludźmi;urzędnik mianowany;rok mianowania;stopień;data zatrudnienia na czas nieokreślony;oceniający
+KAD-0001;Zofia;Przykładowa;Kierownictwo ministerstwa (dane demonstracyjne);Dyrektor generalny urzędu;tak;tak;tak;2012;VI;2008-03-01;Krzysztof Zawadzki
+KAD-0002;Henryk;Wzorcowy;Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych;Zastępca naczelnika wydziału;nie;tak;tak;2016;III;2011-09-01;j.kaminska
+KAD-0003;Alicja;Testowa;Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych;Główny specjalista;nie;nie;tak;2019;II;2014-02-01;j.kaminska
+KAD-0004;Bartosz;Próbny;Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych;Starszy specjalista;nie;nie;nie;;;2020-06-15;j.kaminska
+KAD-0005;Celina;Demonstracyjna;Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych;Specjalista;nie;nie;nie;;;2021-01-04;j.kaminska
+KAD-0006;Dariusz;Fikcyjny;Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych;Referendarz;nie;nie;nie;;;2022-04-01;Joanna Kamińska
+KAD-0007;Elżbieta;Umowna;Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych;Starszy referent;nie;nie;nie;;;2023-03-01;j.kaminska
+KAD-0008;Filip;Zmyślony;Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych;Główny specjalista;nie;nie;tak;2021;I;2017-10-02;j.kaminska
+KAD-0009;Grażyna;Przykładna;Wydział Budżetu i Finansów, Biuro Dyrektora Generalnego;Zastępca naczelnika wydziału;nie;tak;tak;2015;IV;2009-05-04;r.sikora
+KAD-0010;Igor;Testowy;Wydział Budżetu i Finansów, Biuro Dyrektora Generalnego;Główny księgowy wydziału;nie;nie;tak;2018;II;2013-01-02;r.sikora
+KAD-0011;Janina;Wzorowa;Wydział Budżetu i Finansów, Biuro Dyrektora Generalnego;Starszy specjalista do spraw budżetu;nie;nie;nie;;;2019-07-01;r.sikora
+KAD-0012;Kamil;Próbkowy;Wydział Budżetu i Finansów, Biuro Dyrektora Generalnego;Specjalista do spraw rozliczeń;nie;nie;nie;;;2021-11-15;Robert Sikora
+KAD-0013;Lucyna;Demowa;Wydział Budżetu i Finansów, Biuro Dyrektora Generalnego;Referendarz;nie;nie;nie;;;2022-09-01;r.sikora
+KAD-0014;Marcin;Szablonowy;Wydział Budżetu i Finansów, Biuro Dyrektora Generalnego;Starszy referent;nie;nie;nie;;;2024-02-01;r.sikora
+KAD-0015;Natalia;Przykładowa;Wydział Budżetu i Finansów, Biuro Dyrektora Generalnego;Specjalista;nie;nie;tak;2022;I;2018-04-03;r.sikora
+KAD-0016;Oskar;Wzorcowy;Wydział Legislacji, Departament Prawny;Zastępca naczelnika wydziału;nie;tak;tak;2014;IV;2008-10-01;a.pawlak
+KAD-0017;Patrycja;Testowa;Wydział Legislacji, Departament Prawny;Główny legislator;nie;nie;tak;2017;III;2012-03-01;a.pawlak
+KAD-0018;Rafał;Próbny;Wydział Legislacji, Departament Prawny;Starszy legislator;nie;nie;nie;;;2019-01-02;a.pawlak
+KAD-0019;Sylwia;Demonstracyjna;Wydział Legislacji, Departament Prawny;Legislator;nie;nie;nie;;;2021-05-04;Agnieszka Pawlak
+KAD-0020;Tadeusz;Fikcyjny;Wydział Legislacji, Departament Prawny;Radca prawny;nie;nie;nie;;;2020-09-01;a.pawlak
+KAD-0021;Urszula;Umowna;Wydział Legislacji, Departament Prawny;Specjalista;nie;nie;nie;;;2023-06-01;a.pawlak
+KAD-0022;Wiktor;Zmyślony;Wydział Legislacji, Departament Prawny;Starszy referent;nie;nie;nie;;;2024-01-02;a.pawlak
+KAD-0023;Weronika;Przykładna;Kierownictwo ministerstwa (dane demonstracyjne);Dyrektor departamentu;nie;tak;tak;2013;V;2007-02-01;Krzysztof Zawadzki
+KAD-0024;Zbigniew;Testowy;Kierownictwo ministerstwa (dane demonstracyjne);Zastępca dyrektora departamentu;nie;tak;tak;2016;IV;2010-06-01;Krzysztof Zawadzki
+KAD-0025;Agata;Wzorowa;Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych;Specjalista do spraw analiz;nie;nie;nie;;;2025-03-03;j.kaminska

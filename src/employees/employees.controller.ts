@@ -19,6 +19,8 @@ import {
   type EmployeePatch,
   employeePatchSchema,
   employeeSchema,
+  type EmployeesImportInput,
+  employeesImportSchema,
   type HistoryImportInput,
   historyImportSchema,
   type SubstitutionInput,
@@ -95,6 +97,20 @@ export class EmployeesController {
     @Body({ schema: historyImportSchema }) body: HistoryImportInput,
   ) {
     return this.employees.importHistory(body);
+  }
+
+  @Post('employees/import')
+  @Roles('HR')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Import listy pracowników z CSV (podgląd albo zapis)',
+    description:
+      'Wzór: `docs/import/pracownicy-wzor.csv`. Błędne wiersze nie przerywają importu poprawnych; raport podaje numer wiersza i powód. `dryRun: true` niczego nie zapisuje.',
+  })
+  importEmployees(
+    @Body({ schema: employeesImportSchema }) body: EmployeesImportInput,
+  ) {
+    return this.employees.importEmployees(body);
   }
 
   @Post('employees')
