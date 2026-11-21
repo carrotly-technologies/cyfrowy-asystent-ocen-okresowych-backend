@@ -170,7 +170,7 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
 | `GET /api/cases`                 | Cases visible to the caller (`CaseSummary[]`): own for a supervisor, own („Moje oceny”) for an employee, all for HR |
 | `GET /api/team`                  | The supervisor's cases (`CaseSummary[]`) and `todo` sorted by deadline                   |
 | `GET /api/cases/:id`             | `CaseDetail`: stages, deadlines, sheet suggestion, part I, observations, part II, formal check |
-| `GET /api/cases/:id/sheet.pdf`   | Sheet A/B/C as PDF, generated on the server (pdfmake, Roboto), `ocena-<nazwisko>-<data>.pdf`; same access as the route above |
+| `GET /api/cases/:id/sheet.pdf`   | Sheet A/B/C as PDF, generated on the server (pdfmake, Liberation Serif), `ocena-<nazwisko>-<data>.pdf`; same access as the route above |
 | `GET /api/cases/:id/export?format=json` | The sheet's fields (parts I, II, III) in the versioned export format (`schemaVersion`), same access as `GET /api/cases/:id`; see [Integracja z EZD](#integracja-z-ezd) |
 | `PATCH /api/cases/:id`           | Partial update; 400 for invalid values, 409 for parts locked at the current stage. Part II/III (`decisions`, `justification`, `iprz`, `assessmentTalkOn`, `assessmentPeriod`, previous assessment, promotion request) only at `ASSESSMENT`/`SIGNATURE` before signing (`partIIEditableFrom`); `workingNotes` (notatki robocze, no legal effect) until signing |
 | `POST /api/cases/:id/observations` | Adds an S-D-R observation (201)                                                        |
@@ -504,7 +504,7 @@ powiadomienia oraz ankiety pulsu. Dane demonstracyjne trafiają tylko do pustej 
   proxy urzędu z HTTPS; ustaw własne `JWT_SECRET` i `POSTGRES_PASSWORD`.
 - AI i reguły są doradcze: ostateczną ocenę zawsze ustala oceniający.
 - Licencja EUPL-1.2 (plik `LICENSE`), wszystkie zależności open source (MIT, Apache-2.0, BSD, ISC); brak płatnych
-  licencji i usług. PDF arkusza powstaje na serwerze (pdfmake, czcionka Roboto), bez przeglądarki i internetu.
+  licencji i usług. PDF arkusza powstaje na serwerze (pdfmake, czcionka Liberation Serif), bez przeglądarki i internetu.
 
 ### Architektura
 
@@ -565,3 +565,7 @@ on IPv4 only.
 ## Licencja
 
 EUPL-1.2 (European Union Public Licence), plik [`LICENSE`](LICENSE).
+
+Krój dokumentów (PDF arkusza): Liberation Serif, metrycznie zgodny z Times New Roman z wzoru rozporządzenia, licencja
+SIL OFL 1.1 ([`assets/fonts/LiberationSerif/OFL.txt`](assets/fonts/LiberationSerif/OFL.txt)); Times New Roman (licencja
+Microsoftu) nie jest dołączany.

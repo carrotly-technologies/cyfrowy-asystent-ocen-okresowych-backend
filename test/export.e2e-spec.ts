@@ -64,6 +64,18 @@ describe('Sheet PDF export (e2e)', () => {
       writeFileSync(`${process.env.PDF_OUT}.A.pdf`, res.body as Buffer);
   });
 
+  it('embeds Liberation Serif (Times New Roman metrics) in every sheet', async () => {
+    const sheets = { A: 'c-201', B: 'c-008', C: 'c-006' };
+    for (const [sheet, id] of Object.entries(sheets)) {
+      const res = await pdf(hr, id).expect(200);
+      if (process.env.PDF_OUT)
+        writeFileSync(`${process.env.PDF_OUT}.${sheet}.pdf`, res.body as Buffer);
+      const text = (res.body as Buffer).toString('latin1');
+      expect(text).toMatch(/\/BaseFont \/[A-Z]{6}\+LiberationSerif/);
+      expect(text).not.toContain('Roboto');
+    }
+  });
+
   it('keeps the case access rules: own case for the employee, 403 otherwise', async () => {
     await pdf(nowak, 'c-001').expect(200);
     await pdf(nowak, 'c-006').expect(403);

@@ -1,29 +1,29 @@
-import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
+import { join, resolve } from 'node:path';
 import pdfmake from 'pdfmake';
 
 export type TDocumentDefinitions = Parameters<typeof pdfmake.createPdf>[0];
 
+/** Font family used by every generated document. */
+export const DOCUMENT_FONT = 'LiberationSerif';
+
 /**
- * Renders pdfmake documents on the server (pdfmake/pdfkit, MIT; Roboto font,
- * Apache-2.0, bundled with pdfmake, covers Polish letters). No browser, no
- * network: images and URLs are refused.
+ * Renders pdfmake documents on the server (pdfmake/pdfkit, MIT). Documents use
+ * Liberation Serif (SIL OFL 1.1, metric-compatible with Times New Roman, the
+ * typeface of the official forms; covers Polish letters), bundled in
+ * `assets/fonts/LiberationSerif` with its licence. No browser, no network:
+ * images and URLs are refused.
  */
-const fontsDir = join(
-  dirname(createRequire(import.meta.url).resolve('pdfmake/package.json')),
-  'fonts',
-  'Roboto',
-);
+const fontsDir = resolve(import.meta.dirname, '../../assets/fonts/LiberationSerif');
 
 let configured = false;
 function configure(): void {
   if (configured) return;
   pdfmake.setFonts({
-    Roboto: {
-      normal: join(fontsDir, 'Roboto-Regular.ttf'),
-      bold: join(fontsDir, 'Roboto-Medium.ttf'),
-      italics: join(fontsDir, 'Roboto-Italic.ttf'),
-      bolditalics: join(fontsDir, 'Roboto-MediumItalic.ttf'),
+    [DOCUMENT_FONT]: {
+      normal: join(fontsDir, 'LiberationSerif-Regular.ttf'),
+      bold: join(fontsDir, 'LiberationSerif-Bold.ttf'),
+      italics: join(fontsDir, 'LiberationSerif-Italic.ttf'),
+      bolditalics: join(fontsDir, 'LiberationSerif-BoldItalic.ttf'),
     },
   });
   pdfmake.setUrlAccessPolicy(() => false);

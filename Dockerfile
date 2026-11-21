@@ -18,6 +18,8 @@ COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 # Database migrations, applied at startup when DATABASE_URL is set.
 COPY --from=build --chown=node:node /app/drizzle ./drizzle
+# Document fonts (Liberation Serif, SIL OFL 1.1) used by the PDF export.
+COPY --from=build --chown=node:node /app/assets ./assets
 # Source documents, served by GET /api/docs/*.
 COPY --from=build --chown=node:node /app/docs ./docs
 USER node
