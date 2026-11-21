@@ -20,6 +20,10 @@ import {
   pendingObjection,
 } from './objection-terms.rules.js';
 import { applyPatch } from './patch.rules.js';
+import {
+  type ObjectionAddressee,
+  objectionAddressee,
+} from './objection-addressee.rules.js';
 import { dueDateRequestRule, pendingDueDateRequest } from './due-date.rules.js';
 
 export * from './objection-terms.rules.js';
@@ -48,6 +52,7 @@ export function recordAckFiction(
   input: { date: string; reason: string },
   by: ActorRef,
   today: string,
+  addressee: ObjectionAddressee = objectionAddressee(record),
 ): CaseRecord {
   const blocked = ackFictionBlocker(record);
   if (blocked) {
@@ -66,7 +71,12 @@ export function recordAckFiction(
     );
   }
   // Same effects as the assessed person's own confirmation, dated `date`.
-  const next = applyAction(record, 'EMPLOYEE_ACK_ASSESSMENT', input.date);
+  const next = applyAction(
+    record,
+    'EMPLOYEE_ACK_ASSESSMENT',
+    input.date,
+    addressee,
+  );
   next.ackFiction = {
     date: input.date,
     reason: input.reason,
@@ -76,7 +86,7 @@ export function recordAckFiction(
   const objection = objectionDeadline(input.date);
   next.history.push({
     date: today,
-    text: `Stwierdzono fikcję zapoznania z oceną (${by.name}, ${by.role}): ocena dotarła do ocenianego ${formatDatePl(input.date)}, ale nie mógł lub nie chciał potwierdzić zapoznania. Powód: ${sentence(input.reason)} Termin na sprzeciw biegnie do ${formatDatePl(objection.date!)} (art. 83 ust. 1 ${USC}).`,
+    text: `Stwierdzono fikcję zapoznania z oceną (${by.name}, ${by.role}): ocena dotarła do ocenianego ${formatDatePl(input.date)}, ale nie mógł lub nie chciał potwierdzić zapoznania. Powód: ${sentence(input.reason)} Termin na sprzeciw do ${addressee.to} biegnie do ${formatDatePl(objection.date!)} (art. 83 ust. 1 ${USC}).`,
     event: {
       type: 'ACK_FICTION_RECORDED',
       notify: ['EMPLOYEE', 'EVALUATOR', 'HR'],
@@ -114,6 +124,7 @@ export function fileObjection(
   record: CaseRecord,
   text: string,
   today: string,
+  addressee: ObjectionAddressee = objectionAddressee(record),
 ): CaseRecord {
   const blocked = objectionBlocker(record, today);
   if (blocked)
@@ -131,8 +142,14 @@ export function fileObjection(
   const due = objectionDecisionDeadline(today).date!;
   next.history.push({
     date: today,
-    text: `Oceniany wniósł sprzeciw od oceny do dyrektora generalnego urzędu (art. 83 ust. 1 ${USC}). Sprzeciw rozpatruje się do ${formatDatePl(due)} (14 dni, art. 83 ust. 3).`,
-    event: { type: 'OBJECTION_FILED', notify: ['DIRECTOR', 'EVALUATOR', 'HR'] },
+    text: `Oceniany wniósł sprzeciw od oceny do ${addressee.to} (${addressee.legalBasis}). Sprzeciw rozpatruje się do ${formatDatePl(due)} (14 dni, art. 83 ust. 3).`,
+    event: {
+      type: 'OBJECTION_FILED',
+      notify:
+        addressee.decider === 'EVALUATOR'
+          ? ['EVALUATOR', 'HR']
+          : ['DIRECTOR', 'EVALUATOR', 'HR'],
+    },
   });
   return next;
 }
@@ -144,6 +161,8 @@ export interface ObjectionDecisionInput {
   decisions?: Record<string, number>;
   /** CHANGE only: new justification. */
   justification?: string;
+  /** DISMISS: day the decision is delivered (art. 83 ust. 5); default today. */
+  deliveredOn?: string;
 }
 
 /** Snapshot of the current assessment before it is replaced. */
@@ -175,13 +194,23 @@ export function decideObjection(
   input: ObjectionDecisionInput,
   by: ActorRef,
   today: string,
+  addressee: ObjectionAddressee = objectionAddressee(record),
 ): CaseRecord {
+  const who = addressee.who;
   const pending = pendingObjection(record);
   if (!pending) {
     throw new CaseRuleError(
       'W tej sprawie nie ma sprzeciwu czekającego na rozstrzygnięcie.',
     );
   }
+  if (input.deliveredOn !== undefined) {
+    if (!isIsoDate(input.deliveredOn) || input.deliveredOn < today) {
+      throw new CaseRuleError(
+        `Data doręczenia rozstrzygnięcia nie może być wcześniejsza niż data rozstrzygnięcia (${formatDatePl(today)}).`,
+      );
+    }
+  }
+  const deliveredOn = input.deliveredOn ?? today;
   const term = objectionDecisionDeadline(pending.filedOn).date!;
   const late =
     today > term
@@ -195,6 +224,7 @@ export function decideObjection(
           decision: {
             outcome: input.outcome,
             decidedOn: today,
+            deliveredOn,
             reason: input.reason,
             decidedBy: by,
           },
@@ -204,10 +234,10 @@ export function decideObjection(
 
   switch (input.outcome) {
     case 'DISMISS': {
-      const court = daysTerm(today, COURT_APPEAL_DAYS, '', '').date!;
+      const court = daysTerm(deliveredOn, COURT_APPEAL_DAYS, '', '').date!;
       next.history.push({
         date: today,
-        text: `Dyrektor generalny urzędu nie uwzględnił sprzeciwu (oddalenie). Uzasadnienie: ${sentence(input.reason)}${late} Oceniany może odwołać się do sądu pracy w terminie 14 dni od doręczenia rozstrzygnięcia (do ${formatDatePl(court)}, art. 83 ust. 5 ${USC}).`,
+        text: `${who} nie uwzględnił sprzeciwu (oddalenie). Uzasadnienie: ${sentence(input.reason)}${late} Oceniany może odwołać się do sądu pracy w terminie 14 dni od doręczenia rozstrzygnięcia (doręczenie ${formatDatePl(deliveredOn)}, termin do ${formatDatePl(court)}, art. 83 ust. 5 ${USC}).`,
         event: {
           type: 'OBJECTION_DISMISSED',
           notify: ['EMPLOYEE', 'EVALUATOR', 'HR'],
@@ -235,7 +265,7 @@ export function decideObjection(
       }
       next.history.push({
         date: today,
-        text: `Dyrektor generalny urzędu uwzględnił sprzeciw i zmienił ocenę (art. 83 ust. 4 ${USC}). Uzasadnienie: ${sentence(input.reason)}${late} Zmienioną ocenę oceniający podpisuje i ponownie przekazuje ocenianemu do zapoznania.`,
+        text: `${who} uwzględnił sprzeciw i zmienił ocenę (art. 83 ust. 4 ${USC}). Uzasadnienie: ${sentence(input.reason)}${late} Zmienioną ocenę oceniający podpisuje i ponownie przekazuje ocenianemu do zapoznania.`,
         event: {
           type: 'OBJECTION_ASSESSMENT_CHANGE',
           notify: ['EMPLOYEE', 'EVALUATOR', 'HR'],
@@ -253,7 +283,7 @@ export function decideObjection(
       delete next.completedOn.ASSESSMENT;
       next.history.push({
         date: today,
-        text: `Dyrektor generalny urzędu uwzględnił sprzeciw i polecił ponowne sporządzenie oceny (art. 83 ust. 4 ${USC}). Uzasadnienie: ${sentence(input.reason)}${late} Dotychczasowa ocena została anulowana; sprawa wraca do etapu „Rozmowa oceniająca i ocena” (§10–§11 ${RO_2016}). Od oceny sporządzonej po raz drugi przysługuje sprzeciw.`,
+        text: `${who} uwzględnił sprzeciw i polecił ponowne sporządzenie oceny (art. 83 ust. 4 ${USC}). Uzasadnienie: ${sentence(input.reason)}${late} Dotychczasowa ocena została anulowana; sprawa wraca do etapu „Rozmowa oceniająca i ocena” (§10–§11 ${RO_2016}). Od oceny sporządzonej po raz drugi przysługuje sprzeciw.`,
         event: {
           type: 'OBJECTION_ASSESSMENT_REDO',
           notify: ['EMPLOYEE', 'EVALUATOR', 'HR'],
@@ -298,6 +328,7 @@ export function legalActions(
   record: CaseRecord,
   today: string,
   viewer: Viewer,
+  addressee: ObjectionAddressee = objectionAddressee(record),
 ): LegalAction[] {
   const out: LegalAction[] = [];
   if (ACK_FICTION_VIEWERS.includes(viewer) && !ackFictionBlocker(record)) {
@@ -306,7 +337,9 @@ export function legalActions(
   if (viewer === 'EMPLOYEE' && !objectionBlocker(record, today)) {
     out.push('FILE_OBJECTION');
   }
-  if (viewer === 'DIRECTOR' && pendingObjection(record)) {
+  // art. 83 ust. 1–2: the addressee decides (DG / kierownik urzędu, or the
+  // person who made the assessment for sheet A).
+  if (viewer === addressee.decider && pendingObjection(record)) {
     out.push('DECIDE_OBJECTION');
   }
   if (viewer === 'EMPLOYEE' && dueDateRequestRule(record, today).eligible) {

@@ -6,6 +6,7 @@ import type {
   DueChangeReason,
   DueDateChange,
   PositionChange,
+  StageId,
 } from './case.types.js';
 import {
   addDays,
@@ -15,7 +16,7 @@ import {
   isIsoDate,
   shiftToWorkingDay,
 } from './dates.js';
-import { USC } from './deadlines.rules.js';
+import { type DeadlineSpec, USC } from './deadlines.rules.js';
 
 /**
  * Changes of the assessment due date (termin sporządzenia oceny):
@@ -281,6 +282,67 @@ export function positionChangeEffect(
     earliest,
     message: `Od ${record.cycleStart.kind === 'HIRED' ? 'początku okresu oceny' : 'ostatniej oceny'} (${formatDatePl(anchor)}) upłynęło więcej niż 6 miesięcy: sporządź ocenę okresową nie wcześniej niż ${formatDatePl(earliest)} i nie później niż ${formatDatePl(deadline)}.`,
     legalBasis: `art. 81 ust. 6 ${USC}; §9 ust. 2 ${RO_2016}`,
+  };
+}
+
+/** Stages from which §9 ust. 1 sends the case back to the opening talk. */
+const REOPENABLE_STAGES: readonly StageId[] = [
+  'PART_I_ACK',
+  'OBSERVATION',
+  'ASSESSMENT',
+  'SIGNATURE',
+];
+
+/**
+ * §9 ust. 1 rozp. 2016: after a change of position within 6 months the
+ * activities of §5 and §6 are made again within 30 days (part I: talk,
+ * criteria, confirmations); "termin sporządzenia oceny nie ulega zmianie".
+ * Moves the case back to OPENING_TALK keeping the due date and the criteria
+ * chosen so far (the evaluator may change them). No-op before part I is
+ * confirmed or once the assessment is signed.
+ */
+export function reopenPartI(
+  record: CaseRecord,
+  change: Pick<PositionChange, 'deadline'>,
+  today: string,
+): CaseRecord {
+  if (record.signedByEvaluatorOn || !REOPENABLE_STAGES.includes(record.stage)) {
+    return record;
+  }
+  const next = structuredClone(record);
+  next.stage = 'OPENING_TALK';
+  next.partI.confirmedByEvaluatorOn = null;
+  next.partI.acknowledgedByEmployeeOn = null;
+  next.assessmentTalkOn = null;
+  for (const stage of [
+    'OPENING_TALK',
+    'PART_I_ACK',
+    'OBSERVATION',
+    'ASSESSMENT',
+  ] as const) {
+    delete next.completedOn[stage];
+  }
+  next.history.push({
+    date: today,
+    text: `Sprawa wróciła do etapu rozmowy rozpoczynającej: część I (obowiązki, kryteria, oczekiwania) ustala się ponownie do ${formatDatePl(change.deadline)}, a oceniany ponownie ją potwierdza (§9 ust. 1, §5–§6 ${RO_2016}). Termin sporządzenia oceny bez zmian${next.partI.assessmentDue ? ` (${formatDatePl(next.partI.assessmentDue)})` : ''}.`,
+  });
+  return next;
+}
+
+/**
+ * The 30-day term of §9 ust. 1 while part I waits to be made again; null
+ * when no such change is pending.
+ */
+export function redoPartIDeadline(record: CaseRecord): DeadlineSpec | null {
+  if (record.partI.acknowledgedByEmployeeOn) return null;
+  const change = (record.positionChanges ?? [])
+    .filter((c) => c.effect === 'REDO_PART_I')
+    .at(-1);
+  if (!change) return null;
+  return {
+    date: change.deadline,
+    label: 'Ponowna rozmowa rozpoczynająca (część I) po zmianie stanowiska do',
+    legalBasis: `§9 ust. 1 ${RO_2016}: 30 dni od zmiany stanowiska (${formatDatePl(change.date)})`,
   };
 }
 

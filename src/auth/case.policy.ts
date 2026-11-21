@@ -50,8 +50,13 @@ export function isAssessedIn(user: User | null, record: CaseRecord): boolean {
 
 /**
  * The dyrektor generalny reads the cases with an objection (sprzeciw) filed,
- * since he decides them (art. 83 ust. 1 ustawy).
+ * since he decides them (art. 83 ust. 1 ustawy), and signed assessments with
+ * a request for the next stopień służbowy (art. 89 ust. 1).
  */
 export function isDirectorFor(user: User | null, record: CaseRecord): boolean {
-  return user?.role === 'DIRECTOR' && (record.objections ?? []).length > 0;
+  if (user?.role !== 'DIRECTOR') return false;
+  if ((record.objections ?? []).length > 0) return true;
+  return (
+    !!record.signedByEvaluatorOn && record.promotionRequest?.attached === 'YES'
+  );
 }

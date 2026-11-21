@@ -42,6 +42,7 @@ import { DemoReset } from '../demo/demo-reset.service.js';
 import { suggestSheet } from '../sheets/sheet-suggestion.rules.js';
 import { ABSENCE_TYPES } from './data/absence-types.data.js';
 import {
+  archiveBlocker,
   byNewest,
   conflictingUnit,
   effectiveEvaluator,
@@ -50,6 +51,7 @@ import {
   obligatoryPromotion,
   obligatoryPromotionNextStep,
   type PastAssessment,
+  RETENTION_BASIS,
 } from './employees.rules.js';
 import { EmployeesRepository } from './employees.repository.js';
 import type {
@@ -512,6 +514,8 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
         history,
       });
     }
+    // finished cases too: the date of the last grade (art. 89 ust. 2)
+    await this.syncAbsences();
     return this.get(id);
   }
 
@@ -526,24 +530,38 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
       hiredOn: e.indefiniteSince ?? e.createdAt.slice(0, 10),
       officeHead: e.officeHead,
       managesPeople: e.managesPeople,
+      lastGradeGrantedOn: e.gradeGrantedOn,
     };
   }
 
   /**
-   * Deletes the employee's data. Rule: refused (409) while an assessment is
-   * in progress (not yet acknowledged), because the case must be finished
-   * first. Otherwise the record, absences and imported history are deleted
-   * and the person's finished cases are anonymised (name replaced), so the
-   * statistics still count them without personal data (RODO, art. 17).
+   * Archives the employee's data after the retention period of the personnel
+   * file (archiveBlocker in employees.rules.ts: 10 years, art. 94 pkt 9b KP;
+   * earlier only by an ADMIN with a reason). Refused (409) while an
+   * assessment is in progress. The record, absences and imported history are
+   * removed from the register and the finished cases are anonymised (name
+   * replaced), so the statistics still count them without personal data.
    */
-  async remove(id: string): Promise<void> {
+  async remove(id: string, reason?: string | null): Promise<void> {
     await this.employee(id);
     const records = this.casesOf(id);
     if (records.some((r) => !r.acknowledgedOn)) {
       throw new ConflictException(
-        'Nie można usunąć danych: pracownik ma ocenę w toku. Najpierw zakończ ocenę (zapoznanie ocenianego z oceną).',
+        'Nie można zarchiwizować danych: pracownik ma ocenę w toku. Najpierw zakończ ocenę (zapoznanie ocenianego z oceną).',
       );
     }
+    const blocker = archiveBlocker({
+      assessedOn: this.pastAssessments(id, await this.repo.listHistory(id)).map(
+        (a) => a.assessedOn,
+      ),
+      today: this.today,
+      role: this.auth.requireUser().role,
+      reason,
+    });
+    if (blocker) throw new ConflictException(blocker);
+    const note = reason?.trim()
+      ? `Dane osobowe ocenianego zarchiwizowano i zanonimizowano przed upływem okresu przechowywania akt osobowych, decyzją administratora. Powód: ${reason.trim()}`
+      : `Dane osobowe ocenianego zanonimizowano po upływie okresu przechowywania akt osobowych (${RETENTION_BASIS}).`;
     await this.repo.deleteEmployee(id);
     for (const record of records) {
       await this.cases.save({
@@ -553,13 +571,7 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
           ...ANONYMIZED,
           id: `usuniety-${record.id}`,
         },
-        history: [
-          ...record.history,
-          {
-            date: this.today,
-            text: 'Dane osobowe ocenianego usunięto z kartoteki.',
-          },
-        ],
+        history: [...record.history, { date: this.today, text: note }],
       });
     }
   }
@@ -658,15 +670,27 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
     await this.syncAbsences();
   }
 
-  /** Copies the absences into every case of the person (deadline extension). */
+  /**
+   * Copies the absences into every case of the person (deadline extension)
+   * and the date of the last stopień służbowy (art. 89 ust. 2).
+   */
   private async syncAbsences() {
     const all = await this.repo.listAbsences();
+    const grades = new Map(
+      (await this.repo.listEmployees()).map((e) => [e.id, e.gradeGrantedOn]),
+    );
     for (const record of this.cases.all()) {
       const absences = all
         .filter((a) => a.employeeId === record.person.id)
         .map((a) => ({ from: a.from, to: a.to, justified: a.justified }));
-      if (absences.length || record.absences?.length)
-        await this.cases.save({ ...record, absences });
+      const grade = grades.get(record.person.id) ?? null;
+      const gradeChanged = (record.person.lastGradeGrantedOn ?? null) !== grade;
+      if (absences.length || record.absences?.length || gradeChanged)
+        await this.cases.save({
+          ...record,
+          absences,
+          person: { ...record.person, lastGradeGrantedOn: grade },
+        });
     }
   }
 

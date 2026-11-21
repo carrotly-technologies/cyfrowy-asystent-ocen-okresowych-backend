@@ -125,12 +125,16 @@ export class EmployeesController {
   }
 
   @Delete('employees/:id')
-  @ApiOperation({ summary: 'Usunięcie pracownika' })
-  @Roles('HR')
+  // HR; ADMIN only to archive before the retention ends, with a reason.
+  @Roles('HR', 'ADMIN')
   @HttpCode(204)
-  @ApiOperation({ summary: 'Usunięcie danych pracownika' })
-  remove(@Param('id') id: string) {
-    return this.employees.remove(id);
+  @ApiOperation({
+    summary: 'Archiwizacja (anonimizacja) danych pracownika',
+    description:
+      'Po upływie okresu przechowywania akt osobowych (10 lat od ostatniej oceny, art. 94 pkt 9b KP). Wcześniej tylko ADMIN z podanym powodem: `?reason=...`.',
+  })
+  remove(@Param('id') id: string, @Query('reason') reason?: string) {
+    return this.employees.remove(id, reason);
   }
 
   @Post('employees/:id/cycles')

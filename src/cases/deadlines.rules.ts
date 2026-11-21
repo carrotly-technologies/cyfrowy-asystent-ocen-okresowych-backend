@@ -68,9 +68,31 @@ export function openingTalkDeadline(cycle: CycleStart): DeadlineSpec {
   }
 }
 
-/** Default "termin sporządzenia oceny" written in part I: 24 months. */
-export function defaultAssessmentDue(partIConfirmedOn: string): string {
-  return shiftToWorkingDay(monthsTermEnd(partIConfirmedOn, 24));
+/** Months between periodic assessments (art. 81 ust. 4 ustawy o służbie cywilnej). */
+export const ASSESSMENT_CYCLE_MONTHS = 24;
+
+/**
+ * Start of the 24-month period of art. 81 ust. 4 (the anchor of the default
+ * due date and of absences counted under ust. 7): the day of the indefinite
+ * contract / appointment, or the day the previous assessment was made in
+ * writing (Poradnik KPRM, p. 8; schema of the sheet: "24 miesiące od początku
+ * cyklu"). Not the day part I was accepted.
+ */
+export function cycleAnchor(cycle: CycleStart): string {
+  return cycle.kind === 'HIRED' ? cycle.date : cycle.assessedOn;
+}
+
+/** The 24-month term before R3 (art. 115 KC) is applied. */
+export function rawAssessmentDue(anchor: string): string {
+  return monthsTermEnd(anchor, ASSESSMENT_CYCLE_MONTHS);
+}
+
+/**
+ * Default "termin sporządzenia oceny" written in part I: 24 months from
+ * `anchor` (see cycleAnchor), moved to the next working day.
+ */
+export function defaultAssessmentDue(anchor: string): string {
+  return shiftToWorkingDay(rawAssessmentDue(anchor));
 }
 
 /**
@@ -102,11 +124,17 @@ export function assessmentDueDeadline(
   };
 }
 
-/** Objection: 7 days from acknowledging the assessment (art. 83 ust. 1). */
-export function objectionDeadline(acknowledgedOn: string): DeadlineSpec {
+/**
+ * Objection: 7 days from acknowledging the assessment (art. 83 ust. 1).
+ * `to`: the addressee in the genitive (objection-addressee.rules.ts).
+ */
+export function objectionDeadline(
+  acknowledgedOn: string,
+  to = 'dyrektora generalnego urzędu',
+): DeadlineSpec {
   return termEnd(
     daysTermEnd(acknowledgedOn, 7),
-    'Termin na wniesienie sprzeciwu do dyrektora generalnego urzędu',
+    `Termin na wniesienie sprzeciwu do ${to}`,
     `art. 83 ust. 1 ${USC}: 7 dni od dnia zapoznania się z oceną`,
   );
 }

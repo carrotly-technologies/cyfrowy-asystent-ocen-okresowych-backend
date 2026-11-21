@@ -27,6 +27,7 @@ import {
   DUE_CHANGE_MIN_MONTHS,
   DUE_CHANGE_REASONS,
   positionChangeEffect,
+  reopenPartI,
   reassignEvaluator,
 } from '../cases/due-date-change.rules.js';
 import { EVALUATORS } from '../cases/seed/seed.data.js';
@@ -210,7 +211,7 @@ export class DeadlinesService {
     }
     const today = this.cases.today;
     const effect = positionChangeEffect(record, input.date);
-    const next = structuredClone(record);
+    let next = structuredClone(record);
     const list = next.positionChanges ?? [];
     next.positionChanges = [
       ...list,
@@ -224,6 +225,9 @@ export class DeadlinesService {
       date: today,
       text: `Zmiana stanowiska pracy z istotną zmianą zakresu obowiązków od ${formatDatePl(input.date)}. ${effect.message} (${effect.legalBasis}).`,
     });
+    if (effect.effect === 'REDO_PART_I') {
+      next = reopenPartI(next, effect, today);
+    }
     await this.cases.save(next);
     const drafts: NotificationDraft[] = (
       ['EVALUATOR', 'EMPLOYEE', 'HR'] as const

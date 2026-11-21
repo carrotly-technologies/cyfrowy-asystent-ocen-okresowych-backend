@@ -76,7 +76,7 @@ export class RemindersService
     const previous =
       this.cases.all().find((c) => c.nextCaseId === record.id) ?? null;
     const drafts = [
-      ...caseReminders(record, today, previous),
+      ...caseReminders(record, today, previous, this.cases.addresseeOf(record)),
       ...invitationReminders(record, today, this.cases.evaluatorName(record)),
       ...historyEventDrafts(record, today),
     ];
@@ -100,8 +100,11 @@ export class RemindersService
     const today = this.cases.today;
     const drafts: NotificationDraft[] = [];
     drafts.push(
-      ...generateReminders(this.cases.all(), today, (r) =>
-        this.cases.evaluatorName(r),
+      ...generateReminders(
+        this.cases.all(),
+        today,
+        (r) => this.cases.evaluatorName(r),
+        (r) => this.cases.addresseeOf(r),
       ),
     );
     const caseOf = (id: string) =>

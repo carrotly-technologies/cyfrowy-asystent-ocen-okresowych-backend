@@ -149,4 +149,33 @@ describe('extendAssessmentDue (art. 81 ust. 7)', () => {
     expect(positive.legalBasis).toContain('art. 81 ust. 7');
     expect(positive.legalBasis).toContain('05.10.2026–06.11.2026');
   });
+
+  it('counts an absence from the start of the 24-month period, not from part I (art. 81 ust. 7)', () => {
+    // previous assessment 29.11.2024, part I confirmed 20.12.2024; absence
+    // 2.12.2024–10.01.2025 (40 days) starts before part I and must count fully
+    const extended = withAbsenceExtension(
+      {
+        cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: '2024-11-29' },
+        partI: { confirmedByEvaluatorOn: '2024-12-20' },
+        absences: [{ from: '2024-12-02', to: '2025-01-10' }],
+      },
+      { date: '2026-11-30', label: 'x', legalBasis: 'art. 81' },
+    );
+    // raw term 29.11.2026 (Sunday) + 40 days = 8.01.2027 (Friday): extended
+    // from the raw date and moved to a working day once (not 30.11 + 40 = 9.01 -> 11.01)
+    expect(extended.date).toBe('2027-01-08');
+    expect(extended.legalBasis).toContain('przedłużony o 40 dni');
+  });
+
+  it('extends a due date chosen by the evaluator as it is', () => {
+    const extended = withAbsenceExtension(
+      {
+        cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: '2024-11-29' },
+        absences: [{ from: '2025-03-03', to: '2025-04-11' }],
+      },
+      { date: '2026-10-15', label: 'x', legalBasis: 'art. 81' },
+    );
+    // 40 days: 15.10.2026 + 40 = 24.11.2026 (Tuesday)
+    expect(extended.date).toBe('2026-11-24');
+  });
 });

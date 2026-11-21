@@ -12,6 +12,10 @@ import type { CaseRecord, Observation, StageId } from './case.types.js';
 import type { ObservationInput, PatchCase } from './cases.schemas.js';
 import { formatDatePl } from './dates.js';
 import {
+  assessmentPeriodErrors,
+  assessmentPeriodOf,
+} from './assessment-period.rules.js';
+import {
   mergePreviousAssessment,
   mergePromotionRequest,
 } from './promotion.rules.js';
@@ -21,23 +25,16 @@ const LOCKED_NOTE =
 
 /**
  * Stages at which part II of the sheet (partial scores, deviation notes,
- * justification, IPRZ, previous assessment, part III) can be saved as a draft
- * ("wersja robocza"): from the moment the sheet is known until the evaluator
- * signs (Poradnik „Oceny okresowe w służbie cywilnej”, s. 20: „wypełniony na
- * roboczo arkusz oceny”; §11 ust. 2 rozp. 2016: the written assessment takes
- * the assessment talk into account, so drafting continues after the talk).
- * Decision log: notatki/decyzje.md.
+ * justification, IPRZ, previous assessment, part III) can be edited: from the
+ * assessment talk stage until the evaluator signs (field schema of sheets
+ * A/B/C: „dostępne do edycji od etapu rozmowy oceniającej do zatwierdzenia
+ * dokonania oceny”; §11 ust. 2 rozp. 2016: the written assessment takes the
+ * talk into account). Before that the evaluator keeps observations and the
+ * free-text „notatki robocze” (`workingNotes`, no legal effect).
  */
-const PART_II_STAGES: readonly StageId[] = [
-  'SHEET_SELECTION',
-  'OPENING_TALK',
-  'PART_I_ACK',
-  'OBSERVATION',
-  'ASSESSMENT',
-  'SIGNATURE',
-];
+export const PART_II_STAGES: readonly StageId[] = ['ASSESSMENT', 'SIGNATURE'];
 
-/** Whether part II of the sheet can be saved now (draft until signature). */
+/** Whether part II of the sheet can be saved now (assessment stage until signature). */
 export function partIIEditable(record: CaseRecord): boolean {
   if (record.signedByEvaluatorOn || record.acknowledgedOn) return false;
   return record.sheetId !== null && PART_II_STAGES.includes(record.stage);
@@ -51,7 +48,7 @@ function partIIGuard(record: CaseRecord, field: string): void {
     );
   }
   throw new CaseRuleError(
-    `Pole „${field}” można wypełnić, gdy wybrany jest arkusz oceny; sprawa jest na etapie „${STAGE_NAMES[record.stage]}”. Najpierw wybierz arkusz.`,
+    `Pole „${field}” jest dostępne do edycji od etapu „${STAGE_NAMES.ASSESSMENT}” do podpisania oceny; sprawa jest na etapie „${STAGE_NAMES[record.stage]}”. Wcześniej zapisuj obserwacje albo notatki robocze (bez skutków prawnych).`,
   );
 }
 
@@ -129,7 +126,7 @@ export function applyPatch(
     const list = next.partI.additionalCriteria;
     if (list.length > 3) {
       errors.push(
-        `Można wybrać najwyżej 3 kryteria dodatkowe (podano ${list.length}; §2 ust. 2 ${RO_2016}).`,
+        `Można wybrać najwyżej 3 kryteria dodatkowe (podano ${list.length}; §5 ust. 2 ${RO_2016}).`,
       );
     }
     const seen = new Set<string>();
@@ -183,6 +180,44 @@ export function applyPatch(
         errors.push(unknownCriterion(criterionId));
       else next.deviationNotes[criterionId] = note;
     }
+  }
+
+  if (patch.assessmentTalkOn !== undefined) {
+    partIIGuard(record, 'Data przeprowadzenia rozmowy oceniającej');
+    const since =
+      record.partI.acknowledgedByEmployeeOn ??
+      record.partI.confirmedByEvaluatorOn;
+    if (patch.assessmentTalkOn > today) {
+      errors.push(
+        'Data przeprowadzenia rozmowy oceniającej nie może być z przyszłości.',
+      );
+    } else if (since && patch.assessmentTalkOn < since) {
+      errors.push(
+        `Rozmowa oceniająca nie mogła się odbyć przed potwierdzeniem części I (${formatDatePl(since)}).`,
+      );
+    } else next.assessmentTalkOn = patch.assessmentTalkOn;
+  }
+
+  if (patch.assessmentPeriod !== undefined) {
+    partIIGuard(record, 'Okres, w którym oceniany podlegał ocenie');
+    const stored = { from: null, to: null, ...next.assessmentPeriod };
+    const merged = { ...stored, ...patch.assessmentPeriod };
+    const shown = assessmentPeriodOf(
+      { ...next, assessmentPeriod: merged },
+      today,
+    );
+    const periodErrors = assessmentPeriodErrors(shown, today);
+    if (periodErrors.length > 0) errors.push(...periodErrors);
+    else next.assessmentPeriod = merged;
+  }
+
+  if (patch.workingNotes !== undefined) {
+    if (record.signedByEvaluatorOn) {
+      throw new CaseRuleError(
+        `Notatki robocze są zamknięte: ocenę podpisano ${formatDatePl(record.signedByEvaluatorOn)}.`,
+      );
+    }
+    next.workingNotes = patch.workingNotes;
   }
 
   if (patch.justification !== undefined) {

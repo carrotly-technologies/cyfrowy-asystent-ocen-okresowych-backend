@@ -45,7 +45,13 @@ export class AppealsService {
       'Fikcję zapoznania z oceną odnotowuje oceniający tej osoby albo kadry (HR).',
     );
     return this.save(record, (r) =>
-      recordAckFiction(r, input, this.by(), this.cases.today),
+      recordAckFiction(
+        r,
+        input,
+        this.by(),
+        this.cases.today,
+        this.cases.addresseeOf(r),
+      ),
     );
   }
 
@@ -56,7 +62,9 @@ export class AppealsService {
       ['EMPLOYEE'],
       'Sprzeciw od oceny wnosi wyłącznie oceniany, którego ocena dotyczy (art. 83 ust. 1 ustawy o służbie cywilnej).',
     );
-    return this.save(record, (r) => fileObjection(r, text, this.cases.today));
+    return this.save(record, (r) =>
+      fileObjection(r, text, this.cases.today, this.cases.addresseeOf(r)),
+    );
   }
 
   async decideObjection(
@@ -64,13 +72,16 @@ export class AppealsService {
     input: ObjectionDecisionBody,
   ): Promise<CaseDetail> {
     const record = this.cases.record(id);
+    const addressee = this.cases.addresseeOf(record);
     this.require(
       record,
-      ['DIRECTOR'],
-      'Sprzeciw rozpatruje dyrektor generalny urzędu (art. 83 ust. 1 i 3 ustawy o służbie cywilnej).',
+      [addressee.decider],
+      addressee.decider === 'EVALUATOR'
+        ? `Sprzeciw od tej oceny rozpatruje osoba, która jej dokonała (${addressee.legalBasis}).`
+        : `Sprzeciw rozpatruje ${addressee.who.toLowerCase()} (${addressee.legalBasis}; art. 83 ust. 3).`,
     );
     return this.save(record, (r) =>
-      decideObjection(r, input, this.by(), this.cases.today),
+      decideObjection(r, input, this.by(), this.cases.today, addressee),
     );
   }
 
@@ -127,6 +138,12 @@ export class AppealsService {
     const today = this.cases.today;
     return this.cases
       .all()
+      .filter(
+        // Sheet A objections go to the person who made the assessment.
+        (record) =>
+          user.role === 'HR' ||
+          this.cases.addresseeOf(record).decider === 'DIRECTOR',
+      )
       .flatMap((record) =>
         objectionViews(record, today).map((objection) => ({
           caseId: record.id,

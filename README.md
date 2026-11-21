@@ -22,7 +22,8 @@ cp .env.example .env   # optional, defaults work out of the box
 | `OFFICE_NAME`       | `Urząd demonstracyjny (dane fikcyjne)` | „NAZWA URZĘDU” on sheets A/B/C (`GET /api/config` → `office`) |
 | `OFFICE_CITY`       | `Warszawa`              | „miejscowość” next to the signatures on the sheets              |
 | `OFFICE_LOGO_URL`   | (unset)                 | Optional logo URL shown on the on-screen sheet                  |
-| `OBJECTION_RECIPIENT_A` | (unset)             | Sheet A „Pouczenie”: whom the objection goes to (blank = dotted line) |
+| `OBJECTION_RECIPIENT_A` | (unset)             | Sheet A „Pouczenie”: whom the objection goes to (blank = „osoby, która dokonała oceny okresowej”, art. 83 ust. 2) |
+| `OFFICE_HAS_DIRECTOR_GENERAL` | `true`         | `false`: no dyrektor generalny, objections against sheets B/C go to the kierownik urzędu (DIRECTOR role decides; footnote 17) |
 | `REMINDERS_INTERVAL_MINUTES` | `60`          | Reminder scheduler interval (also runs at startup); `0` = startup and `POST /api/notifications/run` only |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | (unset) | Optional e-mail copy of notifications (nodemailer); unset `SMTP_HOST` = in-app inbox only |
 
@@ -171,7 +172,7 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
 | `GET /api/cases/:id`             | `CaseDetail`: stages, deadlines, sheet suggestion, part I, observations, part II, formal check |
 | `GET /api/cases/:id/sheet.pdf`   | Sheet A/B/C as PDF, generated on the server (pdfmake, Roboto), `ocena-<nazwisko>-<data>.pdf`; same access as the route above |
 | `GET /api/cases/:id/export?format=json` | The sheet's fields (parts I, II, III) in the versioned export format (`schemaVersion`), same access as `GET /api/cases/:id`; see [Integracja z EZD](#integracja-z-ezd) |
-| `PATCH /api/cases/:id`           | Partial update; 400 for invalid values, 409 for parts locked at the current stage       |
+| `PATCH /api/cases/:id`           | Partial update; 400 for invalid values, 409 for parts locked at the current stage. Part II/III (`decisions`, `justification`, `iprz`, `assessmentTalkOn`, `assessmentPeriod`, previous assessment, promotion request) only at `ASSESSMENT`/`SIGNATURE` before signing (`partIIEditableFrom`); `workingNotes` (notatki robocze, no legal effect) until signing |
 | `POST /api/cases/:id/observations` | Adds an S-D-R observation (201)                                                        |
 | `POST /api/cases/:id/actions`    | State machine (`{ action }`); 403 when the caller is not the actor of the action, 409 with a Polish explanation for an illegal transition |
 | `GET /api/hr/overview`           | Counters and every case in the office, with evaluator, last reminder and `remindable` |
@@ -246,7 +247,7 @@ act is checked per case; a wrong person gets 403 with a Polish `message` ("Brak 
 | `POST /api/cases/:id/ack-fiction`           | the case's evaluator, HR   | `{ date, reason }`: the assessed person received the assessment but could not/would not confirm. Closes the acknowledgement like `EMPLOYEE_ACK_ASSESSMENT` dated `date` (between hand-over and today) and starts the 7-day objection term |
 | `POST /api/cases/:id/objection`             | the assessed person        | `{ text }`: sprzeciw (art. 83 ust. 1) within 7 days of acknowledgement (KC rules: last day on a working day); one per assessment; status `SPRZECIW_W_ROZPATRZENIU` |
 | `GET /api/objections`                       | DIRECTOR, HR               | `[{ caseId, person, evaluatorName, sheetId, status, objection }]`, pending first |
-| `POST /api/cases/:id/objection/decision`    | DIRECTOR                   | `{ outcome: DISMISS\|CHANGE\|REDO, reason, decisions?, justification? }` (14-day term, art. 83 ust. 3). DISMISS closes the case (14 days to the labour court, ust. 5). CHANGE keeps the old version (`assessmentVersions`, `CHANGED`), applies new scores, sends the case back to `SIGNATURE` for re-signing and re-acknowledgement. REDO cancels the assessment (`CANCELLED`) and returns to `ASSESSMENT`; the re-made one can be objected again (ust. 4) |
+| `POST /api/cases/:id/objection/decision`    | `objectionAddressee.decider`: DIRECTOR (sheets B/C), the case's evaluator (sheet A, art. 83 ust. 2) | `{ outcome: DISMISS\|CHANGE\|REDO, reason, decisions?, justification?, deliveredOn? }` (14-day term, art. 83 ust. 3). DISMISS closes the case (14 days to the labour court from `deliveredOn`, default the decision day, ust. 5). CHANGE keeps the old version (`assessmentVersions`, `CHANGED`), applies new scores, sends the case back to `SIGNATURE` for re-signing and re-acknowledgement. REDO cancels the assessment (`CANCELLED`) and returns to `ASSESSMENT`; the re-made one can be objected again (ust. 4) |
 | `POST /api/cases/:id/due-date-request`      | the assessed person        | `{ reason, proposedDate? }` (art. 81 ust. 8 pkt 4): only if more than 6 months passed since the last assessment was made (first assessment: since the cycle start); never after a negative one (ust. 9) or after signing |
 | `POST /api/cases/:id/due-date-request/decision` | the case's evaluator   | `{ approve, newDate?, note? }`: approval moves the date through `changeDueDate()`; a rejection needs `note`. Pending requests appear in `GET /api/team` `todo` |
 
@@ -323,7 +324,7 @@ person data, evaluator and absences in step.
 | `GET /api/employees/units` | Known organisational units (register + evaluators). `POST`/`PATCH` refuse (400) a new unit that duplicates one of them (other case/spaces, or only its first part such as „Wydział Legislacji”) |
 | `POST /api/employees` | `{ firstName, lastName, unit, position, employment, officeHead, managesPeople, appointedYear, grade, gradeGrantedOn, indefiniteSince, evaluatorId }` (201) |
 | `PATCH /api/employees/:id` | Any of those; open cases get the new person data, a new `evaluatorId` moves them (zmiana podległości, noted in the case history) |
-| `DELETE /api/employees/:id` | 204; 409 while an assessment is in progress (not acknowledged). Deletes the record, absences and imported history; finished cases are anonymised ("Dane usunięte") so statistics keep them without personal data |
+| `DELETE /api/employees/:id?reason=` | Archiving / anonymisation after the retention of akta osobowe (10 years from the latest assessment, art. 94 pkt 9b KP). 204; 409 while an assessment is in progress, or within the retention unless ADMIN gives `reason`. Removes the record, absences and imported history; finished cases are anonymised ("Dane usunięte") so statistics keep them without personal data |
 | `POST /api/employees/:id/cycles` | Starts a new cycle: case in `SHEET_SELECTION` anchored on the last assessment (30 days, 7 after a negative one) or on `indefiniteSince`; part II item 10 prefilled for an urzędnik; 409 with an open case or no evaluator |
 | `GET /api/employees/:id/history` | `{ cases, imported }`: every system cycle (result, level) and imported assessments |
 | `GET/POST /api/employees/:id/absences`, `DELETE …/absences/:absenceId` | `{ type, from, to, justified?, note? }`; GET also returns `continuous` (merged periods with `longerThanMonth`) |
@@ -454,6 +455,7 @@ Cała konfiguracja to zmienne środowiskowe w `.env` (opis każdej w `.env.examp
 | `OFFICE_CITY`            | „miejscowość” przy podpisach na arkuszach                                           |
 | `OFFICE_LOGO_URL`        | Logo urzędu w podglądzie arkusza (opcjonalnie)                                      |
 | `OBJECTION_RECIPIENT_A`  | Arkusz A: do kogo składa się sprzeciw (wzór zostawia to pole puste)                 |
+| `OFFICE_HAS_DIRECTOR_GENERAL` | `false`, gdy w urzędzie nie ma dyrektora generalnego (sprzeciw do kierownika urzędu) |
 | `JWT_SECRET`             | Klucz podpisu sesji (32+ losowe bajty), obowiązkowo w produkcji                    |
 | `POSTGRES_PASSWORD`      | Hasło bazy danych                                                                   |
 | `FEATURE_ASSISTANT`      | `false` wyłącza asystenta AI                                                        |

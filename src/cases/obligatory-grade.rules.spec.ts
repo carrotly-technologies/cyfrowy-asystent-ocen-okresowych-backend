@@ -97,4 +97,14 @@ describe('obligatory next civil-service grade (art. 89 ust. 2)', () => {
     record.acknowledgedOn = null;
     expect(obligatoryGradeFor(record, null)).toBeNull();
   });
+
+  it('uses the date of the last grade from the HR record (art. 89 ust. 2)', () => {
+    const record = seed('c-006');
+    // a grade granted after the previous assessment: only one assessment counts
+    record.person = {
+      ...record.person,
+      lastGradeGrantedOn: record.previousAssessment!.date!,
+    };
+    expect(obligatoryGradeFor(record, null)).toBeNull();
+  });
 });

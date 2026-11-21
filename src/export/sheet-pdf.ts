@@ -240,8 +240,8 @@ export function sheetDocument(detail: CaseDetail): TDocumentDefinitions {
           ],
           [
             label('OKRES, W KTÓRYM OCENIANY PODLEGAŁ OCENIE'),
-            `OD: ${d(detail.partI.acknowledgedByEmployeeOn)}`,
-            `DO: ${d(detail.signedByEvaluatorOn)}`,
+            `OD: ${d(detail.assessmentPeriod?.from ?? detail.partI.confirmedByEvaluatorOn)}`,
+            `DO: ${d(detail.assessmentPeriod?.to ?? detail.signedByEvaluatorOn)}`,
           ],
         ],
       },
@@ -476,7 +476,7 @@ export function sheetDocument(detail: CaseDetail): TDocumentDefinitions {
         { text: 'Pouczenie', italics: true, bold: true },
         {
           text: isA
-            ? `${t.objectionNotice} ${detail.office.objectionRecipient ?? '…………………………………………………………'}`
+            ? `${t.objectionNotice} ${detail.office.objectionRecipient ?? detail.objectionAddressee?.to ?? '…………………………………………………………'}`
             : t.objectionNotice,
         },
         ...(t.objectionNoticeNote

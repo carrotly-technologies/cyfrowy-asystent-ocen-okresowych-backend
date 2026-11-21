@@ -38,6 +38,10 @@ import {
 } from './due-date.rules.js';
 import { addObservation, applyPatch } from './patch.rules.js';
 import { ConfigService } from '@nestjs/config';
+import {
+  type ObjectionAddressee,
+  objectionAddressee,
+} from './objection-addressee.rules.js';
 import { type OfficeConfig, readOffice } from '../config/office.js';
 
 export interface TodoItem {
@@ -120,7 +124,13 @@ export class CasesService {
         const name = fullName(c.person);
         let text: string;
         if (c.status === 'SPRZECIW_W_ROZPATRZENIU') {
-          text = `${name}: sprzeciw od oceny czeka na rozstrzygnięcie dyrektora generalnego`;
+          const addressee = this.addresseeOf(
+            records.find((r) => r.id === c.id)!,
+          );
+          text =
+            addressee.decider === 'EVALUATOR'
+              ? `${name}: rozpatrz sprzeciw od oceny (${addressee.legalBasis})`
+              : `${name}: sprzeciw od oceny czeka na rozstrzygnięcie (${addressee.who.toLowerCase()})`;
         } else if (c.status === 'OKRES_SPRZECIWU') {
           text = `${name}: biegnie termin na sprzeciw od oceny`;
         } else if (c.status === 'ZAKONCZONA') {
@@ -236,7 +246,9 @@ export class CasesService {
       action,
     );
     await this.store.save(
-      this.run(() => applyAction(record, action, this.today)),
+      this.run(() =>
+        applyAction(record, action, this.today, this.addresseeOf(record)),
+      ),
     );
     return this.detail(id, this.actorFor(record));
   }
@@ -260,10 +272,26 @@ export class CasesService {
     return null;
   }
 
+  /**
+   * To whom the objection goes in this case (art. 83 ust. 1–2): from the
+   * sheet, the evaluator (dyrektor generalny?) and the office settings.
+   */
+  addresseeOf(record: CaseRecord): ObjectionAddressee {
+    const evaluator = this.store.evaluator(record.evaluatorId);
+    return objectionAddressee(
+      {
+        sheetId: record.sheetId,
+        assessedByDirectorGeneral: evaluator.directorGeneral === true,
+      },
+      this.office,
+    );
+  }
+
   /** Unscoped: for internal use. Routes go through view(). */
   detail(id: string, actor: Actor | null = 'EVALUATOR'): CaseDetail {
     const record = this.record(id);
     const user = this.auth.user;
+    const addressee = this.addresseeOf(record);
     return {
       ...toDetail(
         record,
@@ -273,7 +301,7 @@ export class CasesService {
         actor,
       ),
       legalActions: user
-        ? legalActions(record, this.today, this.viewerOf(record))
+        ? legalActions(record, this.today, this.viewerOf(record), addressee)
         : [],
     };
   }

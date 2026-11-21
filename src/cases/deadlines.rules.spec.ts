@@ -8,7 +8,9 @@ import {
 } from './dates.js';
 import {
   assessmentDueDeadline,
+  cycleAnchor,
   defaultAssessmentDue,
+  rawAssessmentDue,
   describeDaysLeft,
   objectionDeadline,
   openingTalkDeadline,
@@ -87,7 +89,23 @@ describe('opening talk (§7 rozp. 2016)', () => {
 });
 
 describe('assessment due date', () => {
-  it('defaults to 24 months from part I (art. 81 ust. 1)', () => {
+  it('anchors the 24-month period at employment or the previous assessment', () => {
+    expect(cycleAnchor({ kind: 'HIRED', date: '2025-03-03' })).toBe(
+      '2025-03-03',
+    );
+    expect(
+      cycleAnchor({ kind: 'PREVIOUS_POSITIVE', assessedOn: '2024-11-29' }),
+    ).toBe('2024-11-29');
+    // 24 months from the previous assessment, not from the day part I was accepted
+    expect(
+      defaultAssessmentDue(
+        cycleAnchor({ kind: 'PREVIOUS_POSITIVE', assessedOn: '2024-11-29' }),
+      ),
+    ).toBe('2026-11-30'); // 29.11.2026 is a Sunday
+    expect(rawAssessmentDue('2024-11-29')).toBe('2026-11-29');
+  });
+
+  it('defaults to 24 months from the anchor (art. 81 ust. 4)', () => {
     expect(defaultAssessmentDue('2024-12-04')).toBe('2026-12-04');
     // 2026-11-15 is a Sunday
     expect(defaultAssessmentDue('2024-11-15')).toBe('2026-11-16');

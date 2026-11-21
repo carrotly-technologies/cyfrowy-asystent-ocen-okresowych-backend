@@ -1,6 +1,6 @@
 import type { CaseRecord, Evaluator } from '../case.types.js';
 import { defaultAssessmentDue } from '../deadlines.rules.js';
-import { addDays, formatDatePl } from '../dates.js';
+import { addDays, addMonths, formatDatePl } from '../dates.js';
 import { emptyPromotionRequest } from '../promotion.rules.js';
 import {
   caseRecord,
@@ -85,7 +85,9 @@ function previousNowakCase(r: Rel): CaseRecord {
   const signed = nowakPreviousOn(r);
   const talk = r.workday(addDays(signed, -2));
   const acknowledged = r.workday(addDays(signed, 1));
-  const confirmed = r.months(-48, 10);
+  // The cycle started ~24 months before it was assessed (art. 81 ust. 4).
+  const assessedBefore = r.workday(addDays(addMonths(signed, -24), 5));
+  const confirmed = r.workday(addDays(assessedBefore, 14));
   return caseRecord({
     id: 'c-000',
     person: {
@@ -101,7 +103,7 @@ function previousNowakCase(r: Rel): CaseRecord {
     },
     evaluatorId: SUPERVISOR_ID,
     sheetId: 'C',
-    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-49) },
+    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: assessedBefore },
     promotionRequest: { ...emptyPromotionRequest('URZEDNIK'), attached: 'NO' },
     stage: 'ACKNOWLEDGEMENT',
     completedOn: {
@@ -116,7 +118,7 @@ function previousNowakCase(r: Rel): CaseRecord {
     partI: {
       ...emptyPartI(),
       additionalCriteria: ['myslenie_analityczne'],
-      assessmentDue: defaultAssessmentDue(confirmed),
+      assessmentDue: defaultAssessmentDue(assessedBefore),
       confirmedByEvaluatorOn: confirmed,
       acknowledgedByEmployeeOn: confirmed,
     },
@@ -149,10 +151,11 @@ function previousNowakCase(r: Rel): CaseRecord {
 /** Main demo path: sheet C, in the assessment stage (draft scores), 8 observations. */
 function mainCase(r: Rel): CaseRecord {
   const id = 'c-001';
-  // Part I confirmed ~23.5 months ago, so the assessment is due in ~2 weeks.
+  // Previous assessment ~24 months ago, so this one is due in ~1–2 weeks
+  // (24 months from the previous assessment, art. 81 ust. 4).
   const confirmed = r.months(-24, 13);
   const previous = nowakPreviousOn(r);
-  const due = defaultAssessmentDue(confirmed);
+  const due = defaultAssessmentDue(previous);
   const startedAssessment = r.days(-2);
   return caseRecord({
     id,
@@ -366,7 +369,7 @@ function partIAckCase(r: Rel): CaseRecord {
     partI: {
       ...emptyPartI(),
       additionalCriteria: ['sytuacje_kryzysowe', 'myslenie_analityczne'],
-      assessmentDue: defaultAssessmentDue(confirmed),
+      assessmentDue: defaultAssessmentDue(previous),
       topics: {
         duties:
           'Koordynacja obsługi incydentów w cyberprzestrzeni, raporty sytuacyjne, ćwiczenia z zarządzania kryzysowego.',
@@ -429,7 +432,7 @@ function sheetBCase(r: Rel): CaseRecord {
     partI: {
       ...emptyPartI(),
       additionalCriteria: ['wykorzystywanie_wiedzy', 'negocjowanie'],
-      assessmentDue: defaultAssessmentDue(confirmed),
+      assessmentDue: defaultAssessmentDue(r.months(-15, 10)),
       topics: {
         duties:
           'Koordynacja zespołu (6 osób), przygotowanie wizyt zagranicznych kierownictwa, obsługa dotacji i zamówień na usługi podróży.',
@@ -601,9 +604,9 @@ function objectionPeriodCase(r: Rel): CaseRecord {
     },
     evaluatorId: SUPERVISOR_ID,
     sheetId: 'C',
-    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25, 20) },
+    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-24, -3) },
     previousAssessment: previousAssessment(
-      { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25, 20) },
+      { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-24, -3) },
       'powyżej oczekiwań',
     ),
     promotionRequest: { ...emptyPromotionRequest('URZEDNIK'), attached: 'NO' },
@@ -620,7 +623,7 @@ function objectionPeriodCase(r: Rel): CaseRecord {
     partI: {
       ...emptyPartI(),
       additionalCriteria: ['kreatywnosc'],
-      assessmentDue: defaultAssessmentDue(confirmed),
+      assessmentDue: defaultAssessmentDue(r.months(-24, -3)),
       topics: {
         duties:
           'Omówiono zadania z OSP: opiniowanie projektów aktów prawnych pod kątem zgodności z prawem UE, przygotowanie uwag w uzgodnieniach międzyresortowych i udział w konferencjach uzgodnieniowych.',
@@ -705,10 +708,10 @@ function otherUnitCases(r: Rel): CaseRecord[] {
       },
       evaluatorId: budget.id,
       sheetId: 'C',
-      cycleStart: { kind: 'HIRED', date: '2024-11-04' },
+      cycleStart: { kind: 'HIRED', date: '2024-11-20' },
       stage: 'ACKNOWLEDGEMENT',
       completedOn: {
-        SHEET_SELECTION: '2024-11-12',
+        SHEET_SELECTION: '2024-11-20',
         OPENING_TALK: '2024-11-20',
         PART_I_ACK: '2024-11-20',
         OBSERVATION: r.days(-6),
@@ -784,7 +787,7 @@ function otherUnitCases(r: Rel): CaseRecord[] {
       },
       evaluatorId: legal.id,
       sheetId: 'C',
-      cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25, -10) },
+      cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-24, -10) },
       previousAssessment: previousAssessment(
         { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25, -10) },
         'na poziomie oczekiwań',
@@ -798,7 +801,7 @@ function otherUnitCases(r: Rel): CaseRecord[] {
       partI: {
         ...emptyPartI(),
         additionalCriteria: ['negocjowanie'],
-        assessmentDue: defaultAssessmentDue(overdueConfirmed),
+        assessmentDue: defaultAssessmentDue(r.months(-24, -10)),
         confirmedByEvaluatorOn: overdueConfirmed,
         acknowledgedByEmployeeOn: overdueConfirmed,
       },
@@ -845,7 +848,7 @@ function otherUnitCases(r: Rel): CaseRecord[] {
       partI: {
         ...emptyPartI(),
         additionalCriteria: ['wystapienia_publiczne'],
-        assessmentDue: defaultAssessmentDue(r.months(-10, 13)),
+        assessmentDue: defaultAssessmentDue(r.months(-10)),
         confirmedByEvaluatorOn: r.months(-10, 12),
         acknowledgedByEmployeeOn: r.months(-10, 13),
       },
@@ -872,7 +875,7 @@ function negativeSignatureCase(r: Rel): CaseRecord {
     },
     evaluatorId: SUPERVISOR_ID,
     sheetId: 'C',
-    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-25) },
+    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-24, 2) },
     stage: 'SIGNATURE',
     completedOn: {
       SHEET_SELECTION: confirmed,
@@ -884,7 +887,7 @@ function negativeSignatureCase(r: Rel): CaseRecord {
     partI: {
       ...emptyPartI(),
       additionalCriteria: ['orientacja_na_klienta'],
-      assessmentDue: defaultAssessmentDue(confirmed),
+      assessmentDue: defaultAssessmentDue(r.months(-24, 2)),
       confirmedByEvaluatorOn: confirmed,
       acknowledgedByEmployeeOn: confirmed,
     },
@@ -927,7 +930,7 @@ function teamLeaderDraftCase(r: Rel): CaseRecord {
     },
     evaluatorId: SUPERVISOR_ID,
     sheetId: 'B',
-    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-24) },
+    cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: r.months(-23, 10) },
     stage: 'ASSESSMENT',
     completedOn: {
       SHEET_SELECTION: confirmed,
@@ -938,7 +941,7 @@ function teamLeaderDraftCase(r: Rel): CaseRecord {
     partI: {
       ...emptyPartI(),
       additionalCriteria: ['kreatywnosc', 'orientacja_na_klienta'],
-      assessmentDue: defaultAssessmentDue(confirmed),
+      assessmentDue: defaultAssessmentDue(r.months(-23, 10)),
       confirmedByEvaluatorOn: confirmed,
       acknowledgedByEmployeeOn: confirmed,
     },

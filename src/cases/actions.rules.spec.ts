@@ -56,7 +56,8 @@ describe('periodic state machine', () => {
     );
     r = run(r, 'ACCEPT_SHEET');
     expect(r.sheetId).toBe('C'); // the rule's suggestion (no subordinates)
-    expect(r.partI.assessmentDue).toBe('2028-11-21'); // +24 months
+    // +24 months from employment (hired 2026-11-06), not from today (art. 81 ust. 4)
+    expect(r.partI.assessmentDue).toBe('2028-11-06');
     expect(r.stage).toBe('OPENING_TALK');
 
     r = run(r, 'CONFIRM_PART_I');
@@ -134,7 +135,7 @@ describe('periodic state machine', () => {
       'LOCKED',
     ]);
     expect(stages[4].deadline).toMatchObject({
-      date: '2026-12-04',
+      date: '2026-11-30',
       state: 'SOON',
     });
   });
@@ -196,46 +197,53 @@ describe('patch locks and validation', () => {
     expect(error.message).toContain('Część I jest zablokowana');
   });
 
-  it('part II is a draft during the observation period', () => {
+  it('part II is locked before the assessment stage; notatki robocze are not (field schema A/B/C)', () => {
+    for (const patch of [
+      { decisions: { wykorzystywanie_wiedzy: 7 } },
+      { deviationNotes: { wykorzystywanie_wiedzy: 'x' } },
+      { justification: 'x' },
+      { iprz: 'x' },
+      { previousAssessment: { level: 'na poziomie oczekiwań' } },
+      { promotionRequest: { attached: 'NO' as const } },
+    ]) {
+      expect(
+        conflict(() => applyPatch(seed('c-003'), patch, TODAY)).message,
+      ).toContain('od etapu „Rozmowa oceniająca i ocena”');
+    }
     const r = applyPatch(
       seed('c-003'),
+      { workingNotes: 'Do omówienia: wizyta w Brukseli.' },
+      TODAY,
+    );
+    expect(r.workingNotes).toBe('Do omówienia: wizyta w Brukseli.');
+  });
+
+  it('part II is editable from the assessment stage until signing', () => {
+    const r = applyPatch(
+      seed('c-001'),
       {
         decisions: { wykorzystywanie_wiedzy: 7 },
-        deviationNotes: { wykorzystywanie_wiedzy: 'Notatka robocza.' },
-        justification: 'Uzasadnienie robocze.',
-        iprz: 'Szkolenie z negocjacji.',
-        previousAssessment: { level: 'na poziomie oczekiwań' },
+        justification: 'Uzasadnienie.',
+        iprz: 'Szkolenie.',
         promotionRequest: { attached: 'NO' },
       },
       TODAY,
     );
     expect(r).toMatchObject({
-      stage: 'OBSERVATION',
+      stage: 'ASSESSMENT',
       decisions: { wykorzystywanie_wiedzy: 7 },
-      justification: 'Uzasadnienie robocze.',
-      promotionRequest: { attached: 'NO' },
+      justification: 'Uzasadnienie.',
     });
   });
 
-  it('criteria leaving part I are dropped from part II', () => {
-    let r = applyPatch(
-      seed('c-005'),
-      {
-        partI: { additionalCriteria: ['kreatywnosc'] },
-        decisions: { komunikacja: 5, kreatywnosc: 7 },
-      },
-      TODAY,
-    );
-    expect(r.decisions).toEqual({ komunikacja: 5, kreatywnosc: 7 });
+  it('criteria leaving part I are dropped from part II (part I made again, §9 ust. 1)', () => {
+    let r: CaseRecord = {
+      ...decideAll(seed('c-001')),
+      stage: 'OPENING_TALK',
+    };
+    expect(r.decisions.myslenie_analityczne).toBe(5);
     r = applyPatch(r, { partI: { additionalCriteria: [] } }, TODAY);
-    expect(r.decisions).toEqual({ komunikacja: 5 });
-  });
-
-  it('part II needs a sheet', () => {
-    const error = conflict(() =>
-      applyPatch(seed('c-004'), { iprz: 'x' }, TODAY),
-    );
-    expect(error.message).toContain('gdy wybrany jest arkusz');
+    expect(r.decisions.myslenie_analityczne).toBeUndefined();
   });
 
   it('part II is locked after the evaluator signed', () => {
@@ -281,5 +289,80 @@ describe('patch locks and validation', () => {
     expect(() =>
       applyPatch(seed('c-001'), { decisions: { komunikacja: 4 } }, TODAY),
     ).toThrow('1, 3, 5, 7 lub 9');
+  });
+});
+
+describe('legal audit fixes', () => {
+  it('ACCEPT_SHEET after a positive assessment: 24 months from that assessment', () => {
+    const r = run(seed('c-104'), 'ACCEPT_SHEET');
+    // previous assessment 2026-11-09 -> 2028-11-09 (art. 81 ust. 4), not 2028-11-21
+    expect(r.partI.assessmentDue).toBe('2028-11-09');
+  });
+
+  it('SIGN_ASSESSMENT with part III attached notifies HR and the DG (PROMOTION_REQUESTED)', () => {
+    let r = decideAll(seed('c-001'), 9);
+    r = applyPatch(
+      r,
+      {
+        iprz: 'Plan.',
+        justification: 'Uzasadnienie.',
+        promotionRequest: {
+          attached: 'YES',
+          appointedYear: 2018,
+          currentGrade: 'III',
+          gradeGrantedOn: '2021-05-04',
+          requestedGrade: 'IV',
+          motivation: 'Wyróżniające wyniki.',
+        },
+      },
+      TODAY,
+    );
+    r = run(r, 'COMPLETE_ASSESSMENT_TALK', 'SIGN_ASSESSMENT');
+    const event = r.history.find(
+      (h) => h.event?.type === 'PROMOTION_REQUESTED',
+    );
+    expect(event?.event?.notify).toEqual(['HR', 'DIRECTOR']);
+    expect(event?.text).toContain('art. 89 ust. 1');
+  });
+
+  it('a negative result defaults the promotion question to NIE and signs without an answer', () => {
+    let r = decideAll(seed('c-001'), 3);
+    r = applyPatch(r, { iprz: 'Plan.', justification: 'Uzasadnienie.' }, TODAY);
+    expect(r.promotionRequest.attached).toBeNull();
+    r = run(r, 'COMPLETE_ASSESSMENT_TALK', 'SIGN_ASSESSMENT');
+    expect(r.promotionRequest.attached).toBe('NO');
+    expect(r.history.some((h) => h.event?.type === 'PROMOTION_REQUESTED')).toBe(
+      false,
+    );
+  });
+
+  it('the evaluator sets the assessment talk date and the period until signing', () => {
+    let r = applyPatch(
+      seed('c-001'),
+      {
+        assessmentTalkOn: '2026-11-19',
+        assessmentPeriod: { from: '2024-12-05' },
+      },
+      TODAY,
+    );
+    r = run(r, 'COMPLETE_ASSESSMENT_TALK');
+    expect(r.assessmentTalkOn).toBe('2026-11-19'); // kept, not overwritten with today
+    expect(() =>
+      applyPatch(r, { assessmentTalkOn: '2026-11-30' }, TODAY),
+    ).toThrow(/przyszłości/);
+    expect(() =>
+      applyPatch(seed('c-003'), { assessmentTalkOn: '2026-11-19' }, TODAY),
+    ).toThrow(CaseRuleError);
+    r = decideAll(r, 7);
+    r = applyPatch(
+      r,
+      { iprz: 'Plan.', promotionRequest: { attached: 'NO' } },
+      TODAY,
+    );
+    r = run(r, 'SIGN_ASSESSMENT');
+    expect(r.assessmentPeriod).toEqual({ from: '2024-12-05', to: TODAY });
+    expect(() =>
+      applyPatch(r, { assessmentPeriod: { to: '2026-11-20' } }, TODAY),
+    ).toThrow(/zablokowane/);
   });
 });

@@ -14,6 +14,10 @@ import {
 } from '../cases/deadlines.rules.js';
 import { obligatoryGradeFor } from '../cases/obligatory-grade.rules.js';
 import { objectionDeadlineOf, stageDeadline } from '../cases/stages.rules.js';
+import {
+  type ObjectionAddressee,
+  objectionAddressee,
+} from '../cases/objection-addressee.rules.js';
 
 /**
  * What the scheduler reminds about (use cases "(scheduler) przypomnienie
@@ -78,6 +82,7 @@ export function caseReminders(
   record: CaseRecord,
   today: string,
   previousCase: CaseRecord | null = null,
+  addressee: ObjectionAddressee = objectionAddressee(record),
 ): NotificationDraft[] {
   if (record.nextCaseId) return [];
   const name = fullName(record.person);
@@ -85,7 +90,7 @@ export function caseReminders(
   const out: NotificationDraft[] = [];
 
   if (record.acknowledgedOn) {
-    const objection = objectionDeadlineOf(record, today);
+    const objection = objectionDeadlineOf(record, today, addressee);
     if (objection?.date && objection.daysLeft !== null) {
       if (objection.daysLeft >= 0) {
         out.push({
@@ -94,7 +99,7 @@ export function caseReminders(
           caseId: id,
           type: 'OBJECTION_PERIOD',
           title: 'Biegnie termin na sprzeciw od oceny',
-          body: `Od oceny możesz wnieść sprzeciw do dyrektora generalnego urzędu do ${formatDatePl(objection.date)} (${describeDaysLeft(objection.daysLeft)}; art. 83 ust. 1 ${USC}).`,
+          body: `Od oceny możesz wnieść sprzeciw do ${addressee.to} do ${formatDatePl(objection.date)} (${describeDaysLeft(objection.daysLeft)}; ${addressee.legalBasis}).`,
         });
       } else if (-objection.daysLeft <= OBJECTION_ENDED_LOOKBACK_DAYS) {
         out.push(
@@ -122,7 +127,8 @@ export function caseReminders(
             title: `Obowiązek przyznania kolejnego stopnia służbowego: ${name}`,
             body: `${grade.message} (${grade.legalBasis}).`,
           },
-          ['HR', 'EVALUATOR'],
+          // the stopień is granted by the dyrektor generalny (art. 89 ust. 2)
+          ['HR', 'EVALUATOR', 'DIRECTOR'],
         ),
       );
     }
@@ -273,12 +279,13 @@ export function generateReminders(
   records: readonly CaseRecord[],
   today: string,
   evaluatorName?: (record: CaseRecord) => string,
+  addresseeOf?: (record: CaseRecord) => ObjectionAddressee,
 ): NotificationDraft[] {
   const byNext = new Map(
     records.filter((r) => r.nextCaseId).map((r) => [r.nextCaseId!, r]),
   );
   return records.flatMap((r) => [
-    ...caseReminders(r, today, byNext.get(r.id) ?? null),
+    ...caseReminders(r, today, byNext.get(r.id) ?? null, addresseeOf?.(r)),
     ...invitationReminders(r, today, evaluatorName?.(r) ?? 'Oceniający'),
     ...historyEventDrafts(r, today),
   ]);
@@ -317,6 +324,8 @@ const EVENT_TITLES: Record<CaseEventType, string> = {
   DUE_DATE_CHANGE_REJECTED: 'Wniosek o zmianę terminu oceny nieuwzględniony',
   DUE_DATE_CHANGE_WITHDRAWN: 'Oceniany wycofał wniosek o zmianę terminu oceny',
   DUE_DATE_CHANGED: 'Zmiana terminu oceny',
+  PROMOTION_REQUESTED:
+    'Złożono wniosek o przyznanie kolejnego stopnia służbowego',
 };
 
 const EVENT_TYPE: Partial<Record<CaseEventType, NotificationType>> = {

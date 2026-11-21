@@ -58,10 +58,24 @@ export function emptyPromotionRequest(
   };
 }
 
-/** The request as shown: NOT_APPLICABLE for a pracownik whatever is stored. */
-export function promotionRequestOf(record: CaseRecord): PromotionRequest {
+/**
+ * The request as shown: NOT_APPLICABLE for a pracownik whatever is stored;
+ * for an urzędnik with a negative result and no answer yet, NO (field schema
+ * of sheets A/B/C: "pole „NIE” jest wybierane domyślnie jeżeli uzyskana ocena
+ * okresowa jest „NEGATYWNA”").
+ */
+export function promotionRequestOf(
+  record: CaseRecord,
+  evaluation: EvaluateResult | null = null,
+): PromotionRequest {
   if (record.person.employment === 'PRACOWNIK') {
     return emptyPromotionRequest('PRACOWNIK');
+  }
+  if (
+    record.promotionRequest.attached === null &&
+    evaluation?.result === 'NEGATIVE'
+  ) {
+    return { ...emptyPromotionRequest('URZEDNIK'), attached: 'NO' };
   }
   return record.promotionRequest;
 }
@@ -212,7 +226,7 @@ export function promotionRequestCheck(
   record: CaseRecord,
   evaluation: EvaluateResult | null,
 ): FormalCheckItem {
-  const request = promotionRequestOf(record);
+  const request = promotionRequestOf(record, evaluation);
   const item = (ok: boolean, message: string): FormalCheckItem => ({
     id: 'PROMOTION_REQUEST',
     ok,

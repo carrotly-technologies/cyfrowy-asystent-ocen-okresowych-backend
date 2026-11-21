@@ -141,7 +141,9 @@ describe('validateEvaluation', () => {
       ],
     );
     expect(errors('C', scores)).toEqual([
-      expect.stringContaining('najwyżej 3 kryteria dodatkowe (podano 4'),
+      expect.stringContaining(
+        'najwyżej 3 kryteria dodatkowe (podano 4; §5 ust. 2',
+      ),
     ]);
   });
 

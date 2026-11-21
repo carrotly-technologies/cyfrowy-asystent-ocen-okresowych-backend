@@ -1,6 +1,8 @@
 import { RO_2016 } from '../assessments/assessment.format.js';
 import { suggestSheet } from '../sheets/sheet-suggestion.rules.js';
-import { STAGE_NAMES } from './case.rules.js';
+import { computeEvaluation, STAGE_NAMES } from './case.rules.js';
+import { promotionRequestOf } from './promotion.rules.js';
+import { assessmentPeriodOf } from './assessment-period.rules.js';
 import { CaseRuleError } from './case-rule.error.js';
 import {
   type Actor,
@@ -10,6 +12,7 @@ import {
 } from './case.types.js';
 import { formatDatePl } from './dates.js';
 import {
+  cycleAnchor,
   defaultAssessmentDue,
   objectionDeadline,
   openingTalkDeadline,
@@ -19,6 +22,10 @@ import {
 import { closeMootDueDateRequests } from './due-date.rules.js';
 import { formalCheck } from './formal-check.rules.js';
 import { nextCycleStart } from './stages.rules.js';
+import {
+  type ObjectionAddressee,
+  objectionAddressee,
+} from './objection-addressee.rules.js';
 
 export const ACTION_LABELS: Record<CaseAction, string> = {
   ACCEPT_SHEET: 'Zatwierdź arkusz, kryteria i termin oceny',
@@ -140,6 +147,7 @@ export function applyAction(
   record: CaseRecord,
   action: CaseAction,
   today: string,
+  addressee: ObjectionAddressee = objectionAddressee(record),
 ): CaseRecord {
   const blocker = actionBlocker(record, action, today);
   if (blocker) {
@@ -158,7 +166,7 @@ export function applyAction(
     case 'ACCEPT_SHEET': {
       const suggestion = suggestSheet(next.person);
       next.sheetId ??= suggestion.sheetId;
-      next.partI.assessmentDue ??= dueFor(next, today);
+      next.partI.assessmentDue ??= dueFor(next);
       next.stage = 'OPENING_TALK';
       next.completedOn.SHEET_SELECTION = today;
       log(
@@ -168,7 +176,7 @@ export function applyAction(
     }
     case 'CONFIRM_PART_I':
       next.partI.confirmedByEvaluatorOn = today;
-      next.partI.assessmentDue ??= dueFor(next, today);
+      next.partI.assessmentDue ??= dueFor(next);
       next.stage = 'PART_I_ACK';
       next.completedOn.OPENING_TALK = today;
       log(
@@ -189,7 +197,8 @@ export function applyAction(
       log('Zakończono okres obserwacji; otwarto ocenę (część II arkusza).');
       break;
     case 'COMPLETE_ASSESSMENT_TALK':
-      next.assessmentTalkOn = today;
+      // The evaluator may have entered the actual date of the talk (§10).
+      next.assessmentTalkOn ??= today;
       next.stage = 'SIGNATURE';
       next.completedOn.ASSESSMENT = today;
       log(
@@ -205,8 +214,24 @@ export function applyAction(
         );
       }
       next.signedByEvaluatorOn = today;
+      // The period printed on the sheet is fixed by the signature.
+      next.assessmentPeriod = assessmentPeriodOf(next, today);
+      // The default answer becomes the signed one (NIE after a negative result).
+      next.promotionRequest = promotionRequestOf(
+        next,
+        computeEvaluation(next, today),
+      );
       log('Oceniający podpisał ocenę na piśmie. Pola oceny są zablokowane.');
       closeMootDueDateRequests(next, today);
+      // Use case "wysłanie powiadomienia o złożeniu wniosku o przyznanie
+      // kolejnego stopnia służbowego": part III attached to a signed assessment.
+      if (next.promotionRequest.attached === 'YES') {
+        next.history.push({
+          date: today,
+          text: `Do oceny dołączono wniosek o przyznanie kolejnego stopnia służbowego${next.promotionRequest.requestedGrade ? ` (${next.promotionRequest.requestedGrade})` : ''} (część III arkusza, art. 89 ust. 1 ${USC}). Wniosek trafia do kadr i dyrektora generalnego urzędu.`,
+          event: { type: 'PROMOTION_REQUESTED', notify: ['HR', 'DIRECTOR'] },
+        });
+      }
       break;
     }
     case 'SEND_FOR_ACK':
@@ -218,9 +243,9 @@ export function applyAction(
     case 'EMPLOYEE_ACK_ASSESSMENT': {
       next.acknowledgedOn = today;
       next.completedOn.ACKNOWLEDGEMENT = today;
-      const objection = objectionDeadline(today);
+      const objection = objectionDeadline(today, addressee.to);
       log(
-        `Oceniany zapoznał się z oceną. Sprzeciw do dyrektora generalnego urzędu można wnieść do ${formatDatePl(objection.date!)} (art. 83 ust. 1 ${USC}).`,
+        `Oceniany zapoznał się z oceną. Sprzeciw do ${addressee.to} można wnieść do ${formatDatePl(objection.date!)} (7 dni od zapoznania; ${addressee.legalBasis}).`,
       );
       const cycle = nextCycleStart(next, today);
       if (cycle) {
@@ -237,9 +262,13 @@ export function applyAction(
   return next;
 }
 
-/** Default "termin sporządzenia oceny": 24 months, or 6 months after a negative one. */
-export function dueFor(record: CaseRecord, today: string): string {
+/**
+ * Default "termin sporządzenia oceny": 24 months from the start of the cycle
+ * (art. 81 ust. 4: employment or the previous assessment), or after 6 months
+ * from acknowledging a negative one (art. 81 ust. 9).
+ */
+export function dueFor(record: CaseRecord): string {
   return record.cycleStart.kind === 'PREVIOUS_NEGATIVE'
     ? reassessmentAfterNegativeDue(record.cycleStart.acknowledgedOn)
-    : defaultAssessmentDue(today);
+    : defaultAssessmentDue(cycleAnchor(record.cycleStart));
 }

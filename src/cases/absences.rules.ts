@@ -1,6 +1,6 @@
 import type { CycleStart, PartI } from './case.types.js';
 import type { DeadlineSpec } from './deadlines.rules.js';
-import { USC } from './deadlines.rules.js';
+import { cycleAnchor, rawAssessmentDue, USC } from './deadlines.rules.js';
 import {
   addDays,
   addMonths,
@@ -123,14 +123,30 @@ export function extendAssessmentDue(
     days += counted;
     periods.push(period);
   }
-  return { date: days > 0 ? shiftToWorkingDay(end) : due, days, periods };
+  // R3 once, on the final date (`due` may be the raw, unshifted term).
+  return {
+    date: shiftToWorkingDay(days > 0 ? end : due),
+    days,
+    periods,
+  };
 }
 
 /** What the extension needs from a case. */
 export interface AbsenceCaseFacts {
   cycleStart: CycleStart;
-  partI: Pick<PartI, 'confirmedByEvaluatorOn'>;
+  partI?: Pick<PartI, 'confirmedByEvaluatorOn'>;
   absences?: readonly AbsenceSpan[];
+}
+
+/**
+ * The due date before R3 (art. 115 KC): when `due` is the default 24-month
+ * term moved off a day off work, the unshifted term, so that ust. 7 extends
+ * the raw date and the working-day shift is applied only once at the end.
+ * A due date chosen by the evaluator is taken as it is.
+ */
+export function unshiftedDue(cycleStart: CycleStart, due: string): string {
+  const raw = rawAssessmentDue(cycleAnchor(cycleStart));
+  return raw < due && shiftToWorkingDay(raw) === due ? raw : due;
 }
 
 /**
@@ -144,12 +160,14 @@ export function withAbsenceExtension(
 ): DeadlineSpec {
   if (!spec.date || !facts.absences?.length) return spec;
   if (facts.cycleStart.kind === 'PREVIOUS_NEGATIVE') return spec;
-  const periodStart =
-    facts.partI.confirmedByEvaluatorOn ??
-    (facts.cycleStart.kind === 'HIRED'
-      ? facts.cycleStart.date
-      : facts.cycleStart.assessedOn);
-  const extension = extendAssessmentDue(spec.date, periodStart, facts.absences);
+  // ust. 7 extends the term of ust. 4, which runs from the start of the
+  // 24-month period (employment / previous assessment), not from part I.
+  const periodStart = cycleAnchor(facts.cycleStart);
+  const extension = extendAssessmentDue(
+    unshiftedDue(facts.cycleStart, spec.date),
+    periodStart,
+    facts.absences,
+  );
   if (extension.days === 0) return spec;
   const list = extension.periods
     .map((p) => `${formatDatePl(p.from)}–${formatDatePl(p.to)}`)

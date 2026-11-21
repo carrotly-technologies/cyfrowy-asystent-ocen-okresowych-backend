@@ -16,7 +16,10 @@ import { dueChangeBlocker } from './due-date-change.rules.js';
 import { formalCheck } from './formal-check.rules.js';
 import { objectionNextSteps } from './objection-guide.rules.js';
 import { objectionViews } from './objection-terms.rules.js';
+import { objectionAddressee } from './objection-addressee.rules.js';
 import { promotionRequestOf } from './promotion.rules.js';
+import { PART_II_STAGES } from './patch.rules.js';
+import { assessmentPeriodOf } from './assessment-period.rules.js';
 import {
   buildStages,
   caseStatus,
@@ -54,6 +57,14 @@ export function toDetail(
   actor: Actor | null = 'EVALUATOR',
 ): CaseDetailView {
   const { id: _id, ...evaluatorView } = evaluator;
+  const evaluation = computeEvaluation(record, today);
+  const addressee = objectionAddressee(
+    {
+      sheetId: record.sheetId,
+      assessedByDirectorGeneral: evaluator.directorGeneral === true,
+    },
+    office,
+  );
   const detail: CaseDetailView = {
     ...toSummary(record, today),
     evaluator: evaluatorView,
@@ -67,15 +78,16 @@ export function toDetail(
     justification: record.justification,
     iprz: record.iprz,
     previousAssessment: record.previousAssessment,
-    promotionRequest: promotionRequestOf(record),
-    evaluation: computeEvaluation(record, today),
+    promotionRequest: promotionRequestOf(record, evaluation),
+    evaluation,
     formalCheck: formalCheck(record, today),
     assessmentTalkOn: record.assessmentTalkOn,
     signedByEvaluatorOn: record.signedByEvaluatorOn,
     sentForAckOn: record.sentForAckOn,
     acknowledgedOn: record.acknowledgedOn,
-    objectionDeadline: objectionDeadlineOf(record, today),
-    objectionNextSteps: objectionNextSteps(),
+    objectionDeadline: objectionDeadlineOf(record, today, addressee),
+    objectionAddressee: addressee,
+    objectionNextSteps: objectionNextSteps(addressee.to),
     history: record.history,
     corrections: record.corrections ?? [],
     locks: caseLocks(record),
@@ -89,6 +101,9 @@ export function toDetail(
     talkInvitations: record.talkInvitations ?? [],
     positionChanges: record.positionChanges ?? [],
     absences: record.absences ?? [],
+    workingNotes: record.workingNotes ?? '',
+    assessmentPeriod: assessmentPeriodOf(record, today),
+    partIIEditableFrom: PART_II_STAGES[0],
     availableActions: actor ? availableActions(record, today, actor) : [],
   };
   if (actor !== 'EMPLOYEE') return detail;
@@ -97,6 +112,7 @@ export function toDetail(
     ...detail,
     observations: [],
     formalCheck: [],
+    workingNotes: '',
     ...(handedOver
       ? {}
       : {

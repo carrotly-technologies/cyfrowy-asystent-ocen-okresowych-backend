@@ -5,8 +5,11 @@ import {
   dueChangeBlocker,
   positionChangeEffect,
   reassignEvaluator,
+  redoPartIDeadline,
+  reopenPartI,
   sixMonthsBlocker,
 } from './due-date-change.rules.js';
+import { stageDeadline } from './stages.rules.js';
 import { buildSeed } from './seed/seed.data.js';
 
 const TODAY = '2026-11-21';
@@ -139,5 +142,50 @@ describe('change of position (§9 rozp. 2016) and of evaluator (§9 ust. 3)', ()
     expect(() =>
       reassignEvaluator(seed('c-006'), 'ev-sikora', 'R', TODAY),
     ).toThrow(CaseRuleError);
+  });
+});
+
+describe('reopenPartI (§9 ust. 1 rozp. 2016)', () => {
+  it('sends a case with confirmed part I back to the opening talk, due date kept', () => {
+    const record = seed('c-003'); // OBSERVATION
+    const effect = {
+      ...positionChangeEffect(
+        {
+          ...record,
+          cycleStart: { kind: 'PREVIOUS_POSITIVE', assessedOn: '2026-10-01' },
+        },
+        '2026-11-23',
+      ),
+      id: 'x',
+      recordedOn: TODAY,
+    };
+    expect(effect.effect).toBe('REDO_PART_I');
+    const next = reopenPartI(
+      { ...record, positionChanges: [effect] },
+      effect,
+      TODAY,
+    );
+    expect(next.stage).toBe('OPENING_TALK');
+    expect(next.partI.assessmentDue).toBe(record.partI.assessmentDue);
+    expect(next.partI.additionalCriteria).toEqual(
+      record.partI.additionalCriteria,
+    );
+    expect(next.partI.confirmedByEvaluatorOn).toBeNull();
+    expect(next.partI.acknowledgedByEmployeeOn).toBeNull();
+    expect(next.completedOn.OPENING_TALK).toBeUndefined();
+    expect(next.history.at(-1)?.text).toContain('§9 ust. 1');
+    // 23.11 + 30 days = 23.12.2026
+    expect(redoPartIDeadline(next)?.date).toBe('2026-12-23');
+    expect(stageDeadline(next, 'OPENING_TALK', TODAY)).toMatchObject({
+      date: '2026-12-23',
+      legalBasis: expect.stringContaining('§9 ust. 1'),
+    });
+  });
+
+  it('does nothing before part I is confirmed or after signing', () => {
+    const fresh = seed('c-004');
+    expect(reopenPartI(fresh, { deadline: '2026-12-23' }, TODAY)).toBe(fresh);
+    const signed = { ...seed('c-007'), signedByEvaluatorOn: TODAY };
+    expect(reopenPartI(signed, { deadline: '2026-12-23' }, TODAY)).toBe(signed);
   });
 });
