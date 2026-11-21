@@ -61,3 +61,7 @@ Zestaw pytań i odpowiedzi (`QA`) nie jest jeszcze w repo. Jego fragmenty są w 
 (bez pytań o pierwszą ocenę) i `kb:build` je zachowuje, dopóki brak pliku `materialy-dodatkowe/pytania-i-odpowiedzi.md`.
 
 Opis zadania wymienia też materiały ze strony KPRM poza dwoma poradnikami; nie było ich w paczce.
+
+## Pokaz dla jury
+
+Scenariusz pokazu (≤ 2 min), konta demo i link do nagrania: [`demo/scenariusz.md`](demo/scenariusz.md).
