@@ -159,7 +159,7 @@ fictional data relative to `DEMO_TODAY` (env, default `2026-11-21`); every deadl
 | `POST /api/cases/:id/actions`    | State machine (`{ action }`); 403 when the caller is not the actor of the action, 409 with a Polish explanation for an illegal transition |
 | `GET /api/hr/overview`           | Counters and every case in the office, with evaluator and last reminder                 |
 | `POST /api/hr/reminders`         | Simulated reminders (`{ caseIds }`), logged in each case's history                       |
-| `POST /api/demo/reset`           | Restores the seed (cases and the journal)                                                |
+| `POST /api/demo/reset`           | Restores the seed (cases, journal, pulse)                                                 |
 
 - Rules are pure functions with unit tests in `src/cases/*.rules.ts`: deadlines (`deadlines.rules.ts`, KC term rules
   incl. shifting from Saturdays, Sundays and holidays, each `Deadline` with `legalBasis`), stages
@@ -237,6 +237,33 @@ author only (someone else's entry: 404). Lists are newest first.
 | `POST /api/people/:personId/observations` | `{ date, criterionId, indicatorId?, kind, situation, action, result }` → observation (201; `indicatorId` is a legacy free field); 400 for an unknown criterion, a date after today, S/D/R empty or over 2000 chars |
 | `PATCH /api/observations/:id`          | Any of those fields; the merged observation is validated again                            |
 | `DELETE /api/observations/:id`         | 204                                                                                       |
+
+### Virtual HR partner and pulse survey (`src/partner`)
+
+Advisory module for people management; it never changes a case or a score ("decyzja należy do przełożonego").
+**Pulse**: a voluntary check-in of the employee every 14 days (5 questions, 1–5, 5 = best: obciążenie, energia,
+wsparcie, jasność priorytetów, satysfakcja; optional comment), table `pulse_responses` with `DATABASE_URL`, in memory
+without it (demo seed: ~12 weeks for the demo teams). Privacy: the supervisor gets trends and flags, a comment only
+when the employee shared it; team averages only for periods with ≥ 3 respondents (`MIN_GROUP_SIZE`); HR has no access.
+**Signals** (`signals.rules.ts`, pure and tested): przeciążenie, spadek motywacji, ryzyko wypalenia, moment do
+docenienia, from the pulse trend (`pulse.rules.ts`), case and journal observations and work data (tasks, changes of
+duties, absence length only: demo seed in `src/partner/seed/`, in an office from its HR system / EZD). Each flag lists
+its reasons and suggested actions (`data/partner-actions.data.ts`). **Hints** for the assessment stage
+(`hints.rules.ts`): strengths / areas, SBI feedback phrasing, development forms per criterion
+(`data/development.data.ts`). **Ask**: the context and question are pseudonymized (`anonymize.ts`: names in any case,
+PESEL, e-mail, phone, unit names) before the optional LLM call and re-identified in the answer; without an LLM the
+answer comes from the rules.
+
+| Route                              | What it does                                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `GET /api/pulse/questions`         | Questions, scale, interval, `minGroupSize`, privacy texts (any role)                             |
+| `GET /api/pulse/me`                | EMPLOYEE: own history with comments, `nextDue`, `canSubmit`                                      |
+| `POST /api/pulse`                  | EMPLOYEE: `{ answers, comment?, shareComment? }` → response (201); 409 within 7 days of the last |
+| `PATCH /api/pulse/:id/share`       | EMPLOYEE: `{ shareComment }` on own response (404 otherwise)                                     |
+| `GET /api/partner/team`            | SUPERVISOR: own team with pulse series, flags, team aggregate (hidden below 3 respondents)       |
+| `GET /api/partner/people/:personId`| SUPERVISOR: card with pulse points (shared comments only), trend, flags with reasons and actions, work data |
+| `GET /api/partner/cases/:caseId/hints` | SUPERVISOR (the case's evaluator): strengths, areas, feedback phrasing, development forms, management tips |
+| `POST /api/partner/ask`            | SUPERVISOR: `{ question, personId?, caseId? }` → `{ answer, mode: LLM\|RULES, anonymizedPrompt, … }` |
 
 ### AI assistant (source-grounded)
 
