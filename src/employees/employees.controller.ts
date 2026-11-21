@@ -1,3 +1,4 @@
+import { ApiOperation } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -39,6 +40,7 @@ export class EmployeesController {
   constructor(private readonly employees: EmployeesService) {}
 
   @Get('employees')
+  @ApiOperation({ summary: 'Rejestr pracowników' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   @ApiOperation({
     summary: 'Kartoteka pracowników (wyszukiwanie, filtry, sortowanie)',
@@ -48,6 +50,7 @@ export class EmployeesController {
   }
 
   @Get('employees/evaluators')
+  @ApiOperation({ summary: 'Lista oceniających' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Oceniający do wyboru (podległość służbowa)' })
   evaluators() {
@@ -55,6 +58,7 @@ export class EmployeesController {
   }
 
   @Get('employees/absence-types')
+  @ApiOperation({ summary: 'Rodzaje nieobecności' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Rodzaje nieobecności' })
   absenceTypes() {
@@ -62,6 +66,7 @@ export class EmployeesController {
   }
 
   @Get('employees/export.csv')
+  @ApiOperation({ summary: 'Eksport rejestru pracowników do CSV' })
   @Roles('HR', 'ADMIN')
   @Header('Content-Type', CSV)
   @Header(
@@ -74,6 +79,7 @@ export class EmployeesController {
   }
 
   @Post('employees/history/import')
+  @ApiOperation({ summary: 'Import historii ocen' })
   @Roles('HR', 'ADMIN')
   @HttpCode(200)
   @ApiOperation({ summary: 'Import ocen historycznych z CSV' })
@@ -84,6 +90,7 @@ export class EmployeesController {
   }
 
   @Post('employees')
+  @ApiOperation({ summary: 'Dodanie pracownika' })
   @Roles('HR', 'ADMIN')
   @ApiOperation({ summary: 'Dodanie pracownika do kartoteki' })
   create(@Body({ schema: employeeSchema }) body: EmployeeInput) {
@@ -91,6 +98,7 @@ export class EmployeesController {
   }
 
   @Get('employees/:id')
+  @ApiOperation({ summary: 'Dane pracownika' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Dane pracownika' })
   get(@Param('id') id: string) {
@@ -98,6 +106,7 @@ export class EmployeesController {
   }
 
   @Patch('employees/:id')
+  @ApiOperation({ summary: 'Zmiana danych pracownika' })
   @Roles('HR', 'ADMIN')
   @ApiOperation({ summary: 'Edycja danych pracownika lub zmiana podległości' })
   update(
@@ -108,6 +117,7 @@ export class EmployeesController {
   }
 
   @Delete('employees/:id')
+  @ApiOperation({ summary: 'Usunięcie pracownika' })
   @Roles('HR', 'ADMIN')
   @HttpCode(204)
   @ApiOperation({ summary: 'Usunięcie danych pracownika' })
@@ -116,6 +126,7 @@ export class EmployeesController {
   }
 
   @Post('employees/:id/cycles')
+  @ApiOperation({ summary: 'Rozpoczęcie nowego cyklu oceny' })
   @Roles('HR', 'ADMIN')
   @ApiOperation({ summary: 'Rozpoczęcie nowego cyklu oceny okresowej' })
   startCycle(@Param('id') id: string) {
@@ -123,6 +134,7 @@ export class EmployeesController {
   }
 
   @Get('employees/:id/history')
+  @ApiOperation({ summary: 'Historia ocen pracownika' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Historia ocen pracownika' })
   history(@Param('id') id: string) {
@@ -130,6 +142,7 @@ export class EmployeesController {
   }
 
   @Get('employees/:id/absences')
+  @ApiOperation({ summary: 'Nieobecności pracownika' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Nieobecności pracownika i okresy ciągłe' })
   absences(@Param('id') id: string) {
@@ -137,6 +150,7 @@ export class EmployeesController {
   }
 
   @Post('employees/:id/absences')
+  @ApiOperation({ summary: 'Dodanie nieobecności' })
   @Roles('HR', 'ADMIN')
   @ApiOperation({ summary: 'Dodanie nieobecności' })
   addAbsence(
@@ -147,6 +161,7 @@ export class EmployeesController {
   }
 
   @Delete('employees/:id/absences/:absenceId')
+  @ApiOperation({ summary: 'Usunięcie nieobecności' })
   @Roles('HR', 'ADMIN')
   @HttpCode(204)
   @ApiOperation({ summary: 'Usunięcie nieobecności' })
@@ -158,6 +173,7 @@ export class EmployeesController {
   }
 
   @Get('substitutions')
+  @ApiOperation({ summary: 'Zastępstwa oceniających' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
   @ApiOperation({ summary: 'Zastępstwa oceniających' })
   substitutions() {
@@ -165,6 +181,7 @@ export class EmployeesController {
   }
 
   @Post('substitutions')
+  @ApiOperation({ summary: 'Dodanie zastępstwa' })
   @Roles('HR', 'ADMIN')
   @ApiOperation({ summary: 'Dodanie zastępstwa' })
   addSubstitution(
@@ -174,6 +191,7 @@ export class EmployeesController {
   }
 
   @Delete('substitutions/:id')
+  @ApiOperation({ summary: 'Usunięcie zastępstwa' })
   @Roles('HR', 'ADMIN')
   @HttpCode(204)
   @ApiOperation({ summary: 'Usunięcie zastępstwa' })
@@ -182,6 +200,7 @@ export class EmployeesController {
   }
 
   @Get('statistics')
+  @ApiOperation({ summary: 'Statystyki ocen okresowych' })
   @Roles('HR', 'ADMIN', 'DIRECTOR')
   @ApiOperation({ summary: 'Statystyki ocen okresowych' })
   statistics(@Query('unit') unit?: string) {
@@ -189,6 +208,7 @@ export class EmployeesController {
   }
 
   @Get('statistics/export.csv')
+  @ApiOperation({ summary: 'Eksport statystyk do CSV' })
   @Roles('HR', 'ADMIN', 'DIRECTOR')
   @Header('Content-Type', CSV)
   @Header('Content-Disposition', 'attachment; filename="statystyki-ocen.csv"')

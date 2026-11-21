@@ -15,8 +15,10 @@ const TOPICS: { id: string; re: RegExp }[] = [
   { id: 'APPRECIATION', re: /docen|pochwal|pochwał|nagrod|sukces/i },
   {
     id: 'FEEDBACK',
-    re: /informacj\w* zwrotn|feedback|rozmow|powiedzieć|powiedziec|sformułow|sformulow/i,
+    re: /informacj\w* zwrotn|feedback|powiedzieć|powiedziec|sformułow|sformulow|rozmow\w* oceniaj/i,
   },
+  // A supportive talk is about every risk flag (not about appreciation).
+  { id: 'SUPPORT', re: /wspier|wsparci|samopoczu|kondycj|dobrostan|rozmow/i },
   { id: 'DEVELOPMENT', re: /rozw[oó]j|rozwoj|szkoleni|iprz|kompetenc|mentor/i },
 ];
 
@@ -39,7 +41,10 @@ export function rulesAnswer(
   const who = name ?? 'pracownika';
   const lines: string[] = [];
   const relevant = signals.filter(
-    (s) => topics.length === 0 || topics.includes(s.kind),
+    (s) =>
+      topics.length === 0 ||
+      topics.includes(s.kind) ||
+      (topics.includes('SUPPORT') && s.kind !== 'APPRECIATION'),
   );
   for (const s of relevant) {
     lines.push(
