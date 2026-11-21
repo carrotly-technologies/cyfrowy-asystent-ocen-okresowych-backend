@@ -4,6 +4,8 @@ Dokumenty prawne i poradniki, na których opiera się aplikacja (HackNation 2026
 Porównanie tych wymagań z implementacją, wraz z listą braków: [`audyt-zgodnosci.md`](audyt-zgodnosci.md).
 Oryginały leżą w podkatalogach tematycznych, a `tekst/` ma ich wersje tekstowe w tej samej strukturze,
 do czytania przez agentów i jako baza wiedzy asystenta AI.
+Materiały zgłoszeniowe dla jury (prezentacja PDF, opis projektu, zrzuty ekranu) są w [`prezentacja/`](prezentacja/opis.md);
+nie należą do bazy wiedzy asystenta.
 
 ## Kryteria oceny
 
