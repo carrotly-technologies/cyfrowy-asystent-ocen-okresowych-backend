@@ -143,11 +143,15 @@ export function computeStatistics(
 }
 
 function csvCell(value: string | number): string {
-  const text = String(value);
-  return /[;"\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  // numbers with a decimal comma (11,1), as Polish spreadsheets expect
+  const text =
+    typeof value === 'number' ? String(value).replace('.', ',') : value;
+  return /[;"\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-/** CSV (`;`, UTF-8 with BOM for spreadsheets) from rows of cells. */
+/**
+ * CSV for Polish Excel/LibreOffice: `;` between fields, decimal comma in numbers, UTF-8 with BOM, CRLF lines.
+ */
 export function toCsv(rows: readonly (readonly (string | number)[])[]): string {
   return `﻿${rows.map((r) => r.map(csvCell).join(';')).join('\r\n')}\r\n`;
 }

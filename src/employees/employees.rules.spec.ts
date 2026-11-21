@@ -281,6 +281,10 @@ describe('computeStatistics', () => {
     ]);
   });
 
+  it('toCsv writes numbers with a decimal comma', () => {
+    expect(toCsv([['Odsetek', 11.1, 3]])).toBe('\uFEFFOdsetek;11,1;3\r\n');
+  });
+
   it('toCsv quotes cells with separators', () => {
     expect(toCsv([['a;b', 'x"y', 3]])).toBe('﻿"a;b";"x""y";3\r\n');
   });
