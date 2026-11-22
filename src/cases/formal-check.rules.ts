@@ -9,6 +9,7 @@ import type { CaseRecord, FormalCheckItem } from './case.types.js';
 import { formatDatePl } from './dates.js';
 import { USC } from './deadlines.rules.js';
 import { promotionRequestCheck } from './promotion.rules.js';
+import { levelTextCheck } from './level-text.rules.js';
 
 const quoted = (ids: readonly string[]) =>
   ids.map((id) => `„${criterionName(id)}”`).join(', ');
@@ -140,6 +141,12 @@ export function formalCheck(
           : 'Ocena jest pozytywna: uzasadnienie jest opcjonalne, ale zalecane.',
     legalBasis: `§11 ust. 3–4 ${RO_2016}`,
   });
+
+  const levelText = levelTextCheck(
+    record.justification,
+    evaluation?.level?.label,
+  );
+  if (levelText) items.push(levelText);
 
   const hasIprz = record.iprz.trim().length > 0;
   {

@@ -25,6 +25,8 @@ describe('Post-assessment paths: fikcja zapoznania, sprzeciw, zmiana terminu (e2
       'e.dabrowska',
       't.jankowski',
       'b.wisniewska',
+      'k.zawadzki',
+      'm.wasilewska',
     ]) {
       t[login] = await loginAs(app, login);
     }
@@ -147,6 +149,43 @@ describe('Post-assessment paths: fikcja zapoznania, sprzeciw, zmiana terminu (e2
       .post('/api/cases/c-301/objection')
       .send({ text: 'Jeszcze raz.' })
       .expect(409);
+  });
+
+  it('sheet A (c-202): the assessed person acknowledges and objects to the evaluator, who decides; the DG does not', async () => {
+    const before = await as('m.wasilewska').get('/api/cases/c-202').expect(200);
+    expect(before.body.sheetId).toBe('A');
+    expect(before.body.status).toBe('DO_ZAPOZNANIA');
+    expect(before.body.objectionAddressee).toMatchObject({
+      decider: 'EVALUATOR',
+      to: 'osoby, która dokonała oceny okresowej',
+    });
+    await as('m.wasilewska')
+      .post('/api/cases/c-202/actions')
+      .send({ action: 'EMPLOYEE_ACK_ASSESSMENT' })
+      .expect(200);
+    const filed = await as('m.wasilewska')
+      .post('/api/cases/c-202/objection')
+      .send({
+        text: 'Nie zgadzam się z oceną kryterium „Zarządzanie strategiczne”.',
+      })
+      .expect(200);
+    expect(filed.body.status).toBe('SPRZECIW_W_ROZPATRZENIU');
+    const list = await as('b.wisniewska').get('/api/objections').expect(200);
+    expect(list.body.map((o: { caseId: string }) => o.caseId)).not.toContain(
+      'c-202',
+    );
+    const evaluator = await as('k.zawadzki')
+      .get('/api/cases/c-202')
+      .expect(200);
+    expect(evaluator.body.legalActions).toContain('DECIDE_OBJECTION');
+    const decided = await as('k.zawadzki')
+      .post('/api/cases/c-202/objection/decision')
+      .send({ outcome: 'DISMISS', reason: 'Ocena zasadna.' })
+      .expect(200);
+    expect(decided.body.status).toBe('ZAKONCZONA');
+    expect(decided.body.nextDeadline.label).toBe(
+      'Termin na odwołanie do sądu pracy',
+    );
   });
 
   it('DIRECTOR orders a new assessment: back to ASSESSMENT, previous one cancelled', async () => {

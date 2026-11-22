@@ -260,9 +260,9 @@ describe('Cases, team, employee and HR (e2e)', () => {
 
   it('HR overview counts and simulated reminders', async () => {
     let res = await asHr().get('/api/hr/overview').expect(200);
-    expect(res.body.cases).toHaveLength(16);
+    expect(res.body.cases).toHaveLength(17);
     expect(res.body.counters).toMatchObject({
-      awaitingAck: 1,
+      awaitingAck: 2,
       objectionPeriod: 1,
     });
     res = await asHr()
