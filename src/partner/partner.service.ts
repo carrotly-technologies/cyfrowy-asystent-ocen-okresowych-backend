@@ -142,7 +142,7 @@ export class PartnerService implements OnModuleInit {
 
   // ---------------------------------------------------------- supervisor
 
-  /** "Mój zespół – dobrostan": current team of the supervisor. */
+  /** "Dobrostan zespołu": current team of the supervisor. */
   async team() {
     const user = this.user();
     const records = this.cases

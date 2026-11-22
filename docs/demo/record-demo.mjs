@@ -97,7 +97,7 @@ await wait(5000);
 // 2. Supervisor: team + sheet suggestion
 await login('Joanna Kamińska');
 await cap(
-  'Przełożona: mój zespół',
+  'Przełożona: oceny zespołu',
   'Każda ocena na jednym z 7 etapów, terminy liczone z przepisów',
 );
 log('2 team');
