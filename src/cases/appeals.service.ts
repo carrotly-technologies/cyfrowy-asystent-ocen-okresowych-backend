@@ -3,6 +3,7 @@ import { AuthenticationContext } from '@nestjs/authentication';
 import { ROLE_LABELS } from '../auth/role-labels.js';
 import {
   ACK_FICTION_VIEWERS,
+  courtTermPreview,
   decideObjection,
   fileObjection,
   objectionViews,
@@ -125,6 +126,11 @@ export class AppealsService {
     return this.save(record, (r) =>
       decideDueDateRequest(r, input, this.by(), this.cases.today),
     );
+  }
+
+  /** Preview of the labour court term for a delivery date (art. 83 ust. 5). */
+  courtTerm(deliveredOn: string) {
+    return courtTermPreview(deliveredOn, this.cases.today);
   }
 
   /** Objections for the dyrektor generalny (and HR), pending first, oldest first. */

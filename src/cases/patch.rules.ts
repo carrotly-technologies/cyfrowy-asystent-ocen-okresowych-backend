@@ -15,6 +15,7 @@ import {
   assessmentPeriodErrors,
   assessmentPeriodOf,
 } from './assessment-period.rules.js';
+import { assessmentChangedAfterObjection } from './objection-terms.rules.js';
 import {
   mergePreviousAssessment,
   mergePromotionRequest,
@@ -37,11 +38,18 @@ export const PART_II_STAGES: readonly StageId[] = ['ASSESSMENT', 'SIGNATURE'];
 /** Whether part II of the sheet can be saved now (assessment stage until signature). */
 export function partIIEditable(record: CaseRecord): boolean {
   if (record.signedByEvaluatorOn || record.acknowledgedOn) return false;
+  // art. 83 ust. 4: the scores set when the objection was upheld are final.
+  if (assessmentChangedAfterObjection(record)) return false;
   return record.sheetId !== null && PART_II_STAGES.includes(record.stage);
 }
 
 function partIIGuard(record: CaseRecord, field: string): void {
   if (partIIEditable(record)) return;
+  if (assessmentChangedAfterObjection(record) && !record.signedByEvaluatorOn) {
+    throw new CaseRuleError(
+      `Pole „${field}” jest zablokowane: ocenę zmieniono w rozstrzygnięciu sprzeciwu (art. 83 ust. 4 ustawy o służbie cywilnej). Oceniający tylko podpisuje zmienioną ocenę i przekazuje ją ocenianemu. ${LOCKED_NOTE}`,
+    );
+  }
   if (record.signedByEvaluatorOn) {
     throw new CaseRuleError(
       `Pole „${field}” jest zablokowane: ocenę zatwierdzono ${formatDatePl(record.signedByEvaluatorOn)}. ${LOCKED_NOTE}`,

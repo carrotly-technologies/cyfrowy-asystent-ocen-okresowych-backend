@@ -5,6 +5,10 @@ import type { SheetSuggestion } from '../sheets/sheet-suggestion.rules.js';
 import type { SheetId } from '../sheets/sheet.types.js';
 import type { AbsenceSpan } from './absences.rules.js';
 import type { ObjectionAddressee } from './objection-addressee.rules.js';
+import type {
+  ObjectionDecisionNotice,
+  ObjectionRight,
+} from './objection-terms.rules.js';
 
 /** Types of contract v2 (notatki/api-kontrakt-v2.md). */
 
@@ -341,6 +345,10 @@ export interface CaseDetail extends CaseSummary {
   partIIEditableFrom?: StageId;
   /** To whom the sprzeciw goes and who decides it (art. 83 ust. 1–2). */
   objectionAddressee?: ObjectionAddressee;
+  /** Whether a sprzeciw lies from the current assessment (art. 83 ust. 4). */
+  objectionRight?: ObjectionRight;
+  /** The upheld objection (change / re-making) behind the current assessment. */
+  objectionDecisionNotice?: ObjectionDecisionNotice | null;
 }
 
 export interface ObjectionView extends Objection {

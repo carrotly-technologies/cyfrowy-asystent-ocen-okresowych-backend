@@ -19,7 +19,13 @@ import {
   toDeadline,
   USC,
 } from './deadlines.rules.js';
-import { appealNextDeadline, appealStatus } from './objection-terms.rules.js';
+import {
+  appealNextDeadline,
+  appealStatus,
+  courtAppealDeadline,
+  currentObjection,
+  objectionRight,
+} from './objection-terms.rules.js';
 import { redoPartIDeadline } from './due-date-change.rules.js';
 import {
   type ObjectionAddressee,
@@ -61,9 +67,14 @@ function stageDeadlineSpec(
           openingTalkDeadline(record.cycleStart)),
         label: 'Potwierdzenie części I przez ocenianego, do',
       };
-    case 'OBSERVATION':
     case 'ASSESSMENT':
     case 'SIGNATURE':
+      if (record.assessmentVersions?.length) return afterObjectionSpec(record);
+      return withAbsenceExtension(
+        record,
+        assessmentDueDeadline(record.cycleStart, record.partI.assessmentDue),
+      );
+    case 'OBSERVATION':
       return withAbsenceExtension(
         record,
         assessmentDueDeadline(record.cycleStart, record.partI.assessmentDue),
@@ -77,6 +88,22 @@ function stageDeadlineSpec(
   }
 }
 
+/**
+ * After an upheld objection (art. 83 ust. 4) the assessment is changed or made
+ * a second time. The law sets no term for it, so the original due date (long
+ * passed) is not shown as overdue: "niezwłocznie", without a date.
+ */
+function afterObjectionSpec(record: CaseRecord): DeadlineSpec {
+  const changed = record.assessmentVersions?.at(-1)?.status === 'CHANGED';
+  return {
+    date: null,
+    label: changed
+      ? 'Podpisanie i przekazanie zmienionej oceny niezwłocznie'
+      : 'Ponowne sporządzenie oceny po sprzeciwie niezwłocznie',
+    legalBasis: `art. 83 ust. 4 ${USC}: przepisy nie określają terminu ${changed ? 'podpisania zmienionej oceny' : 'ponownego sporządzenia oceny'}; należy to zrobić bez zbędnej zwłoki`,
+  };
+}
+
 /** Deadline of a stage; null when the stage has no date yet. */
 export function stageDeadline(
   record: CaseRecord,
@@ -86,7 +113,7 @@ export function stageDeadline(
   const spec = stageDeadlineSpec(record, stage);
   if (!spec) return null;
   // "Niezwłocznie" keeps a NONE deadline; others need a date.
-  if (!spec.date && stage !== 'ACKNOWLEDGEMENT') return null;
+  if (!spec.date && !/niezwłocznie/.test(spec.label)) return null;
   return toDeadline(spec, today);
 }
 
@@ -113,6 +140,8 @@ export function objectionDeadlineOf(
   addressee: ObjectionAddressee = objectionAddressee(record),
 ): Deadline | null {
   if (!record.acknowledgedOn) return null;
+  // art. 83 ust. 4: no sprzeciw from an assessment changed after one.
+  if (!objectionRight(record).open) return null;
   return toDeadline(
     objectionDeadline(record.acknowledgedOn, addressee.to),
     today,
@@ -168,7 +197,15 @@ export function nextDeadline(
   const appeal = appealNextDeadline(record, today);
   if (appeal) return appeal;
   if (record.acknowledgedOn) {
-    const objection = objectionDeadlineOf(record, today);
+    const filed = currentObjection(record);
+    // A sprzeciw was decided: the labour court term (art. 83 ust. 5) replaces
+    // the objection term while it runs.
+    const court = filed ? courtAppealDeadline(filed, today) : null;
+    if (court) {
+      const deadline = toDeadline(court, today);
+      if (deadline.daysLeft !== null && deadline.daysLeft >= 0) return deadline;
+    }
+    const objection = filed ? null : objectionDeadlineOf(record, today);
     if (objection && objection.daysLeft !== null && objection.daysLeft >= 0) {
       return objection;
     }

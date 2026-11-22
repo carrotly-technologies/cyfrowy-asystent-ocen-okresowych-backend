@@ -1,7 +1,7 @@
 import { RO_2016 } from '../assessments/assessment.format.js';
 import { applyAction } from './actions.rules.js';
 import { computeEvaluation } from './case.rules.js';
-import { CaseRuleError } from './case-rule.error.js';
+import { CaseRuleError, CaseValidationError } from './case-rule.error.js';
 import type {
   ActorRef,
   AssessmentVersion,
@@ -10,13 +10,14 @@ import type {
   ObjectionOutcome,
 } from './case.types.js';
 import { formatDatePl, isIsoDate } from './dates.js';
-import { objectionDeadline, USC } from './deadlines.rules.js';
+import { objectionDeadline, toDeadline, USC } from './deadlines.rules.js';
 import {
   COURT_APPEAL_DAYS,
   currentObjection,
   currentRound,
   daysTerm,
   objectionDecisionDeadline,
+  objectionRight,
   pendingObjection,
 } from './objection-terms.rules.js';
 import { applyPatch } from './patch.rules.js';
@@ -109,9 +110,9 @@ export function objectionBlocker(
   if (existing) {
     return `Sprzeciw od tej oceny został już wniesiony ${formatDatePl(existing.filedOn)}.`;
   }
-  const versions = record.assessmentVersions ?? [];
-  if (versions.at(-1)?.status === 'CHANGED') {
-    return `Ocena została zmieniona w wyniku uwzględnienia sprzeciwu; ponowny sprzeciw przysługuje od oceny sporządzonej po raz drugi (art. 83 ust. 4 ${USC}).`;
+  const right = objectionRight(record);
+  if (!right.open) {
+    return `Od oceny zmienionej w wyniku uwzględnienia sprzeciwu nie przysługuje kolejny sprzeciw; przysługuje on tylko od oceny sporządzonej po raz drugi (art. 83 ust. 4 ${USC}).`;
   }
   const deadline = objectionDeadline(record.acknowledgedOn).date!;
   if (today > deadline) {
@@ -161,8 +162,55 @@ export interface ObjectionDecisionInput {
   decisions?: Record<string, number>;
   /** CHANGE only: new justification. */
   justification?: string;
-  /** DISMISS: day the decision is delivered (art. 83 ust. 5); default today. */
+  /** Day of the decision (on paper); between the filing and today; default today. */
+  decidedOn?: string;
+  /** DISMISS: day the decision is delivered (art. 83 ust. 5); default the decision day. */
   deliveredOn?: string;
+}
+
+/**
+ * Dates of a decision: decidedOn ∈ [filing, today], deliveredOn ∈ [decidedOn,
+ * today] (a future delivery is not known yet). Invalid → CaseValidationError (400).
+ */
+export function decisionDates(
+  filedOn: string,
+  input: Pick<ObjectionDecisionInput, 'decidedOn' | 'deliveredOn'>,
+  today: string,
+): { decidedOn: string; deliveredOn: string } {
+  const errors: string[] = [];
+  const decidedOn = input.decidedOn ?? today;
+  if (!isIsoDate(decidedOn) || decidedOn < filedOn || decidedOn > today) {
+    errors.push(
+      `Data rozstrzygnięcia musi przypadać między wniesieniem sprzeciwu (${formatDatePl(filedOn)}) a dniem dzisiejszym (${formatDatePl(today)}).`,
+    );
+  }
+  const deliveredOn = input.deliveredOn ?? decidedOn;
+  if (
+    !isIsoDate(deliveredOn) ||
+    deliveredOn < decidedOn ||
+    deliveredOn > today
+  ) {
+    errors.push(
+      `Data doręczenia rozstrzygnięcia musi przypadać między dniem rozstrzygnięcia (${isIsoDate(decidedOn) ? formatDatePl(decidedOn) : decidedOn}) a dniem dzisiejszym (${formatDatePl(today)}); doręczenia w przyszłości nie można jeszcze odnotować.`,
+    );
+  }
+  if (errors.length) throw new CaseValidationError(errors);
+  return { decidedOn, deliveredOn };
+}
+
+/** Labour court term (art. 83 ust. 5) for a dismissal delivered on `deliveredOn`. */
+export function courtTermPreview(deliveredOn: string, today: string) {
+  return toDeadline(
+    {
+      ...daysTerm(
+        deliveredOn,
+        COURT_APPEAL_DAYS,
+        'Termin na odwołanie do sądu pracy',
+        `art. 83 ust. 5 ${USC}: 14 dni od doręczenia rozstrzygnięcia o nieuwzględnieniu sprzeciwu`,
+      ),
+    },
+    today,
+  );
 }
 
 /** Snapshot of the current assessment before it is replaced. */
@@ -203,17 +251,14 @@ export function decideObjection(
       'W tej sprawie nie ma sprzeciwu czekającego na rozstrzygnięcie.',
     );
   }
-  if (input.deliveredOn !== undefined) {
-    if (!isIsoDate(input.deliveredOn) || input.deliveredOn < today) {
-      throw new CaseRuleError(
-        `Data doręczenia rozstrzygnięcia nie może być wcześniejsza niż data rozstrzygnięcia (${formatDatePl(today)}).`,
-      );
-    }
-  }
-  const deliveredOn = input.deliveredOn ?? today;
+  const { decidedOn, deliveredOn } = decisionDates(
+    pending.filedOn,
+    input,
+    today,
+  );
   const term = objectionDecisionDeadline(pending.filedOn).date!;
   const late =
-    today > term
+    decidedOn > term
       ? ` Rozstrzygnięcie po terminie (upłynął ${formatDatePl(term)}).`
       : '';
   let next = structuredClone(record);
@@ -223,7 +268,7 @@ export function decideObjection(
           ...o,
           decision: {
             outcome: input.outcome,
-            decidedOn: today,
+            decidedOn,
             deliveredOn,
             reason: input.reason,
             decidedBy: by,
@@ -246,11 +291,9 @@ export function decideObjection(
       return next;
     }
     case 'CHANGE': {
-      next.assessmentVersions = [
-        ...(next.assessmentVersions ?? []),
-        snapshot(record, 'CHANGED', input.reason, today),
-      ];
       reopen(next, 'SIGNATURE');
+      // The decider's scores go in before the version is closed: afterwards
+      // part II is locked (patch.rules.ts, art. 83 ust. 4).
       if (input.decisions || input.justification !== undefined) {
         next = applyPatch(
           next,
@@ -263,9 +306,13 @@ export function decideObjection(
           today,
         );
       }
+      next.assessmentVersions = [
+        ...(next.assessmentVersions ?? []),
+        snapshot(record, 'CHANGED', input.reason, today),
+      ];
       next.history.push({
         date: today,
-        text: `${who} uwzględnił sprzeciw i zmienił ocenę (art. 83 ust. 4 ${USC}). Uzasadnienie: ${sentence(input.reason)}${late} Zmienioną ocenę oceniający podpisuje i ponownie przekazuje ocenianemu do zapoznania.`,
+        text: `${who} uwzględnił sprzeciw i zmienił ocenę (art. 83 ust. 4 ${USC}). Uzasadnienie: ${sentence(input.reason)}${late} Zmienioną ocenę oceniający podpisuje i ponownie przekazuje ocenianemu do zapoznania; od zmienionej oceny nie przysługuje kolejny sprzeciw.`,
         event: {
           type: 'OBJECTION_ASSESSMENT_CHANGE',
           notify: ['EMPLOYEE', 'EVALUATOR', 'HR'],

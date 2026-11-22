@@ -6,11 +6,21 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ApiErrors } from '../openapi/api-docs.decorators.js';
-import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { Can } from '@nestjs/authorization';
 import {
   type AckFictionInput,
   ackFictionSchema,
+  type CourtTermQuery,
+  courtTermQuerySchema,
   type DueDateDecisionInput,
   dueDateDecisionSchema,
   type DueDateRequestInput,
@@ -147,6 +157,19 @@ export class AppealsController {
     @Body({ schema: dueDateDecisionSchema }) body: DueDateDecisionInput,
   ): Promise<CaseDetail> {
     return this.appeals.decideDueDateRequest(id, body);
+  }
+
+  @Get('objections/court-term')
+  @ApiOperation({
+    summary: 'Termin na odwołanie do sądu pracy (podgląd)',
+    description:
+      'Termin 14 dni od doręczenia rozstrzygnięcia o nieuwzględnieniu sprzeciwu (art. 83 ust. 5) dla podanej daty doręczenia, z przesunięciem na dzień roboczy. Do okna potwierdzenia rozstrzygnięcia.',
+  })
+  @ApiOkResponse({ description: '`Deadline` z podstawą prawną.' })
+  @ApiErrors(400)
+  @Can.Anyone()
+  courtTerm(@Query({ schema: courtTermQuerySchema }) query: CourtTermQuery) {
+    return this.appeals.courtTerm(query.deliveredOn);
   }
 
   @Get('objections')

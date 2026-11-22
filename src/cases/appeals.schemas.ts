@@ -37,6 +37,8 @@ export const objectionDecisionSchema = z.object({
   reason: text('uzasadnienie rozstrzygnięcia'),
   decisions: z.record(z.string(), z.number()).optional(),
   justification: z.string().max(TEXT_MAX).optional(),
+  /** Data rozstrzygnięcia (between the filing and today); default: today. */
+  decidedOn: isoDate.optional(),
   /** Data doręczenia rozstrzygnięcia (art. 83 ust. 5); default: the decision date. */
   deliveredOn: isoDate.optional(),
 });
@@ -54,3 +56,6 @@ export const dueDateDecisionSchema = z.object({
   note: z.string().trim().max(TEXT_MAX).nullable().optional(),
 });
 export type DueDateDecisionInput = z.infer<typeof dueDateDecisionSchema>;
+
+export const courtTermQuerySchema = z.object({ deliveredOn: isoDate });
+export type CourtTermQuery = z.infer<typeof courtTermQuerySchema>;

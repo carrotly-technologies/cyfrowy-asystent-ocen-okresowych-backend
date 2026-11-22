@@ -1,18 +1,31 @@
-import { objectionNextSteps } from './objection-guide.rules.js';
+import {
+  objectionNextSteps,
+  objectionNextStepsFor,
+} from './objection-guide.rules.js';
+import { caseLocks } from './correction.rules.js';
+import { applyPatch, partIIEditable } from './patch.rules.js';
 import { applyAction } from './actions.rules.js';
 import {
   courtAppealDeadline,
+  courtTermPreview,
   decideObjection,
+  decisionDates,
+  objectionDecisionNotice,
+  objectionRight,
   fileObjection,
   legalActions,
   objectionBlocker,
   objectionDecisionDeadline,
   recordAckFiction,
 } from './appeals.rules.js';
-import { CaseRuleError } from './case-rule.error.js';
+import { CaseRuleError, CaseValidationError } from './case-rule.error.js';
 import type { CaseRecord } from './case.types.js';
 import { buildSeed } from './seed/seed.data.js';
-import { caseStatus, nextDeadline } from './stages.rules.js';
+import {
+  caseStatus,
+  nextDeadline,
+  objectionDeadlineOf,
+} from './stages.rules.js';
 
 const TODAY = '2026-11-21';
 const seed = (id: string): CaseRecord =>
@@ -199,7 +212,66 @@ describe('sprzeciw and the decision of the dyrektor generalny', () => {
       'EMPLOYEE_ACK_ASSESSMENT',
     ].reduce((r, a) => applyAction(r, a as never, TODAY), next);
     expect(next.acknowledgedOn).toBe(TODAY);
-    expect(objectionBlocker(next, TODAY)).toContain('zmieniona');
+    expect(objectionBlocker(next, TODAY)).toContain('nie przysługuje kolejny');
+  });
+
+  it('changed assessment: status, term, steps and part II follow one rule (art. 83 ust. 4)', () => {
+    let next = decideObjection(
+      filed(),
+      {
+        outcome: 'CHANGE',
+        reason: 'Zawyżono wymagania',
+        decisions: { organizacja_pracy: 7 },
+      },
+      DG,
+      TODAY,
+    );
+    // The evaluator sees the decision and cannot edit the scores it set.
+    const notice = objectionDecisionNotice(next, 'Dyrektor generalny urzędu');
+    expect(notice).toMatchObject({
+      outcome: 'CHANGE',
+      reason: 'Zawyżono wymagania',
+    });
+    expect(notice?.changes).toContainEqual(
+      expect.objectContaining({ criterionId: 'organizacja_pracy', to: 7 }),
+    );
+    expect(partIIEditable(next)).toBe(false);
+    expect(caseLocks(next).partII).toContain('rozstrzygnięciu sprzeciwu');
+    expect(() =>
+      applyPatch(next, { decisions: { organizacja_pracy: 3 } }, TODAY),
+    ).toThrow(/rozstrzygnięciu sprzeciwu/);
+    // The original due date has long passed: no red "po terminie".
+    expect(nextDeadline(next, TODAY)).toMatchObject({
+      state: 'NONE',
+      date: null,
+    });
+    next = [
+      'SIGN_ASSESSMENT',
+      'SEND_FOR_ACK',
+      'EMPLOYEE_ACK_ASSESSMENT',
+    ].reduce((r, a) => applyAction(r, a as never, TODAY), next);
+    expect(objectionRight(next).open).toBe(false);
+    expect(legalActions(next, TODAY, 'EMPLOYEE')).not.toContain(
+      'FILE_OBJECTION',
+    );
+    expect(caseStatus(next, TODAY)).toBe('ZAKONCZONA');
+    expect(objectionDeadlineOf(next, TODAY)).toBeNull();
+    expect(nextDeadline(next, TODAY)?.label).not.toContain('sprzeciwu');
+    const steps = objectionNextStepsFor(next, 'x', 'Dyrektor generalny urzędu');
+    expect(steps).toHaveLength(1);
+    expect(steps[0].text).toContain('nie przysługuje kolejny sprzeciw');
+  });
+
+  it('after a dismissal the next deadline is the labour court term', () => {
+    const next = decideObjection(
+      filed(),
+      { outcome: 'DISMISS', reason: 'Ocena zasadna' },
+      DG,
+      TODAY,
+    );
+    const deadline = nextDeadline(next, TODAY);
+    expect(deadline?.label).toBe('Termin na odwołanie do sądu pracy');
+    expect(deadline?.date).toBe('2026-12-07');
   });
 
   it('ponowne sporządzenie: cancels the assessment, back to ASSESSMENT, may be objected again', () => {
@@ -216,6 +288,12 @@ describe('sprzeciw and the decision of the dyrektor generalny', () => {
       status: 'CANCELLED',
       result: 'POSITIVE',
     });
+    // No statutory term for the re-making: neutral, not overdue.
+    expect(nextDeadline(next, TODAY)).toMatchObject({ state: 'NONE' });
+    expect(partIIEditable(next)).toBe(true);
+    expect(
+      objectionDecisionNotice(next, 'Dyrektor generalny urzędu')?.outcome,
+    ).toBe('REDO');
     next = [
       'COMPLETE_ASSESSMENT_TALK',
       'SIGN_ASSESSMENT',
@@ -245,6 +323,18 @@ describe('history text', () => {
 });
 
 describe('objectionNextSteps ("Co dalej?")', () => {
+  it('after filing: when the decision comes and the court path, not the 7 days', () => {
+    const filed = fileObjection(seed('c-006'), 'x', TODAY);
+    const steps = objectionNextStepsFor(
+      filed,
+      'x',
+      'Dyrektor generalny urzędu',
+    );
+    expect(steps[0].text).toContain('Sprzeciw złożony 21.11.2026');
+    expect(steps[0].text).toContain('do 07.12.2026');
+    expect(steps.map((st) => st.text).join(' ')).not.toContain('7 dni');
+  });
+
   it('lists the 7-day, 14-day and labour-court steps with legal basis', () => {
     const steps = objectionNextSteps('dyrektora generalnego urzędu');
     expect(steps).toHaveLength(3);
@@ -282,38 +372,64 @@ describe('objection addressee in the post-assessment path', () => {
 
   it('court term counts from the delivery of the decision (art. 83 ust. 5)', () => {
     const filed = fileObjection(seed('c-006'), 'Nie zgadzam się.', TODAY);
+    const later = '2026-12-01';
     const decided = decideObjection(
       filed,
       {
         outcome: 'DISMISS',
         reason: 'Ocena zasadna',
+        decidedOn: '2026-11-25',
         deliveredOn: '2026-11-30',
       },
       DG,
-      TODAY,
+      later,
     );
     const objection = decided.objections!.at(-1)!;
-    expect(objection.decision?.deliveredOn).toBe('2026-11-30');
+    expect(objection.decision).toMatchObject({
+      decidedOn: '2026-11-25',
+      deliveredOn: '2026-11-30',
+    });
     // 30.11 + 14 days = 14.12.2026 (Monday)
-    expect(courtAppealDeadline(objection, TODAY)?.date).toBe('2026-12-14');
+    expect(courtAppealDeadline(objection, later)?.date).toBe('2026-12-14');
+    expect(courtTermPreview('2026-11-30', later).date).toBe('2026-12-14');
     expect(decided.history.at(-1)?.text).toContain('doręczenie 30.11.2026');
-    // default: delivered on the decision day
+    // default: decided and delivered today
     const sameDay = decideObjection(
       filed,
       { outcome: 'DISMISS', reason: 'Ocena zasadna' },
       DG,
       TODAY,
     ).objections!.at(-1)!;
-    expect(sameDay.decision?.deliveredOn).toBe(TODAY);
+    expect(sameDay.decision).toMatchObject({
+      decidedOn: TODAY,
+      deliveredOn: TODAY,
+    });
+  });
+
+  it('decision dates: delivery between the decision and today, decision after the filing (400)', () => {
+    const invalid = (input: Parameters<typeof decisionDates>[1]) => {
+      try {
+        decisionDates('2026-11-19', input, TODAY);
+      } catch (error) {
+        expect(error).toBeInstanceOf(CaseValidationError);
+        return (error as Error).message;
+      }
+      throw new Error('expected CaseValidationError');
+    };
+    expect(decisionDates('2026-11-19', {}, TODAY)).toEqual({
+      decidedOn: TODAY,
+      deliveredOn: TODAY,
+    });
     expect(
-      conflict(() =>
-        decideObjection(
-          filed,
-          { outcome: 'DISMISS', reason: 'x', deliveredOn: '2026-11-01' },
-          DG,
-          TODAY,
-        ),
-      ),
-    ).toContain('Data doręczenia');
+      decisionDates('2026-11-19', { decidedOn: '2026-11-20' }, TODAY),
+    ).toEqual({ decidedOn: '2026-11-20', deliveredOn: '2026-11-20' });
+    expect(invalid({ deliveredOn: '2026-11-23' })).toContain('w przyszłości');
+    expect(invalid({ deliveredOn: '2026-11-20' })).toContain('Data doręczenia');
+    expect(invalid({ decidedOn: '2026-11-18' })).toContain(
+      'wniesieniem sprzeciwu',
+    );
+    expect(invalid({ deliveredOn: '21.11.20263.11.2026' })).toContain(
+      'Data doręczenia',
+    );
   });
 });
