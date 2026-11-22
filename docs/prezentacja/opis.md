@@ -50,17 +50,19 @@ Dwa moduły wspierają przełożonego poza samą procedurą:
 
 Kadry mają panel monitoringu wszystkich ocen w urzędzie (w toku, termin ≤ 14 dni, po terminie, do zapoznania,
 w okresie sprzeciwu) z przypomnieniami do przełożonych oraz kartotekę: pracownicy, podległość, zastępstwa oceniających,
-nieobecności dłuższe niż miesiąc wydłużające termin oceny (art. 81 ust. 7), import historii ocen i statystyki z CSV.
+nieobecności dłuższe niż miesiąc wydłużające termin oceny (art. 81 ust. 7), import listy pracowników z CSV z podglądem,
+import historii ocen i statystyki z CSV. Powiadomienia w aplikacji (opcjonalnie kopia e-mail przez SMTP) przypominają
+każdej roli o terminach; sprzeciw trafia do adresata z art. 83 (dyrektor generalny albo, przy arkuszu A, oceniający).
 
 **AI jest wyłącznie doradcze.** Ani asystent, ani HR partner nie wystawiają punktów i nie zapisują decyzji. Ocenę
 cząstkową zawsze wybiera przełożony, co widać w interfejsie i w API.
 
 **Technologia i wdrożenie.** Frontend React, API NestJS (Node LTS), opcjonalnie PostgreSQL (migracje uruchamiają się
-same przy starcie). Dwa obrazy Docker, konfiguracja wyłącznie przez zmienne środowiskowe, zależności tylko open source
-na licencjach permisywnych. Model językowy jest opcjonalny: dowolny endpoint zgodny z OpenAI, także lokalny (Ollama);
+same przy starcie). Całość startuje poleceniem `docker compose up` (dwa obrazy i baza), konfiguracja wyłącznie przez
+zmienne środowiskowe; kod na licencji EUPL-1.2, zależności tylko open source na licencjach permisywnych. Model językowy jest opcjonalny: dowolny endpoint zgodny z OpenAI, także lokalny (Ollama);
 bez niego asystent odpowiada cytatami z dokumentów, więc aplikacja działa bez internetu i bez płatnych usług.
 Integracja z EZD i systemami kadrowymi (np. QNT) przez REST API opisane w OpenAPI 3 (eksport arkusza w wersjonowanym
-JSON, PDF z serwera, import historii ocen z CSV), nigdy jako warunek działania.
+JSON, PDF z serwera, import pracowników i historii ocen z CSV), nigdy jako warunek działania.
 Reguły wynikające z przepisów są w osobnych plikach z testami, więc zmiana przepisu to zmiana jednego pliku.
 
 **Ochrona danych.** Przetwarzamy tylko pola potrzebne do oceny (bez PESEL i adresu). Dostęp wynika z roli:
@@ -102,5 +104,5 @@ na papierowych lub edytowalnych wzorach arkuszy:
 | Wdrożenie w różnych urzędach    | Docker, open source, opcjonalny lokalny model AI, działanie bez internetu, integracje przez REST API     |
 
 **Kierunki rozwoju:** gotowe konektory do konkretnych systemów EZD i kadrowych na bazie eksportu i OpenAPI, podpis
-profilem zaufanym lub kwalifikowanym, powiadomienia e-mail według harmonogramu terminów, ścieżka pierwszej oceny na tym samym silniku reguł,
+profilem zaufanym lub kwalifikowanym, ścieżka pierwszej oceny na tym samym silniku reguł,
 lokalny otwarty model językowy z ewaluacją na zestawie pytań i odpowiedzi KPRM, pilotaż w jednym departamencie.

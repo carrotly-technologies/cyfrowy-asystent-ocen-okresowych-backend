@@ -4,7 +4,9 @@
   Generowanie PDF (Chrome lub Chromium, bez dodatkowych zależności), z katalogu docs/prezentacja:
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --no-pdf-header-footer \
       --print-to-pdf=prezentacja.pdf slajdy.html
-  Zrzuty ekranu w zrzuty/ pochodzą z https://cyfrowy.rabbithole.carrotly.tech (dane fikcyjne z seeda, 21.11.2026).
+  Zrzuty ekranu w zrzuty/: lokalna instancja z main obu repozytoriów (22.11.2026, wygląd gov.pl jak na
+  https://cyfrowy.rabbithole.carrotly.tech), świeże dane demo po POST /api/demo/reset, DEMO_TODAY=2026-11-21,
+  okno 1440×900; dane fikcyjne z seeda.
 -->
 <html lang="pl">
 <head>
@@ -102,7 +104,7 @@
   <div style="margin-top:28px">
     <span class="badge">Arkusze A, B, C</span><span class="badge">7 etapów z terminami z przepisów</span>
     <span class="badge">Asystent AI ze źródłami</span><span class="badge">Wirtualny HR partner</span>
-    <span class="badge">Open source, bez płatnych licencji</span>
+    <span class="badge">Powiadomienia i przypomnienia</span><span class="badge">Open source (EUPL-1.2), docker compose</span>
   </div>
   <div class="meta">
     Prototyp: cyfrowy.rabbithole.carrotly.tech · konta demo, hasło <b>Ocena2026!</b><br>
@@ -173,8 +175,8 @@
   </div>
   <div class="after">
     <div class="card green"><h2>Fikcja zapoznania</h2><p>Gdy oceniany nie może lub nie chce potwierdzić, przełożony albo kadry odnotowują datę doręczenia i bieg terminu.</p></div>
-    <div class="card green"><h2>Sprzeciw</h2><p>Oceniany składa go w 7 dni (termin liczony wg KC). Dyrektor generalny w 14 dni oddala, zmienia ocenę albo poleca ją sporządzić ponownie.</p></div>
-    <div class="card green"><h2>Zmiana terminu oceny</h2><p>Wniosek ocenianego (art. 81 ust. 8 pkt 4) i decyzja oceniającego z historią zmian i podstawą prawną.</p></div>
+    <div class="card green"><h2>Sprzeciw</h2><p>W 7 dni (termin wg KC) do adresata z art. 83: dyrektor generalny (arkusze B, C) albo osoba, która dokonała oceny (arkusz A). Decyzja w 14 dni.</p></div>
+    <div class="card green"><h2>Terminy w ruchu</h2><p>Nieobecność dłuższa niż miesiąc sama przedłuża termin oceny (art. 81 ust. 7); wniosek ocenianego o zmianę terminu (ust. 8 pkt 4) z decyzją i historią.</p></div>
   </div>
   <div class="foot"><span>Każde przejście to akcja w maszynie stanów: niedozwolony krok dostaje odmowę z polskim wyjaśnieniem.</span><span>4 / 15</span></div>
 </section>
@@ -229,7 +231,7 @@
   <h1>Ocenę wybiera przełożony, system pilnuje formy i reguł § 11</h1>
   <div class="cols c2">
     <div>
-      <div class="shot" style="height:300px;background-image:url(zrzuty/04-oceny-czastkowe.jpg);background-size:122%;background-position:0 98%"></div>
+      <div class="shot" style="height:300px;background-image:url(zrzuty/04-oceny-czastkowe.jpg);background-size:128%;background-position:100% 45%"></div>
       <p class="cap">Oceny cząstkowe 1–9 w skali z rozporządzenia, kryteria obowiązkowe i dodatkowe.</p>
       <ul class="small" style="margin-top:10px">
         <li>Średnia, poziom i wynik liczone na bieżąco: pozytywna przy średniej &gt; 4 i braku oceny 1 pkt.</li>
@@ -237,7 +239,7 @@
       </ul>
     </div>
     <div>
-      <div class="shot" style="height:300px;background-image:url(zrzuty/05-kontrola-formalna.jpg);background-size:200%;background-position:100% 62%"></div>
+      <div class="shot" style="height:300px;background-image:url(zrzuty/05-kontrola-formalna.jpg);background-size:165%;background-position:100% 62%"></div>
       <p class="cap">Kontrola formalna przed podpisem: każdy punkt z paragrafem.</p>
       <ul class="small" style="margin-top:10px">
         <li>Podpis jest zablokowany, dopóki brakuje ocen, uzasadnienia przy ocenie negatywnej, wniosków do IPRZ
@@ -252,57 +254,81 @@
 <!-- 8. Zapoznanie i sprzeciw -->
 <section class="slide">
   <p class="kicker">Krok 7 · zapoznanie i sprzeciw</p>
-  <h1>Oceniany ma własne konto, a jego prawa są widoczne od pierwszego dnia</h1>
+  <h1>Sprzeciw trafia do właściwego adresata, a terminy biegną same</h1>
   <div class="cols c-text-shot">
     <div>
-      <ul>
-        <li>„Moje oceny”: tylko własne oceny, tylko do odczytu; część II widać dopiero po przekazaniu do zapoznania.</li>
-        <li>Potwierdzenia części I i zapoznania z oceną składa wyłącznie oceniany.</li>
-        <li>Pouczenie z wzoru arkusza (art. 83 ust. 1) i licznik 7 dni na sprzeciw.</li>
-        <li>Sprzeciw trafia do dyrektora generalnego z terminem 14 dni; decyzja „zmiana oceny” zachowuje poprzednią
-          wersję, „ponowna ocena” wraca do etapu 5.</li>
-        <li>Każde zdarzenie (sprzeciw, decyzja, zmiana terminu) jest w historii teczki z informacją, kogo powiadomić.</li>
+      <ul class="small">
+        <li>Oceniany ma własne konto: kryteria od pierwszego dnia, potwierdzenia części I i zapoznania składa tylko on;
+          część II widzi dopiero po przekazaniu do zapoznania.</li>
+        <li>Pouczenie z wzoru arkusza i licznik 7 dni na sprzeciw od zapoznania (albo od fikcji zapoznania).</li>
+        <li><b>Adresat wg art. 83</b>: arkusze B i C → dyrektor generalny urzędu (ust. 1), w urzędzie bez dyrektora
+          generalnego → kierownik urzędu; arkusz A → osoba, która dokonała oceny (ust. 2), adresat ustawiany w env.</li>
+        <li>Rozstrzygnięcie w 14 dni (ust. 3): oddalenie z pouczeniem o sądzie pracy (ust. 5), zmiana oceny
+          z zachowaniem poprzedniej wersji albo ocena do ponownego sporządzenia.</li>
+        <li>Każde zdarzenie trafia do historii teczki i jako powiadomienie do właściwych osób.</li>
       </ul>
     </div>
-    <div><img class="shot-img" src="zrzuty/06-oceniany-potwierdzenie.jpg" alt="Widok ocenianego">
-      <p class="cap">Konto ocenianego: potwierdzenie rozmowy rozpoczynającej i kryteriów (§ 6 ust. 2).</p></div>
+    <div><img class="shot-img" src="zrzuty/11-sprzeciw.jpg" alt="Sprzeciw u dyrektora generalnego">
+      <p class="cap">Dyrektor generalny: treść sprzeciwu, termin z art. 83 ust. 3, arkusz i trzy rozstrzygnięcia.</p></div>
   </div>
-  <div class="foot"><span>art. 83 ust. 1–5 ustawy o służbie cywilnej; § 12 rozp. PRM z 4.04.2016</span><span>8 / 15</span></div>
+  <div class="foot"><span>art. 83 ust. 1–5 ustawy o służbie cywilnej; § 12 rozp. PRM z 4.04.2016; wzory arkuszy A, B, C</span><span>8 / 15</span></div>
 </section>
 
-<!-- 9. Wirtualny HR partner -->
+<!-- 9. Terminy, nieobecności i powiadomienia -->
 <section class="slide">
-  <p class="kicker">Wirtualny HR partner</p>
-  <h1>Pomoc w zarządzaniu ludźmi przez cały rok, nie tylko przy ocenie</h1>
-  <div class="cols c3">
-    <div class="card blue">
-      <h2>Puls zespołu</h2>
-      <p>Dobrowolny check-in pracownika co 14 dni: 5 pytań w skali 1–5 (obciążenie, energia, wsparcie, jasność
-        priorytetów, satysfakcja) i opcjonalny komentarz.</p>
-      <p class="small muted">Przełożony widzi trendy, komentarz tylko gdy pracownik go udostępni. Średnie zespołu
-        dopiero od 3 odpowiedzi. Kadry nie mają wglądu.</p>
+  <p class="kicker">Terminy, nieobecności i powiadomienia</p>
+  <h1>Nikt nie musi pamiętać o terminach: system przypomina sam</h1>
+  <div class="cols" style="grid-template-columns: 1fr 1fr; gap: 26px">
+    <div>
+      <div class="shot" style="height:250px;background-image:url(zrzuty/12-powiadomienia.jpg);background-size:190%;background-position:78% 0"></div>
+      <ul class="small" style="margin-top:12px">
+        <li><b>Powiadomienia w aplikacji</b> dla przełożonego, ocenianego, kadr i dyrektora generalnego: zbliżający się
+          i przekroczony termin, potwierdzenia, okres sprzeciwu, obowiązkowy kolejny stopień.</li>
+        <li>Harmonogram przypomnień działa co godzinę i nie dubluje wiadomości; opcjonalna kopia e-mail przez dowolny
+          serwer SMTP, zaproszenie na rozmowę jako plik <code>.ics</code> do kalendarza.</li>
+      </ul>
     </div>
-    <div class="card blue">
-      <h2>Sygnały ryzyka</h2>
-      <p>Reguły łączą trend pulsu, obserwacje z teczki i dane o pracy (zadania, zmiany obowiązków, długość nieobecności):</p>
-      <p><span class="tag">przeciążenie</span><span class="tag">spadek motywacji</span><span class="tag">ryzyko wypalenia</span><span class="tag">moment do docenienia</span></p>
-      <p class="small muted">Każdy sygnał ma powody i propozycje działań.</p>
-    </div>
-    <div class="card blue">
-      <h2>Przygotowanie rozmowy</h2>
-      <p>Mocne strony i obszary do rozwoju z obserwacji, sformułowania informacji zwrotnej w modelu S-D-R, formy
-        rozwoju do IPRZ dla każdego kryterium.</p>
-      <p class="small muted">Pytanie do partnera trafia do modelu językowego wyłącznie po anonimizacji.</p>
+    <div>
+      <div class="shot" style="height:250px;background-image:url(zrzuty/13-nieobecnosci.jpg);background-size:128%;background-position:100% 40%"></div>
+      <ul class="small" style="margin-top:12px">
+        <li><b>Nieobecność ciągła dłuższa niż miesiąc</b> przedłuża termin sporządzenia oceny o jej czas
+          (art. 81 ust. 7); dni wolne między nieobecnościami nie przerywają ciągłości (KC).</li>
+        <li>Zmiana terminu na wniosek ocenianego (art. 81 ust. 8 pkt 4), zmiana stanowiska i oceniającego (§ 9),
+          zastępstwa oceniających; każda zmiana z podstawą prawną w historii teczki.</li>
+      </ul>
     </div>
   </div>
-  <div class="card amber" style="margin-top:18px">
-    <p style="margin:0"><b>Puls nie jest częścią oceny okresowej.</b> Partner nie zmienia teczki ani ocen
-      cząstkowych: każda odpowiedź kończy się zdaniem „Decyzja należy do przełożonego; podpowiedzi nie wpływają na ocenę”.</p>
-  </div>
-  <div class="foot"><span>Moduł <code>src/partner</code>: reguły jako czyste funkcje z testami</span><span>9 / 15</span></div>
+  <div class="foot"><span>art. 81 ust. 6–9 ustawy o służbie cywilnej; § 8–9 rozp. PRM z 4.04.2016; art. 110–115 KC</span><span>9 / 15</span></div>
 </section>
 
-<!-- 10. AI i anonimizacja -->
+<!-- 10. Wirtualny HR partner -->
+<section class="slide">
+  <p class="kicker">Wirtualny HR partner i puls zespołu</p>
+  <h1>Pomoc w zarządzaniu ludźmi przez cały rok, z prywatnością pracownika</h1>
+  <div class="cols c-text-shot">
+    <div>
+      <ul class="small">
+        <li><b>Puls</b>: dobrowolny check-in co 14 dni, 5 pytań w skali 1–5 (obciążenie, energia, wsparcie, jasność
+          priorytetów, satysfakcja) i opcjonalny komentarz.</li>
+        <li><b>Prywatność</b>: przełożony widzi przy nazwisku tylko ogólny wskaźnik i trend; wyniki pytań wyłącznie
+          jako średnią zespołu od 3 osób; komentarz tylko udostępniony przez pracownika; kadry nie mają wglądu.</li>
+        <li><b>Sygnały</b>: <span class="tag">przeciążenie</span><span class="tag">spadek motywacji</span><span class="tag">ryzyko wypalenia</span><span class="tag">do docenienia</span>
+          z powodami i propozycjami działań.</li>
+        <li><b>Przygotowanie rozmowy</b>: mocne strony i obszary do rozwoju z obserwacji, informacja zwrotna S-D-R,
+          formy rozwoju do IPRZ.</li>
+      </ul>
+      <div class="card amber" style="margin-top:10px;padding:12px 16px">
+        <p class="small" style="margin:0"><b>Puls nie jest częścią oceny okresowej.</b> Podpowiedzi nie zmieniają
+          teczki ani ocen: decyzja należy do przełożonego.</p>
+      </div>
+    </div>
+    <div><img class="shot-img" src="zrzuty/14-moj-puls.jpg" alt="Mój puls">
+      <p class="cap">Widok pracownika „Mój puls”: zanim odpowie, widzi, kto i co zobaczy.</p></div>
+  </div>
+  <div class="foot"><span>Moduł <code>src/partner</code>: reguły jako czyste funkcje z testami</span><span>10 / 15</span></div>
+</section>
+
+<!-- 11. AI i anonimizacja -->
 <section class="slide">
   <p class="kicker">AI i anonimizacja</p>
   <h1>AI odpowiada tylko z przepisów, wskazuje źródło i nie widzi nazwisk</h1>
@@ -337,35 +363,36 @@ z <span class="hl">[OSOBA_1]</span> o jej obciążeniu pracą?</pre>
         Kontekst teczki zawiera stanowisko, kryteria i obserwacje, bez danych osobowych.</p>
     </div>
   </div>
-  <div class="foot"><span>Prawdziwy prompt z <code>POST /api/partner/ask</code> (dane demo: „Jak porozmawiać z Anną Nowak…”)</span><span>10 / 15</span></div>
+  <div class="foot"><span>Prawdziwy prompt z <code>POST /api/partner/ask</code> (dane demo: „Jak porozmawiać z Anną Nowak…”)</span><span>11 / 15</span></div>
 </section>
 
-<!-- 11. Kadry -->
+<!-- 12. Kadry -->
 <section class="slide">
   <p class="kicker">Kadry i dyrektor generalny</p>
   <h1>Stan wszystkich ocen w urzędzie na jednym ekranie</h1>
-  <div class="cols" style="grid-template-columns: 1fr 330px">
+  <div class="cols" style="grid-template-columns: 1fr 360px">
     <div><img class="shot-img" src="zrzuty/09-monitoring-hr.jpg" alt="Monitoring ocen">
       <p class="cap">Monitoring ocen: liczniki są filtrami, terminy liczone z przepisów, przypomnienia jednym kliknięciem.</p></div>
     <div>
       <ul class="small">
         <li>Liczniki: w toku, termin ≤ 14 dni, po terminie, oczekuje na zapoznanie, w okresie sprzeciwu.</li>
-        <li>Filtry po komórce, arkuszu, wyszukiwanie pracownika i oceniającego.</li>
-        <li>Przypomnienia do przełożonych z zapisem w historii teczki.</li>
-        <li>Lista sprzeciwów dla dyrektora generalnego z terminem decyzji.</li>
-        <li>Kartoteka: pracownicy, podległość, zastępstwa, nieobecności ponad miesiąc wydłużające termin oceny
-          (art. 81 ust. 7), statystyki wyników z eksportem CSV.</li>
+        <li>Filtry, przypomnienia do przełożonych z zapisem w historii; lista sprzeciwów dla dyrektora generalnego.</li>
+        <li>Kartoteka: pracownicy, podległość, zastępstwa, nieobecności, statystyki z eksportem CSV.</li>
+        <li><b>Import pracowników z CSV</b> z systemu kadrowego: podgląd przed zapisem, sugerowany arkusz,
+          błędne wiersze opisane i pominięte.</li>
         <li>Kadry widzą status i terminy, ale nie edytują ocen i nie widzą notatek przełożonego ani pulsu.</li>
+        <li><b>Tryb korekty</b>: zablokowane pola poprawia tylko administrator, z powodem i wpisem w historii
+          teczki (kto, kiedy, stara → nowa wartość).</li>
       </ul>
     </div>
   </div>
-  <div class="foot"><span>Role: przełożony, oceniany, kadry, dyrektor generalny, administrator</span><span>11 / 15</span></div>
+  <div class="foot"><span>Role: przełożony, oceniany, kadry, dyrektor generalny, administrator</span><span>12 / 15</span></div>
 </section>
 
-<!-- 12. Architektura -->
+<!-- 13. Architektura -->
 <section class="slide">
   <p class="kicker">Architektura i wdrożenie w urzędzie</p>
-  <h1>Dwa obrazy Docker, zero płatnych licencji, działa bez internetu</h1>
+  <h1>Cała aplikacja jednym poleceniem, open source, działa bez internetu</h1>
   <div class="arch" style="margin: 6px 0 22px">
     <div class="box"><h2>Przeglądarka</h2><p>React 19 + Vite (SPA), nginx. Interfejs po polsku, tryb ciemny,
       wysoki kontrast, powiększenie tekstu.</p></div>
@@ -380,22 +407,23 @@ z <span class="hl">[OSOBA_1]</span> o jej obciążeniu pracą?</pre>
   </div>
   <div class="cols c3" style="gap:20px">
     <div class="card"><h2>Instalacja</h2><ul class="small">
-      <li><code>docker run</code> backendu i frontendu; konfiguracja tylko przez zmienne środowiskowe z domyślnymi wartościami.</li>
+      <li><code>cp .env.example .env</code> i <code>docker compose up -d --build</code>: PostgreSQL, API i frontend;
+        lokalny model: <code>--profile llm</code> (Ollama).</li>
       <li>Linux, Windows, macOS; dowolny serwer lub chmura bez vendor lock-in.</li>
-      <li>Nazwa urzędu, miejscowość i adresat sprzeciwu ustawiane w env.</li></ul></div>
+      <li>Nazwa urzędu, miejscowość, adresat sprzeciwu i SMTP ustawiane w env.</li></ul></div>
     <div class="card"><h2>Integracje</h2><ul class="small">
       <li>REST API opisane w OpenAPI 3 (Swagger po polsku) dla systemów kadrowych (np. QNT) i EZD.</li>
-      <li>Eksport arkusza w wersjonowanym JSON i PDF z serwera; import historii ocen z CSV.</li>
+      <li>Eksport arkusza w wersjonowanym JSON i PDF z serwera; import pracowników i historii ocen z CSV.</li>
       <li>Aplikacja działa samodzielnie: integracja nie jest warunkiem startu.</li></ul></div>
     <div class="card"><h2>Utrzymanie</h2><ul class="small">
       <li>Aktualizacja = nowy obraz; bez ręcznych zmian na serwerze.</li>
       <li>Bezstanowe API: skalowanie poziome w dużych urzędach.</li>
       <li>Reguły z przepisów w osobnych plikach z testami: zmiana prawa = zmiana jednego pliku.</li></ul></div>
   </div>
-  <div class="foot"><span>Zależności tylko na licencjach MIT / Apache-2.0 / BSD / ISC</span><span>12 / 15</span></div>
+  <div class="foot"><span>Kod na licencji EUPL-1.2; zależności tylko MIT / Apache-2.0 / BSD / ISC (krój PDF: SIL OFL)</span><span>13 / 15</span></div>
 </section>
 
-<!-- 13. Zgodność z przepisami -->
+<!-- 14. Zgodność z przepisami -->
 <section class="slide">
   <p class="kicker">Zgodność z przepisami</p>
   <h1>Każda reguła ma paragraf, test i jedno miejsce w kodzie</h1>
@@ -407,8 +435,8 @@ z <span class="hl">[OSOBA_1]</span> o jej obciążeniu pracą?</pre>
       <tr><td>Skala 1–9, średnia, wynik pozytywny/negatywny</td><td class="law">§ 11 ust. 1</td><td>wyliczenie i uzasadnienie wyniku</td></tr>
       <tr><td>Uzasadnienie przy negatywnej, wnioski do IPRZ</td><td class="law">§ 11 ust. 3–4, art. 108</td><td>kontrola formalna blokuje podpis</td></tr>
       <tr><td>Wniosek o kolejny stopień służbowy</td><td class="law">art. 89 ust. 1, § 11 ust. 5</td><td>część III, następny stopień</td></tr>
-      <tr><td>Zmiana terminu oceny na wniosek</td><td class="law">art. 81 ust. 8 pkt 4, ust. 9</td><td>wniosek i decyzja z historią</td></tr>
-      <tr><td>Sprzeciw 7 dni, decyzja 14 dni, sąd pracy</td><td class="law">art. 83 ust. 1–5</td><td>terminy, role, wersje oceny</td></tr>
+      <tr><td>Nieobecność &gt; miesiąc, zmiana terminu na wniosek</td><td class="law">art. 81 ust. 7, ust. 8 pkt 4, ust. 9</td><td>przedłużenie z KC, wniosek i decyzja</td></tr>
+      <tr><td>Sprzeciw 7 dni do adresata, decyzja 14 dni, sąd pracy</td><td class="law">art. 83 ust. 1–5</td><td>adresat wg arkusza, terminy, wersje oceny</td></tr>
     </table>
     <div class="stack">
       <div class="card green"><h2>Ochrona danych (RODO)</h2><ul class="small">
@@ -420,32 +448,7 @@ z <span class="hl">[OSOBA_1]</span> o jej obciążeniu pracą?</pre>
         Ocenę cząstkową zawsze wybiera przełożony; widać to w API i w interfejsie.</p></div>
     </div>
   </div>
-  <div class="foot"><span>Rozp. PRM z 4.04.2016 (Dz.U. 2016 poz. 470); ustawa z 21.11.2008 o służbie cywilnej</span><span>13 / 15</span></div>
-</section>
-
-<!-- 14. Kierunki rozwoju -->
-<section class="slide">
-  <p class="kicker">Kierunki rozwoju</p>
-  <h1>Od prototypu do wdrożenia w urzędzie</h1>
-  <div class="cols c2">
-    <div class="stack">
-      <div class="card"><h2>Konektory</h2><p>Gotowe połączenia z konkretnymi systemami EZD i kadrowymi na bazie
-        istniejącego eksportu JSON i OpenAPI: synchronizacja pracowników, podległości i nieobecności.</p></div>
-      <div class="card"><h2>Powiadomienia</h2><p>Harmonogram przypomnień o terminach i e-mail do przełożonego,
-        ocenianego i kadr; zdarzenia są już zapisywane w historii teczki z listą odbiorców.</p></div>
-      <div class="card"><h2>Podpis elektroniczny</h2><p>Potwierdzenia i podpis oceny profilem zaufanym lub podpisem
-        kwalifikowanym zamiast potwierdzenia w aplikacji.</p></div>
-    </div>
-    <div class="stack">
-      <div class="card"><h2>Pierwsza ocena</h2><p>Ścieżka pierwszej oceny (rozp. PRM z 23.07.2015) jako kolejny moduł na tym samym
-        silniku reguł, terminów i kontroli formalnej.</p></div>
-      <div class="card"><h2>Model językowy w urzędzie</h2><p>Otwarty model uruchomiony lokalnie, ewaluacja odpowiedzi na
-        zestawie pytań i odpowiedzi KPRM, rozbudowa bazy wiedzy o interpretacje departamentu służby cywilnej.</p></div>
-      <div class="card"><h2>Pilotaż</h2><p>Jeden departament przez pełny cykl, szkolenie przełożonych w 30 minut,
-        audyt bezpieczeństwa i dostępności (WCAG 2.1) przed wdrożeniem produkcyjnym.</p></div>
-    </div>
-  </div>
-  <div class="foot"><span>Cyfrowy Asystent Ocen Okresowych</span><span>14 / 15</span></div>
+  <div class="foot"><span>Rozp. PRM z 4.04.2016 (Dz.U. 2016 poz. 470); ustawa z 21.11.2008 o służbie cywilnej</span><span>14 / 15</span></div>
 </section>
 
 <!-- 15. Podsumowanie -->
@@ -458,9 +461,11 @@ z <span class="hl">[OSOBA_1]</span> o jej obciążeniu pracą?</pre>
     <div class="card" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff">
       <div class="num" style="color:#fff">5 ról</div><p style="color:#e3ecfa;font-size:16px;margin-top:8px">przełożony, oceniany, kadry, dyrektor generalny, administrator, każda z własnymi uprawnieniami</p></div>
     <div class="card" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff">
-      <div class="num" style="color:#fff">0 zł</div><p style="color:#e3ecfa;font-size:16px;margin-top:8px">licencji: open source, Docker, opcjonalny lokalny model AI, działa offline</p></div>
+      <div class="num" style="color:#fff">0 zł</div><p style="color:#e3ecfa;font-size:16px;margin-top:8px">licencji: open source (EUPL-1.2), docker compose, opcjonalny lokalny model AI, działa offline</p></div>
   </div>
-  <div class="meta" style="bottom:48px">
+  <div class="meta" style="bottom:48px;right:80px">
+    <b style="color:#fff">Dalej:</b> konektory do EZD i systemów kadrowych na bazie OpenAPI, podpis profilem zaufanym lub
+    kwalifikowanym, ścieżka pierwszej oceny, lokalny model językowy z ewaluacją na pytaniach KPRM, pilotaż w departamencie.<br><br>
     <b style="color:#fff">Prototyp:</b> https://cyfrowy.rabbithole.carrotly.tech<br>
     Konta demo (hasło <b style="color:#fff">Ocena2026!</b>): j.kaminska (przełożona), p.wojcik i a.nowak (oceniani),
     a.lis (kadry), b.wisniewska (dyrektor generalny), admin<br>
