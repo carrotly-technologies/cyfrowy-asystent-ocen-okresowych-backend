@@ -275,6 +275,24 @@ describe('HR register: employees, absences, history, statistics (e2e)', () => {
       expect(detail.body.nextDeadline.legalBasis).toContain('7 dni');
     });
 
+    it('a supervisor starts a cycle for own employees only', async () => {
+      const res = await as(supervisor)
+        .post('/api/employees/p-pietrzak/cycles')
+        .expect(201);
+      expect(res.body.case.currentStage).toBe('SHEET_SELECTION');
+      const detail = await as(supervisor)
+        .get(`/api/cases/${res.body.caseId}`)
+        .expect(200);
+      expect(JSON.stringify(detail.body.history)).toContain(
+        'Oceniający rozpoczął nowy cykl oceny',
+      );
+      await as(supervisor).post('/api/employees/p-pietrzak/cycles').expect(409);
+      await as(supervisor)
+        .post('/api/employees/p-grabowski/cycles')
+        .expect(403);
+      await as(employee).post('/api/employees/p-pietrzak/cycles').expect(403);
+    });
+
     it('refuses while a case is open', async () => {
       await as(hr).post('/api/employees/p-nowak/cycles').expect(409);
     });

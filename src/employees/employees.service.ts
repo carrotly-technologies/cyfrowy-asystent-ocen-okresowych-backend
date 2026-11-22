@@ -603,6 +603,16 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
    */
   async startCycle(id: string) {
     const employee = await this.employee(id);
+    const role = this.auth.requireUser().role;
+    if (
+      role === 'SUPERVISOR' &&
+      !this.canRead(
+        this.view(employee, await this.repo.listSubstitutions(), []),
+      )
+    )
+      throw new ForbiddenException(
+        'Możesz rozpocząć ocenę tylko osoby, którą oceniasz.',
+      );
     const records = this.casesOf(id);
     const open = records.find((r) => !r.acknowledgedOn);
     if (open) {
@@ -633,7 +643,7 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
       history: [
         {
           date: this.today,
-          text: `Kadry rozpoczęły nowy cykl oceny. ${start.reason}`,
+          text: `${role === 'SUPERVISOR' ? 'Oceniający rozpoczął' : 'Kadry rozpoczęły'} nowy cykl oceny. ${start.reason}`,
         },
       ],
     });
