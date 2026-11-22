@@ -22,7 +22,7 @@ import {
 } from './objection-terms.rules.js';
 import { objectionAddressee } from './objection-addressee.rules.js';
 import { promotionRequestOf } from './promotion.rules.js';
-import { PART_II_STAGES } from './patch.rules.js';
+import { observationLock, PART_II_STAGES } from './patch.rules.js';
 import { assessmentPeriodOf } from './assessment-period.rules.js';
 import { nextEvaluationDueOn } from './deadlines.rules.js';
 import {
@@ -114,6 +114,7 @@ export function toDetail(
     history: record.history,
     corrections: record.corrections ?? [],
     locks: caseLocks(record),
+    observationsLock: observationLock(record),
     ackFiction: record.ackFiction ?? null,
     objections: objectionViews(record, today),
     assessmentVersions: record.assessmentVersions ?? [],

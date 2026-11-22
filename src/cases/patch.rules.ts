@@ -305,6 +305,21 @@ function logAdditionalCriteriaChange(
   });
 }
 
+/**
+ * Why no observation can be added now (Polish), or null when the journal is
+ * open. Evidence is gathered from the confirmation of part I right up to the
+ * assessment talk, so the journal stays open in the OBSERVATION and
+ * ASSESSMENT stages (also after a "Popraw" return) and closes only once the
+ * evaluator signs the assessment.
+ */
+export function observationLock(record: CaseRecord): string | null {
+  if (record.signedByEvaluatorOn)
+    return `Ocena została podpisana ${formatDatePl(record.signedByEvaluatorOn)} — dziennik obserwacji jest zamknięty.`;
+  if (record.partI.confirmedByEvaluatorOn === null)
+    return 'Obserwacje zapisuje się w okresie oceny: najpierw potwierdź część I (kryteria), aby było wiadomo, do których kryteriów je przypinać.';
+  return null;
+}
+
 /** Validates and adds an observation; returns the updated copy. */
 export function addObservation(
   record: CaseRecord,
@@ -312,15 +327,8 @@ export function addObservation(
   id: string,
   today: string,
 ): CaseRecord {
-  const open =
-    !record.signedByEvaluatorOn && record.partI.confirmedByEvaluatorOn !== null;
-  if (!open) {
-    throw new CaseRuleError(
-      record.signedByEvaluatorOn
-        ? `Ocena została zatwierdzona ${formatDatePl(record.signedByEvaluatorOn)}; obserwacje dotyczą okresu oceny i nie można ich już dodawać.`
-        : 'Obserwacje zapisuje się w okresie oceny: najpierw potwierdź część I (kryteria), aby było wiadomo, do których kryteriów je przypinać.',
-    );
-  }
+  const lock = observationLock(record);
+  if (lock) throw new CaseRuleError(lock);
   const errors: string[] = [];
   const criteria = caseCriteria(record);
   if (!criteria.includes(input.criterionId)) {
