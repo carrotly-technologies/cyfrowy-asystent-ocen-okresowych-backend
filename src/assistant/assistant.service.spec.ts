@@ -133,6 +133,39 @@ describe('AssistantService', () => {
     expect(prompt).toContain(person.position);
   });
 
+  it('pseudonymizes the question and case context before the LLM and restores the answer', async () => {
+    const { person } = cases.detail('c-001');
+    chat.mockImplementation((messages) => {
+      const token = /\[OSOBA_\d+\]/.exec(messages[1].content)?.[0] ?? '';
+      return Promise.resolve(`Porozmawiaj z ${token} o celach [1].`);
+    });
+    const res = await service.ask({
+      question: `Jak rozmawiać z ${person.firstName} ${person.lastName} z ${person.unit}?`,
+      assistant: 'CONVERSATION',
+      caseId: 'c-001',
+    });
+    const prompt = chat.mock.calls[0][0].map((m) => m.content).join('\n');
+    expect(prompt).not.toContain(person.lastName);
+    expect(prompt).not.toContain(person.unit);
+    expect(prompt).toMatch(/\[OSOBA_1\]/);
+    expect(prompt).toMatch(/\[JEDNOSTKA_\d+\]/);
+    expect(res.answer).toContain(`${person.firstName} ${person.lastName}`);
+  });
+
+  it('pseudonymizes names in a formal question too', async () => {
+    chat.mockImplementation((messages) =>
+      Promise.resolve(
+        `Odpowiedź dla ${/\[OSOBA_\d+\]/.exec(messages[1].content)?.[0]} [1].`,
+      ),
+    );
+    const res = await ask(
+      'Jak często Joanna Kamińska sporządza ocenę okresową?',
+    );
+    const prompt = chat.mock.calls[0][0].map((m) => m.content).join('\n');
+    expect(prompt).not.toContain('Kamińska');
+    expect(res.answer).toContain('Joanna Kamińska');
+  });
+
   it('404s for an unknown case', async () => {
     await expect(
       service.ask({

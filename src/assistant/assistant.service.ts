@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import type { CaseDetail, StageId } from '../cases/case.types.js';
 import { CasesService } from '../cases/cases.service.js';
+import { EVALUATORS, OFFICE_NAME } from '../cases/seed/seed.data.js';
+import {
+  anonymize,
+  type AnonymizeEntities,
+  deanonymize,
+} from '../partner/anonymize.js';
 import {
   asksForRatingDecision,
   buildMessages,
@@ -25,6 +31,8 @@ import {
 import { KnowledgeBase } from './knowledge-base.js';
 import { quickAnswer } from './quick-answers.rules.js';
 import { LlmClient } from './llm.client.js';
+
+const SPLIT = '\n\n<<<KONTEKST>>>\n\n';
 
 @Injectable()
 export class AssistantService {
@@ -86,7 +94,15 @@ export class AssistantService {
         disclaimer: DISCLAIMER,
       };
     }
-    const reply = await this.llm.chat(buildMessages(question, retrieval.hits));
+    // Pseudonymized before the external LLM call (anonymize.ts); restored after.
+    const { text: safeQuestion, mapping } = anonymize(
+      question,
+      this.entities(),
+    );
+    const raw = await this.llm.chat(
+      buildMessages(safeQuestion, retrieval.hits),
+    );
+    const reply = raw ? deanonymize(raw, mapping) : null;
     if (reply) {
       const notFound = saysNotFound(reply);
       return {
@@ -118,13 +134,18 @@ export class AssistantService {
       retrieval = retrieve(this.kb, STAGE_RULE_QUERY[stage]);
     }
     const sources = toSources(retrieval.hits, input.question);
-    const messages = buildMessages(
-      input.question,
-      retrieval.hits,
-      caseContext(detail, stage),
+    // Question and case context (unit, observation texts) are pseudonymized
+    // before the external LLM call; the answer gets the original values back.
+    // One anonymize() call for both texts, so they share one token space.
+    const { text, mapping } = anonymize(
+      `${input.question}${SPLIT}${caseContext(detail, stage)}`,
+      this.entities(detail),
     );
+    const [safeQuestion, safeContext] = text.split(SPLIT);
+    const messages = buildMessages(safeQuestion, retrieval.hits, safeContext);
     messages[0].content += `\n\n${CONVERSATION_ADDENDUM}`;
-    const reply = await this.llm.chat(messages);
+    const raw = await this.llm.chat(messages);
+    const reply = raw ? deanonymize(raw, mapping) : null;
     if (reply) {
       return {
         answer: sanitizeCitations(reply, sources.length),
@@ -144,6 +165,24 @@ export class AssistantService {
       mode: 'EXTRACTIVE',
       sources,
       disclaimer: DISCLAIMER,
+    };
+  }
+
+  /** People and units known to the system, for anonymize(). */
+  private entities(detail?: CaseDetail): AnonymizeEntities {
+    const records = this.cases.all();
+    return {
+      people: [
+        ...records.map((r) => r.person),
+        ...EVALUATORS,
+        ...(detail ? [detail.person] : []),
+      ],
+      units: [
+        ...records.map((r) => r.person.unit),
+        ...EVALUATORS.map((e) => e.unit),
+        ...(detail ? [detail.person.unit] : []),
+        OFFICE_NAME,
+      ],
     };
   }
 }
