@@ -19,6 +19,7 @@ import { EVALUATORS, OFFICE_NAME } from '../cases/seed/seed.data.js';
 import { DemoReset } from '../demo/demo-reset.service.js';
 import { JournalRepository } from '../journal/journal.repository.js';
 import { anonymize, deanonymize } from './anonymize.js';
+import { personCaseLink } from './case-link.js';
 import {
   MIN_GROUP_SIZE,
   PULSE_INTERVAL_DAYS,
@@ -201,6 +202,7 @@ export class PartnerService implements OnModuleInit {
       name: fullName(record.person),
       position: record.person.position,
       caseId: record.id,
+      ...personCaseLink(this.cases.summary(record)),
       points: own.map(toSupervisorPoint),
       trend: toSupervisorTrend(result.trend),
       signals: result.signals,
