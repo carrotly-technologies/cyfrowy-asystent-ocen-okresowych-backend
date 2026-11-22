@@ -44,7 +44,7 @@ Dwa moduły wspierają przełożonego poza samą procedurą:
 - **Asystent AI** (formalny i do rozmowy) odpowiada wyłącznie na podstawie dokumentów: ustawy, rozporządzenia,
   poradnika KPRM, standardów ZZL i wzorów arkuszy. Każda odpowiedź podaje źródło z linkiem do strony dokumentu,
   a gdy w bazie nie ma odpowiedzi, asystent mówi to wprost.
-- **Wirtualny HR partner**: dobrowolny puls pracownika co 14 dni, sygnały przeciążenia, spadku motywacji, ryzyka
+- **Wirtualny asystent HR**: dobrowolny puls pracownika co 14 dni, sygnały przeciążenia, spadku motywacji, ryzyka
   wypalenia i momentu do docenienia, podpowiedzi do rozmowy i form rozwoju do IPRZ. Przełożony widzi trendy,
   komentarz tylko za zgodą pracownika, średnie zespołu dopiero od 3 odpowiedzi; kadry nie mają wglądu.
 
@@ -54,7 +54,7 @@ nieobecności dłuższe niż miesiąc wydłużające termin oceny (art. 81 ust. 
 import historii ocen i statystyki z CSV. Powiadomienia w aplikacji (opcjonalnie kopia e-mail przez SMTP) przypominają
 każdej roli o terminach; sprzeciw trafia do adresata z art. 83 (dyrektor generalny albo, przy arkuszu A, oceniający).
 
-**AI jest wyłącznie doradcze.** Ani asystent, ani HR partner nie wystawiają punktów i nie zapisują decyzji. Ocenę
+**AI jest wyłącznie doradcze.** Ani asystent, ani wirtualny asystent HR nie wystawiają punktów i nie zapisują decyzji. Ocenę
 cząstkową zawsze wybiera przełożony, co widać w interfejsie i w API.
 
 **Technologia i wdrożenie.** Frontend React, API NestJS (Node LTS), opcjonalnie PostgreSQL (migracje uruchamiają się
@@ -95,7 +95,7 @@ na papierowych lub edytowalnych wzorach arkuszy:
 | Terminy                         | Liczone automatycznie z przepisów (z przesunięciem z dnia wolnego), z podstawą prawną przy każdym terminie |
 | Błędy formalne                  | Kontrola formalna z paragrafem przy każdym punkcie blokuje podpis do czasu uzupełnienia braków          |
 | Ocena z ostatnich tygodni       | Dziennik obserwacji S-D-R przez cały okres i ostrzeżenie o kryteriach bez dowodów                       |
-| Trudna rozmowa                  | Asystent rozmowy i HR partner: pytania z kryteriów i obserwacji, sformułowania informacji zwrotnej, formy rozwoju do IPRZ |
+| Trudna rozmowa                  | Asystent rozmowy i wirtualny asystent HR: pytania z kryteriów i obserwacji, sformułowania informacji zwrotnej, formy rozwoju do IPRZ |
 | Brak wiedzy pod ręką            | Asystent formalny odpowiada z ustawy, rozporządzenia i poradnika KPRM, zawsze ze źródłem; „nie wiem”, gdy brak w bazie |
 | Kadry nie widzą stanu           | Panel monitoringu urzędu z licznikami, filtrami i przypomnieniami; lista sprzeciwów dla dyrektora generalnego |
 | Prawa ocenianego                | Własne konto: kryteria od pierwszego dnia, potwierdzenia tylko przez ocenianego, pouczenie i licznik 7 dni na sprzeciw |

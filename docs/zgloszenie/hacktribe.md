@@ -16,7 +16,7 @@ Cyfrowy Asystent Ocen Okresowych
 ## Krótki opis (jedno zdanie)
 
 ```text
-Aplikacja w przeglądarce, która prowadzi przełożonego, ocenianego, kadry i dyrektora generalnego przez całą ocenę okresową w służbie cywilnej – od doboru arkusza do sprzeciwu – z kontrolą formalną, terminami liczonymi z przepisów, asystentem AI odpowiadającym ze źródłem i wirtualnym HR partnerem; AI jest wyłącznie doradcze.
+Aplikacja w przeglądarce, która prowadzi przełożonego, ocenianego, kadry i dyrektora generalnego przez całą ocenę okresową w służbie cywilnej – od doboru arkusza do sprzeciwu – z kontrolą formalną, terminami liczonymi z przepisów, asystentem AI odpowiadającym ze źródłem i wirtualnym asystentem HR; AI jest wyłącznie doradcze.
 ```
 
 ## Opis rozwiązania
@@ -57,7 +57,7 @@ Ocena okresowa w służbie cywilnej to proces prawny z wieloma terminami i warun
 - Terminy → liczone automatycznie z przepisów (z przesunięciem z dnia wolnego), z podstawą prawną przy każdym terminie.
 - Błędy formalne → kontrola formalna z paragrafem przy każdym punkcie blokuje podpis do czasu uzupełnienia braków.
 - Ocena z ostatnich tygodni → dziennik obserwacji S-D-R przez cały okres i ostrzeżenie o kryteriach bez dowodów.
-- Trudna rozmowa → asystent rozmowy i HR partner: pytania z kryteriów i obserwacji, sformułowania informacji zwrotnej, formy rozwoju do IPRZ.
+- Trudna rozmowa → asystent rozmowy i wirtualny asystent HR: pytania z kryteriów i obserwacji, sformułowania informacji zwrotnej, formy rozwoju do IPRZ.
 - Brak wiedzy pod ręką → asystent formalny odpowiada z ustawy, rozporządzenia i poradnika KPRM, zawsze ze źródłem; mówi „nie wiem”, gdy odpowiedzi nie ma w bazie.
 - Kadry nie widzą stanu → panel monitoringu urzędu z licznikami, filtrami i przypomnieniami; lista sprzeciwów dla dyrektora generalnego.
 - Prawa ocenianego → własne konto: kryteria od pierwszego dnia, potwierdzenia tylko przez ocenianego, pouczenie i licznik 7 dni na sprzeciw.
@@ -69,11 +69,11 @@ Ocena okresowa w służbie cywilnej to proces prawny z wieloma terminami i warun
 ## Wykorzystanie AI
 
 ```text
-AI jest wyłącznie doradcze: ani asystent, ani HR partner nie wystawiają punktów i nie zapisują decyzji. Ocenę cząstkową zawsze wybiera przełożony, co widać w interfejsie i w API.
+AI jest wyłącznie doradcze: ani asystent, ani wirtualny asystent HR nie wystawiają punktów i nie zapisują decyzji. Ocenę cząstkową zawsze wybiera przełożony, co widać w interfejsie i w API.
 
 1. Asystent AI z bazą wiedzy (formalny i do rozmowy). Odpowiada wyłącznie na podstawie dokumentów: ustawy o służbie cywilnej, rozporządzenia PRM z 2016 r., poradnika KPRM, standardów ZZL i wzorów arkuszy A/B/C. Dokumenty są pocięte na fragmenty według art./§/ust. i stron, wyszukiwanie działa lokalnie (BM25 z polskim stemmingiem). Każda odpowiedź podaje źródło z linkiem do strony dokumentu, a gdy w bazie nie ma odpowiedzi, asystent mówi to wprost („Nie znalazłem tego w bazie wiedzy”) zamiast zgadywać. Asystent rozmowy zna etap teczki i podpowiada pytania z kryteriów i obserwacji. Model językowy jest opcjonalny: dowolny endpoint zgodny z OpenAI, także lokalny (Ollama); bez niego asystent odpowiada cytatami z dokumentów (tryb ekstraktywny), więc działa bez internetu. Jakość wyszukiwania mierzymy na 72 pytaniach i odpowiedziach KPRM (hit@5).
 
-2. Wirtualny HR partner. Dobrowolny puls pracownika co 14 dni, sygnały przeciążenia, spadku motywacji, ryzyka wypalenia i momentu do docenienia, podpowiedzi do rozmowy i form rozwoju do IPRZ. Przełożony widzi trendy, komentarz tylko za zgodą pracownika, średnie zespołu dopiero od 3 odpowiedzi; kadry nie mają wglądu.
+2. Wirtualny asystent HR. Dobrowolny puls pracownika co 14 dni, sygnały przeciążenia, spadku motywacji, ryzyka wypalenia i momentu do docenienia, podpowiedzi do rozmowy i form rozwoju do IPRZ. Przełożony widzi trendy, komentarz tylko za zgodą pracownika, średnie zespołu dopiero od 3 odpowiedzi; kadry nie mają wglądu.
 
 3. Anonimizacja przed modelem językowym. Zanim tekst trafi do modelu działającego poza infrastrukturą urzędu, imiona i nazwiska (w każdej formie gramatycznej), PESEL, e-maile, telefony i nazwy komórek są zastępowane znacznikami ([OSOBA_1], [JEDNOSTKA_1]…). Mapowanie zostaje na serwerze, który przywraca dane dopiero w odpowiedzi. W logach nie ma danych osobowych.
 ```
@@ -114,7 +114,7 @@ Plik nagrania do ponownego wgrania: `gh release download demo-v2 -R carrotly-tec
 3. Zmiana roli: menu użytkownika → Wyloguj, potem karta innego konta.
 
 Konta demo (wszystkie osoby i dane są fikcyjne):
-- j.kaminska – przełożona (Joanna Kamińska): zespół, teczki na różnych etapach (c-004 od wyboru arkusza, c-001, c-007), dziennik obserwacji, asystent AI, dobrostan zespołu (HR partner).
+- j.kaminska – przełożona (Joanna Kamińska): zespół, teczki na różnych etapach (c-004 od wyboru arkusza, c-001, c-007), dziennik obserwacji, asystent AI, dobrostan zespołu (wirtualny asystent HR).
 - r.sikora – przełożony (Robert Sikora): teczka przekazana do zapoznania (fikcja zapoznania), c-102, c-301.
 - a.pawlak – przełożona (Agnieszka Pawlak): teczki c-103, c-104.
 - p.wojcik – oceniany (Piotr Wójcik): potwierdza część I arkusza (c-002).

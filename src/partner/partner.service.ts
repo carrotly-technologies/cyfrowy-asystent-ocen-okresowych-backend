@@ -209,12 +209,12 @@ export class PartnerService implements OnModuleInit {
     };
   }
 
-  /** "Podpowiedzi HR partnera" in the assessment stage of a case. */
+  /** "Podpowiedzi wirtualnego asystenta HR" in the assessment stage of a case. */
   async hints(caseId: string): Promise<CaseHints & { personId: string }> {
     const record = this.cases.record(caseId);
     if (!isEvaluatorOf(this.user(), record))
       throw new ForbiddenException(
-        'Podpowiedzi HR partnera są dostępne tylko dla oceniającego w tej sprawie.',
+        'Podpowiedzi wirtualnego asystenta HR są dostępne tylko dla oceniającego w tej sprawie.',
       );
     return { personId: record.person.id, ...(await this.hintsFor(record)) };
   }
@@ -386,7 +386,7 @@ export class PartnerService implements OnModuleInit {
     const own = records.filter((r) => isEvaluatorOf(user, r));
     if (own.length === 0)
       throw new ForbiddenException(
-        'Dane HR partnera widzisz tylko o pracownikach, których oceniasz.',
+        'Dane wirtualnego asystenta HR widzisz tylko o pracownikach, których oceniasz.',
       );
     return own.find((r) => !r.nextCaseId) ?? own[0];
   }

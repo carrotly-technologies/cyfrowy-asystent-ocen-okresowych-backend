@@ -9,7 +9,7 @@ import {
 import type { Signal } from './signals.rules.js';
 
 export const DECISION_NOTE =
-  'Podpowiedzi HR partnera są wyłącznie pomocą. Nie ustalają ocen cząstkowych ani oceny ogólnej: decyzja należy do przełożonego.';
+  'Podpowiedzi wirtualnego asystenta HR są wyłącznie pomocą. Nie ustalają ocen cząstkowych ani oceny ogólnej: decyzja należy do przełożonego.';
 
 /** An S-D-R observation from the case or the supervisor's journal. */
 export interface HintObservation {

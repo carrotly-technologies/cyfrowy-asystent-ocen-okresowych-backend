@@ -78,7 +78,7 @@ export class PulseController {
 }
 
 /** HR partner panel of a supervisor (own team only). */
-@ApiTags('Wirtualny partner HR')
+@ApiTags('Wirtualny asystent HR')
 @ApiBearerAuth()
 @ApiErrors(401, 403)
 @Controller('partner')
@@ -122,7 +122,7 @@ export class PartnerController {
 
   @Post('ask')
   @ApiOperation({
-    summary: 'Pytanie do partnera HR',
+    summary: 'Pytanie do wirtualnego asystenta HR',
     description: 'Pytanie zanonimizowane przed wysłaniem do modelu językowego.',
   })
   @ApiOkResponse({ description: 'Odpowiedź.' })
