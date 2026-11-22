@@ -61,7 +61,7 @@ export class HrService {
       .filter((r) => !canRemind(this.cases.summary(r).status));
     if (closed.length > 0) {
       throw new ConflictException(
-        `Nie wysłano przypomnień: ${closed.map((r) => `${fullName(r.person)} (${statusText(this.cases.summary(r).status)})`).join(', ')}. Przy ocenie zakończonej i przy sprzeciwie rozpatrywanym przez dyrektora generalnego oceniający nie ma nic do zrobienia.`,
+        `Nie wysłano przypomnień: ${closed.map((r) => `${fullName(r.person)} (${statusText(this.cases.summary(r).status)})`).join(', ')}. Przy ocenie zakończonej, w okresie na sprzeciw i przy sprzeciwie rozpatrywanym przez dyrektora generalnego oceniający nie ma nic do zrobienia.`,
       );
     }
     const today = this.cases.today;
