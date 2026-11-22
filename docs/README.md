@@ -1,7 +1,8 @@
 # Dokumenty źródłowe – Cyfrowy Asystent Ocen Okresowych
 
 Dokumenty prawne i poradniki, na których opiera się aplikacja (HackNation 2026, wyzwanie KPRM).
-Porównanie tych wymagań z implementacją, wraz z listą braków: [`audyt-zgodnosci.md`](audyt-zgodnosci.md).
+Jak aplikacja realizuje te wymagania (funkcje, role, reguły prawne i ich pliki): [`README.md`](../README.md) repozytorium
+oraz opis zgłoszenia [`prezentacja/opis.md`](prezentacja/opis.md).
 Oryginały leżą w podkatalogach tematycznych, a `tekst/` ma ich wersje tekstowe w tej samej strukturze,
 do czytania przez agentów i jako baza wiedzy asystenta AI.
 Materiały zgłoszeniowe dla jury (prezentacja PDF, opis projektu, zrzuty ekranu) są w [`prezentacja/`](prezentacja/opis.md);
