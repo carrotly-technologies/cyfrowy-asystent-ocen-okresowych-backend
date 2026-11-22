@@ -302,7 +302,7 @@ answer comes from the rules.
 | `GET /api/pulse/me`                | EMPLOYEE: own history with comments, `nextDue`, `canSubmit`                                      |
 | `POST /api/pulse`                  | EMPLOYEE: `{ answers, comment?, shareComment? }` → response (201); 409 within 7 days of the last |
 | `PATCH /api/pulse/:id/share`       | EMPLOYEE: `{ shareComment }` on own response (404 otherwise)                                     |
-| `GET /api/partner/team`            | SUPERVISOR: own team with pulse series, flags, team aggregate (hidden below 3 respondents)       |
+| `GET /api/partner/team`            | SUPERVISOR: own team with pulse series, flags with reasons, team aggregate (hidden below 3 resp.) |
 | `GET /api/partner/people/:personId`| SUPERVISOR: card with pulse points (one overall `index` per response, no single answers; shared comments only), trend, flags with reasons and actions, work data. Per-question averages only in the team aggregate (≥ 3 respondents) |
 | `GET /api/partner/cases/:caseId/hints` | SUPERVISOR (the case's evaluator): strengths, areas, feedback phrasing, development forms, management tips |
 | `POST /api/partner/ask`            | SUPERVISOR: `{ question, personId?, caseId? }` → `{ answer, mode: LLM\|RULES, anonymizedPrompt, … }` |

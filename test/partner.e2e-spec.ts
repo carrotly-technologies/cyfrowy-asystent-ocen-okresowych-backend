@@ -209,6 +209,36 @@ describe('Virtual HR assistant and pulse survey (e2e)', () => {
       }
     });
 
+    it('team signals carry the same reasons (source and text) as the card', async () => {
+      const team = await as('j.kaminska').get('/api/partner/team').expect(200);
+      for (const m of team.body.members)
+        for (const s of m.signals) {
+          expect(s.reasons.length).toBeGreaterThan(0);
+          for (const r of s.reasons)
+            expect(r).toEqual({
+              source: expect.any(String),
+              text: expect.any(String),
+            });
+        }
+      const member = team.body.members.find(
+        (m: { personId: string }) => m.personId === 'p-lewandowski',
+      );
+      const card = await as('j.kaminska')
+        .get('/api/partner/people/p-lewandowski')
+        .expect(200);
+      expect(
+        member.signals.map((s: { kind: string; reasons: unknown }) => ({
+          kind: s.kind,
+          reasons: s.reasons,
+        })),
+      ).toEqual(
+        card.body.signals.map((s: { kind: string; reasons: unknown }) => ({
+          kind: s.kind,
+          reasons: s.reasons,
+        })),
+      );
+    });
+
     it('case hints: areas, development forms and the decision note', async () => {
       const res = await as('j.kaminska')
         .get('/api/partner/cases/c-001/hints')
