@@ -35,7 +35,7 @@ Każda ocena to teczka, która przechodzi przez siedem etapów:
 
 Po ocenie system obsługuje fikcję zapoznania, sprzeciw rozpatrywany przez dyrektora generalnego w 14 dni (oddalenie, zmiana oceny z zachowaniem poprzedniej wersji albo polecenie ponownej oceny) oraz zmianę terminu oceny na wniosek ocenianego (art. 81 ust. 8 pkt 4).
 
-Kadry mają panel monitoringu wszystkich ocen w urzędzie (w toku, termin ≤ 14 dni, po terminie, do zapoznania, w okresie sprzeciwu) z przypomnieniami do przełożonych oraz kartotekę: pracownicy, podległość, zastępstwa oceniających, nieobecności dłuższe niż miesiąc wydłużające termin oceny (art. 81 ust. 7), import historii ocen i statystyki z CSV. Administrator poprawia zablokowane pola tylko w trybie korekty, z powodem i audytem.
+Kadry mają panel monitoringu wszystkich ocen w urzędzie (w toku, termin ≤ 14 dni, po terminie, do zapoznania, w okresie sprzeciwu) z przypomnieniami do przełożonych oraz kartotekę: pracownicy, podległość, zastępstwa oceniających, nieobecności dłuższe niż miesiąc wydłużające termin oceny (art. 81 ust. 7), import listy pracowników z CSV z podglądem przed zapisem, import historii ocen i statystyki z eksportem CSV. Powiadomienia w aplikacji (opcjonalnie także e-mail przez dowolny serwer SMTP) przypominają o terminach każdej roli, a zaproszenia na rozmowy można pobrać do kalendarza (.ics). Administrator poprawia zablokowane pola tylko w trybie korekty, z powodem i audytem.
 ```
 
 ## Identyfikacja problemu
@@ -85,11 +85,11 @@ Architektura: frontend React (serwowany przez nginx) i API NestJS (Node LTS), op
 
 Reguły wynikające z przepisów (dobór arkusza, kryteria, § 11, terminy, etapy, kontrola formalna, stopnie służbowe) są w osobnych plikach *.rules.ts i data/*.data.ts z testami i komentarzem ze źródłem prawnym, więc zmiana przepisu to edycja jednego pliku. Frontend nie powiela stałych prawnych: skale, progi, terminy i teksty wzorów pobiera z API.
 
-Wdrożenie: dwa obrazy Docker, instalacja w 3 krokach (git clone obu repozytoriów, cp .env.example .env, docker compose up -d --build). Konfiguracja wyłącznie przez zmienne środowiskowe (nazwa urzędu, miejscowość, sekret sesji, opcjonalny LLM). Zależności tylko open source na licencjach permisywnych, bez płatnych licencji i bez usług konkretnej chmury; działa na Linux, Windows i macOS, także bez dostępu do internetu. Wymagania: 2 vCPU, 2 GB RAM, 5 GB dysku (z lokalnym modelem +8 GB RAM). Aktualizacja = nowy obraz. Integracja z EZD i systemami kadrowymi (np. QNT) przez REST API opisane w OpenAPI 3: eksport arkusza w wersjonowanym JSON, PDF z serwera, import historii ocen z CSV.
+Wdrożenie: dwa obrazy Docker, instalacja w 3 krokach (git clone obu repozytoriów, cp .env.example .env, docker compose up -d --build). Konfiguracja wyłącznie przez zmienne środowiskowe (nazwa urzędu, miejscowość, sekret sesji, opcjonalny LLM). Kod na licencji EUPL-1.2, zależności tylko open source na licencjach permisywnych, bez płatnych licencji i bez usług konkretnej chmury; działa na Linux, Windows i macOS, także bez dostępu do internetu. Wymagania: 2 vCPU, 2 GB RAM, 5 GB dysku (z lokalnym modelem +8 GB RAM). Aktualizacja = nowy obraz. Integracja z EZD i systemami kadrowymi (np. QNT) przez REST API opisane w OpenAPI 3: eksport arkusza w wersjonowanym JSON, PDF z serwera, import pracowników i historii ocen z CSV.
 
 Ochrona danych: przetwarzamy tylko pola potrzebne do oceny (bez PESEL i adresu). Dostęp wynika z roli: przełożony widzi swój zespół, oceniany tylko własne oceny, kadry monitoring, dyrektor generalny sprawy ze sprzeciwem.
 
-Kierunki rozwoju: konektory do konkretnych systemów EZD i kadrowych na bazie eksportu i OpenAPI, podpis profilem zaufanym lub kwalifikowanym, powiadomienia e-mail według harmonogramu terminów, ścieżka pierwszej oceny na tym samym silniku reguł, lokalny otwarty model językowy z ewaluacją na zestawie pytań KPRM, pilotaż w jednym departamencie.
+Kierunki rozwoju: konektory do konkretnych systemów EZD i kadrowych na bazie eksportu i OpenAPI, podpis profilem zaufanym lub kwalifikowanym, ścieżka pierwszej oceny na tym samym silniku reguł, lokalny otwarty model językowy z ewaluacją na zestawie pytań KPRM, pilotaż w jednym departamencie.
 ```
 
 ## Linki
@@ -99,12 +99,12 @@ Kierunki rozwoju: konektory do konkretnych systemów EZD i kadrowych na bazie ek
 | Prototyp               | https://cyfrowy.rabbithole.carrotly.tech                                                                                     | tak (200; logowanie kontami demo działa)       |
 | Repozytorium backendu  | https://github.com/carrotly-technologies/cyfrowy-asystent-ocen-okresowych-backend                                            | **nie** (repo prywatne, 404)                   |
 | Repozytorium frontendu | https://github.com/carrotly-technologies/cyfrowy-asystent-ocen-okresowych-frontend                                           | **nie** (repo prywatne, 404)                   |
-| Nagranie demo (1:44)   | https://github.com/carrotly-technologies/cyfrowy-asystent-ocen-okresowych-backend/releases/download/demo-v1/demo.mp4         | **nie** (release w prywatnym repo, 404)        |
-| Prezentacja PDF        | plik do wgrania: `docs/prezentacja/prezentacja.pdf` (15 slajdów, 3,0 MB, < 10 MB)                                             | wgrywany do formularza                         |
+| Nagranie demo (1:58)   | https://github.com/carrotly-technologies/cyfrowy-asystent-ocen-okresowych-backend/releases/download/demo-v2/demo.mp4         | **nie** (release w prywatnym repo, 404)        |
+| Prezentacja PDF        | plik do wgrania: `docs/prezentacja/prezentacja.pdf` (15 slajdów, 3,1 MB, < 10 MB)                                             | wgrywany do formularza                         |
 
 Repozytoria i nagranie zaczną działać dla jury dopiero po decyzji o dostępie (repo publiczne albo zaproszenie jury,
 nagranie np. jako niepubliczny film na YouTube). Po tej decyzji podmień link do nagrania w polu formularza.
-Plik nagrania do ponownego wgrania: `gh release download demo-v1 -R carrotly-technologies/cyfrowy-asystent-ocen-okresowych-backend -p demo.mp4` (13,6 MB).
+Plik nagrania do ponownego wgrania: `gh release download demo-v2 -R carrotly-technologies/cyfrowy-asystent-ocen-okresowych-backend -p demo.mp4` (16,0 MB; wygląd gov.pl, release `demo-v1` to nagranie sprzed przebudowy).
 
 ## Instrukcje jak otworzyć projekt
 
@@ -136,7 +136,7 @@ Uruchomienie lokalne (opcjonalnie): w repozytorium backendu `cp .env.example .en
 ## Lista kontrolna przed wysłaniem
 
 - [ ] Tytuł, opis, problem, rozwiązanie, AI, architektura i instrukcje wklejone z tego pliku.
-- [ ] `docs/prezentacja/prezentacja.pdf` wgrany (15 slajdów, 3,0 MB).
+- [ ] `docs/prezentacja/prezentacja.pdf` wgrany (15 slajdów, 3,1 MB).
 - [ ] Decyzja o dostępie jury: oba repozytoria publiczne albo zaproszenia dla kont jury.
 - [ ] Nagranie demo w miejscu dostępnym bez logowania; link wklejony do formularza.
 - [ ] Przed 10:30: każdy link z tabeli [Linki](#linki) otwarty w oknie prywatnym (bez logowania do GitHuba)

@@ -92,7 +92,7 @@ await cap(
   'Cała ocena okresowa służby cywilnej (rozp. PRM z 4.04.2016) — przełożony, oceniany, kadry i dyrektor generalny',
 );
 log('1 open');
-await wait(6000);
+await wait(5000);
 
 // 2. Supervisor: team + sheet suggestion
 await login('Joanna Kamińska');
@@ -101,7 +101,18 @@ await cap(
   'Każda ocena na jednym z 7 etapów, terminy liczone z przepisów',
 );
 log('2 team');
-await wait(6000);
+await wait(4000);
+await p
+  .getByRole('button', { name: /powiadomie/i })
+  .first()
+  .click();
+await cap(
+  'Powiadomienia',
+  'Zbliżające się terminy, wnioski i przedłużenia terminów; harmonogram przypomina sam',
+);
+log('2 notifications');
+await wait(4000);
+await p.keyboard.press('Escape');
 await go('/teczka/c-004/arkusz-i-kryteria');
 await cap(
   'Krok 1: arkusz i kryteria',
@@ -200,7 +211,14 @@ await p.waitForLoadState('networkidle');
 await wait(600);
 await scroll(-2500, 15);
 await cap('Część I potwierdzona', 'Ocena przechodzi do okresu obserwacji');
-await wait(3500);
+await wait(3000);
+await go('/moj-puls');
+await cap(
+  'Puls co 14 dni, dobrowolny',
+  'Pracownik widzi, kto i co zobaczy; przełożony tylko ogólny wskaźnik, kadry nic',
+);
+log('6 pulse');
+await wait(4500);
 
 // 7. HR monitoring
 await login('Agnieszka Lis');
@@ -212,15 +230,43 @@ log('7 hr');
 await wait(5000);
 await p.getByRole('button', { name: 'Wyślij przypomnienie' }).first().click();
 await wait(1500);
-await scroll(400);
-await wait(2500);
+await go('/kartoteka/p-lewandowski');
+await scroll(200, 6);
+await cap(
+  'Nieobecności',
+  'Nieobecność dłuższa niż miesiąc sama przedłuża termin oceny (art. 81 ust. 7)',
+);
+log('7 absences');
+await wait(4500);
+await go('/kartoteka');
+await p.getByRole('button', { name: 'Importuj pracowników (CSV)' }).click();
+await wait(800);
+await p
+  .getByRole('dialog')
+  .locator('input[type=file]')
+  .setInputFiles({
+    name: 'pracownicy-wzor.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(
+      await (
+        await fetch(API + '/api/docs/import/pracownicy-wzor.csv')
+      ).arrayBuffer(),
+    ),
+  });
+await p.waitForLoadState('networkidle');
+await cap(
+  'Import pracowników z CSV',
+  'Lista z systemu kadrowego: podgląd i sugerowany arkusz, nic nie zapisuje się bez potwierdzenia',
+);
+log('7 import');
+await wait(4500);
 
 // 8. Director general: objection
 await login('Barbara Wiśniewska');
 await go('/sprzeciwy/c-301');
 await cap(
   'Dyrektor generalny: sprzeciw od oceny',
-  'Treść sprzeciwu, arkusz i termin 14 dni (art. 83 ust. 3) w jednym miejscu',
+  'Adresat wg art. 83 (arkusze B i C: dyrektor generalny), termin 14 dni i trzy rozstrzygnięcia',
 );
 log('8 dg');
 await wait(5000);
@@ -229,11 +275,11 @@ await wait(3500);
 
 // 9. Close
 await cap(
-  'Open source · jeden obraz Docker · działa bez internetu i bez LLM',
+  'Open source (EUPL-1.2) · docker compose up · działa bez internetu i bez LLM',
   'Reguły z przepisów w jednym miejscu · AI tylko doradza, ocenę ustala przełożony',
 );
 log('9 close');
-await wait(6500);
+await wait(5500);
 
 const v = p.video();
 await ctx.close();
