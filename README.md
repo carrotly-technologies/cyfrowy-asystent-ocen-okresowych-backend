@@ -290,7 +290,9 @@ when the employee shared it; team averages only for periods with ≥ 3 responden
 **Signals** (`signals.rules.ts`, pure and tested): przeciążenie, spadek motywacji, ryzyko wypalenia, moment do
 docenienia, from the pulse trend (`pulse.rules.ts`), case and journal observations and work data (tasks, changes of
 duties, absence length only: demo seed in `src/partner/seed/`, in an office from its HR system / EZD). Each flag lists
-its reasons and suggested actions (`data/partner-actions.data.ts`). **Hints** for the assessment stage
+its reasons and suggested actions (`data/partner-actions.data.ts`). A pulse-based flag is general ("ryzyko przeciążenia
+lub wypalenia: sygnał z pulsu") and its reason gives only the overall index ("spadek wskaźnika dobrostanu: 2,0 wobec
+średnio 3,7"), never which question was low; przeciążenie comes from work data only. **Hints** for the assessment stage
 (`hints.rules.ts`): strengths / areas, SBI feedback phrasing, development forms per criterion
 (`data/development.data.ts`). **Ask**: the context and question are pseudonymized (`anonymize.ts`: names in any case,
 PESEL, e-mail, phone, unit names) before the optional LLM call and re-identified in the answer; without an LLM the

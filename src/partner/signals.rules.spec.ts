@@ -44,7 +44,7 @@ describe('computeSignals', () => {
     expect(r.notes[0]).toContain('starszy niż 28 dni');
   });
 
-  it('overload from low workload + overdue tasks + scope change is an ALERT with reasons', () => {
+  it('overload from overdue tasks + scope change is an ALERT; a low pulse answer goes to the general pulse flag', () => {
     const r = computeSignals(
       input({
         pulses: [
@@ -58,14 +58,17 @@ describe('computeSignals', () => {
         }),
       }),
     );
-    const overload = r.signals.find((s) => s.kind === 'OVERLOAD')!;
+    expect(kinds(r)).toEqual(['OVERLOAD', 'BURNOUT_RISK']);
+    const overload = r.signals[0];
     expect(overload.level).toBe('ALERT');
-    expect(overload.reasons.map((x) => x.source)).toEqual([
-      'PULSE',
-      'TASKS',
-      'SCOPE',
-    ]);
+    expect(overload.reasons.map((x) => x.source)).toEqual(['TASKS', 'SCOPE']);
     expect(overload.actions.map((a) => a.id)).toContain('REPRIORITIZE');
+    const p = r.signals[1];
+    expect(p.title).toContain('sygnał z pulsu');
+    expect(p.reasons[0]).toEqual({
+      source: 'PULSE',
+      text: '15.11.2026: spadek wskaźnika dobrostanu: 2,8 wobec średnio 3,0.',
+    });
   });
 
   it('a scope change alone does not raise a flag', () => {
@@ -77,7 +80,7 @@ describe('computeSignals', () => {
     expect(r.signals).toEqual([]);
   });
 
-  it('gradual decline and low satisfaction: motivation drop', () => {
+  it('gradual decline: motivation drop; low answers only as the general pulse flag', () => {
     const r = computeSignals(
       input({
         pulses: [
@@ -92,9 +95,8 @@ describe('computeSignals', () => {
     );
     const m = r.signals.find((s) => s.kind === 'MOTIVATION_DROP')!;
     expect(r.trend.kind).toBe('GRADUAL_DECLINE');
-    expect(m.reasons.map((x) => x.text).join(' ')).toContain(
-      'niska satysfakcja',
-    );
+    expect(m.reasons[0].text).toContain('Stopniowy spadek');
+    expect(kinds(r)).toContain('BURNOUT_RISK');
     expect(m.actions.map((a) => a.id)).toContain('CLARIFY_GOALS');
   });
 
@@ -174,5 +176,29 @@ describe('computeSignals', () => {
     const text = JSON.stringify(r.signals);
     expect(text).not.toMatch(/\d\/5/);
     expect(text).not.toMatch(/Najbardziej/);
+    // No pulse question is named or paraphrased.
+    const said = JSON.stringify(r.signals.map((s) => [s.title, s.reasons]));
+    expect(said).not.toMatch(
+      /obciąż|energi|wsparci|satysfakc|priorytet|jasno|zmęcz/i,
+    );
+    const pulseReasons = r.signals
+      .flatMap((s) => s.reasons)
+      .filter((x) => x.source === 'PULSE');
+    expect(pulseReasons[0].text).toBe(
+      '13.11.2026: spadek wskaźnika dobrostanu: 1,0 wobec średnio 3,0.',
+    );
+  });
+
+  it('privacy: one low answer alone gives a general flag that does not say which', () => {
+    const r = computeSignals(
+      input({ pulses: [pulse('2026-11-13', [5, 5, 1, 5, 5])] }),
+    );
+    expect(kinds(r)).toEqual(['BURNOUT_RISK']);
+    expect(r.signals[0].reasons).toEqual([
+      {
+        source: 'PULSE',
+        text: '13.11.2026: wskaźnik dobrostanu 4,2 (skala 1–5) z sygnałem do rozmowy.',
+      },
+    ]);
   });
 });

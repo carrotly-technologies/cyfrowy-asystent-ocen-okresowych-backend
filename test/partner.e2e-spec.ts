@@ -232,7 +232,7 @@ describe('Virtual HR assistant and pulse survey (e2e)', () => {
         })
         .expect(200);
       expect(res.body.mode).toBe('RULES');
-      expect(res.body.answer).toContain('Ryzyko wypalenia');
+      expect(res.body.answer).toContain('sygnał z pulsu');
       expect(res.body.anonymizedPrompt).not.toMatch(/Lewandowsk|Michał/);
       expect(res.body.anonymizedPrompt).toContain('[OSOBA_');
       expect(res.body.anonymizationNote).toContain('zanonimizowane');
