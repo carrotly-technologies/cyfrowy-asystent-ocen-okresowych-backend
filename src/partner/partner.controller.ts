@@ -105,7 +105,10 @@ export class PartnerController {
     description: 'Identyfikator pracownika, np. `p-nowak`.',
   })
   @ApiOperation({ summary: 'Sygnały dla pracownika' })
-  @ApiOkResponse({ description: 'Sygnały i kontekst pracy.' })
+  @ApiOkResponse({
+    description:
+      'Sygnały i kontekst pracy. Teczka oceny tej osoby: `caseId`, `caseStatus`, `stageName` (bieżący etap), `nextDeadline` (`Deadline | null`, null przy `ZAKONCZONA`) i `completedOn` (`YYYY-MM-DD` zakończenia, tylko przy `ZAKONCZONA`).',
+  })
   @ApiErrors(404)
   person(@Param('personId') personId: string) {
     return this.partner.person(personId);

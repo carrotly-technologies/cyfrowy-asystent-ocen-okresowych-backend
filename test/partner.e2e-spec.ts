@@ -117,6 +117,28 @@ describe('Virtual HR assistant and pulse survey (e2e)', () => {
     });
   });
 
+  describe('person card: the case button context', () => {
+    it('carries the case status, stage name and term of the evaluated person', async () => {
+      const team = await as('j.kaminska').get('/api/team').expect(200);
+      for (const id of ['p-nowak', 'p-wojcik']) {
+        const card = await as('j.kaminska')
+          .get(`/api/partner/people/${id}`)
+          .expect(200);
+        const summary = team.body.cases.find(
+          (c: { id: string }) => c.id === card.body.caseId,
+        );
+        expect(card.body.caseStatus).toBe(summary.status);
+        expect(typeof card.body.stageName).toBe('string');
+        if (summary.status === 'ZAKONCZONA') {
+          expect(card.body.nextDeadline).toBeNull();
+        } else {
+          expect(card.body.nextDeadline).toEqual(summary.nextDeadline);
+          expect(card.body.completedOn).toBeNull();
+        }
+      }
+    });
+  });
+
   describe('privacy (supervisor)', () => {
     it('per person: flags and one overall index only, no answers to single questions', async () => {
       for (const id of ['p-lewandowski', 'p-wojcik', 'p-nowak']) {
