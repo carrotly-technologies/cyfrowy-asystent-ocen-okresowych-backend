@@ -363,6 +363,37 @@ export function historyEventDrafts(
   });
 }
 
+/** Keys of notifications that are done once their action happened (matched exactly or by a prefix ending in ':'). */
+export interface ResolvedKeys {
+  exact: string[];
+  prefixes: string[];
+}
+
+/**
+ * Which notifications of a case are done and should be marked read: "Potwierdź część I" once the assessed person
+ * confirmed it, "Zapoznaj się z oceną" once acknowledged, a talk invitation once that talk took place (part I approved
+ * for the opening talk, part II completed or the assessment signed for the assessment talk).
+ */
+export function resolvedNotificationKeys(record: CaseRecord): ResolvedKeys {
+  const id = record.id;
+  const prefixes: string[] = [];
+  if (record.partI.acknowledgedByEmployeeOn) {
+    prefixes.push(`${id}:ACK_PART_I:`, `${id}:REMIND_PART_I:`);
+  }
+  if (record.acknowledgedOn) {
+    prefixes.push(`${id}:ACK:`, `${id}:REMIND_ACK:`, `${id}:ACK_WAITING:`);
+  }
+  const talkDone = (kind: TalkInvitation['kind']) =>
+    kind === 'OPENING'
+      ? !!record.completedOn.OPENING_TALK ||
+        !!record.partI.confirmedByEvaluatorOn
+      : !!record.completedOn.ASSESSMENT || !!record.signedByEvaluatorOn;
+  const exact = (record.talkInvitations ?? [])
+    .filter((i) => talkDone(i.kind))
+    .map((i) => `${id}:TALK:${i.id}`);
+  return { exact, prefixes };
+}
+
 const TALK_NAMES: Record<TalkInvitation['kind'], string> = {
   OPENING: 'rozmowę rozpoczynającą (ustalenie kryteriów, część I)',
   ASSESSMENT: 'rozmowę oceniającą',

@@ -11,6 +11,7 @@ import { formatDatePl } from '../cases/dates.js';
 import { DemoReset } from '../demo/demo-reset.service.js';
 import { NotificationsService } from './notifications.service.js';
 import {
+  resolvedNotificationKeys,
   caseReminders,
   generateReminders,
   historyEventDrafts,
@@ -81,7 +82,14 @@ export class RemindersService
       ...historyEventDrafts(record, today),
     ];
     try {
-      return await this.notifications.deliver(drafts, () => record, today);
+      const created = await this.notifications.deliver(
+        drafts,
+        () => record,
+        today,
+      );
+      const done = resolvedNotificationKeys(record);
+      await this.notifications.resolve(done.exact, done.prefixes);
+      return created;
     } catch {
       this.logger.warn('Nie udało się zapisać powiadomień o zmianie sprawy.');
       return 0;

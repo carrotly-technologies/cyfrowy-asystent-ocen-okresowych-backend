@@ -10,6 +10,7 @@ import {
   dueSoonBucket,
   generateReminders,
   historyEventDrafts,
+  resolvedNotificationKeys,
 } from './reminders.rules.js';
 
 const TODAY = '2026-11-21';
@@ -194,5 +195,69 @@ describe('manualAckReminder', () => {
     });
     const sheet = seed.find((c) => c.stage === 'SHEET_SELECTION')!;
     expect(manualAckReminder(sheet, '2026-11-21', 'J. K.')).toBeNull();
+  });
+});
+
+describe('resolvedNotificationKeys', () => {
+  const blank = (r: CaseRecord): CaseRecord => ({
+    ...r,
+    partI: {
+      ...r.partI,
+      confirmedByEvaluatorOn: null,
+      acknowledgedByEmployeeOn: null,
+    },
+    completedOn: {},
+    signedByEvaluatorOn: null,
+    acknowledgedOn: null,
+    talkInvitations: [
+      {
+        id: 'i1',
+        kind: 'OPENING',
+        date: TODAY,
+        time: '10:00',
+        place: 'p',
+        note: '',
+        createdOn: TODAY,
+      },
+      {
+        id: 'i2',
+        kind: 'ASSESSMENT',
+        date: TODAY,
+        time: '10:00',
+        place: 'p',
+        note: '',
+        createdOn: TODAY,
+      },
+    ],
+  });
+
+  it('nothing is done before the actions', () => {
+    expect(resolvedNotificationKeys(blank(seed('c-001')))).toEqual({
+      exact: [],
+      prefixes: [],
+    });
+  });
+
+  it('part I confirmed by the employee resolves "Potwierdź część I"; the opening talk invitation is done after part I', () => {
+    const r = blank(seed('c-001'));
+    r.partI.confirmedByEvaluatorOn = TODAY;
+    r.partI.acknowledgedByEmployeeOn = TODAY;
+    expect(resolvedNotificationKeys(r)).toEqual({
+      exact: ['c-001:TALK:i1'],
+      prefixes: ['c-001:ACK_PART_I:', 'c-001:REMIND_PART_I:'],
+    });
+  });
+
+  it('a signed and acknowledged assessment resolves the assessment talk invitation and "Zapoznaj się z oceną"', () => {
+    const r = blank(seed('c-001'));
+    r.signedByEvaluatorOn = TODAY;
+    r.acknowledgedOn = TODAY;
+    const keys = resolvedNotificationKeys(r);
+    expect(keys.exact).toEqual(['c-001:TALK:i2']);
+    expect(keys.prefixes).toEqual([
+      'c-001:ACK:',
+      'c-001:REMIND_ACK:',
+      'c-001:ACK_WAITING:',
+    ]);
   });
 });

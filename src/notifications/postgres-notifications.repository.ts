@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, like, or } from 'drizzle-orm';
 import type { Database } from '../database/database.js';
 import type { AppNotification } from './notification.types.js';
 import { NotificationsRepository } from './notifications.repository.js';
@@ -70,6 +70,26 @@ export class PostgresNotificationsRepository extends NotificationsRepository {
       .where(
         and(eq(notifications.userId, userId), isNull(notifications.readAt)),
       )
+      .returning({ id: notifications.id });
+    return rows.length;
+  }
+
+  async markReadByKeys(
+    exact: readonly string[],
+    prefixes: readonly string[],
+    at: string,
+  ) {
+    const conditions = [
+      ...(exact.length ? [inArray(notifications.key, [...exact])] : []),
+      ...prefixes.map((p) =>
+        like(notifications.key, `${p.replace(/[\\%_]/g, '\\$&')}%`),
+      ),
+    ];
+    if (!conditions.length) return 0;
+    const rows = await this.db
+      .update(notifications)
+      .set({ readAt: new Date(at) })
+      .where(and(isNull(notifications.readAt), or(...conditions)))
       .returning({ id: notifications.id });
     return rows.length;
   }

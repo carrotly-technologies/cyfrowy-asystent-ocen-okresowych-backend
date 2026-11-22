@@ -8,6 +8,12 @@ export abstract class NotificationsRepository {
   abstract insertIfAbsent(n: AppNotification): Promise<boolean>;
   abstract markRead(id: string, userId: string, at: string): Promise<boolean>;
   abstract markAllRead(userId: string, at: string): Promise<number>;
+  /** Marks read (for every user) the unread notifications whose key is in `exact` or starts with one of `prefixes`. */
+  abstract markReadByKeys(
+    exact: readonly string[],
+    prefixes: readonly string[],
+    at: string,
+  ): Promise<number>;
   abstract clear(): Promise<void>;
 }
 
@@ -44,6 +50,22 @@ export class InMemoryNotificationsRepository extends NotificationsRepository {
     let count = 0;
     for (const n of this.items) {
       if (n.userId === userId && !n.readAt) {
+        n.readAt = at;
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  async markReadByKeys(
+    exact: readonly string[],
+    prefixes: readonly string[],
+    at: string,
+  ) {
+    let count = 0;
+    for (const n of this.items) {
+      if (n.readAt) continue;
+      if (exact.includes(n.key) || prefixes.some((p) => n.key.startsWith(p))) {
         n.readAt = at;
         count += 1;
       }
