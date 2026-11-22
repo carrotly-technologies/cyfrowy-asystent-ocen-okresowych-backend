@@ -20,6 +20,10 @@ export abstract class UsersRepository {
   abstract list(): Promise<User[]>;
   /** The updated user, or null when there is no such user. */
   abstract updateRole(id: string, role: Role): Promise<User | null>;
+  /** Adds one account (POST /api/admin/users); the caller checks the login is free. */
+  abstract insert(row: UserRow): Promise<User>;
+  /** The EMPLOYEE account linked to the assessed person, if any. */
+  abstract findByPersonId(personId: string): Promise<User | null>;
   abstract isEmpty(): Promise<boolean>;
   /** Replaces every account (seed, POST /api/demo/reset). */
   abstract replaceAll(rows: readonly UserRow[]): Promise<void>;

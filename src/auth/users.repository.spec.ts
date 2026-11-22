@@ -53,4 +53,26 @@ describe.each([
     await repo.replaceAll(USER_SEED);
     expect((await repo.findById('u-nowak'))?.role).toBe('EMPLOYEE');
   });
+
+  it('inserts an account and finds it by personId and login', async () => {
+    await repo.replaceAll(USER_SEED);
+    const created = await repo.insert({
+      id: 'u-test',
+      login: 'j.testowy',
+      firstName: 'Jan',
+      lastName: 'Testowy',
+      role: 'EMPLOYEE',
+      position: 'Specjalista',
+      unit: 'Wydział Testów',
+      evaluatorId: null,
+      personId: 'e-test',
+      passwordHash: 'hash',
+    });
+    expect(created).not.toHaveProperty('passwordHash');
+    expect((await repo.findByPersonId('e-test'))?.login).toBe('j.testowy');
+    expect((await repo.findCredentials('J.TESTOWY'))?.passwordHash).toBe(
+      'hash',
+    );
+    expect(await repo.findByPersonId('e-none')).toBeNull();
+  });
 });
