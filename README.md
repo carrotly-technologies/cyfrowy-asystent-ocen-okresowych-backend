@@ -360,7 +360,7 @@ person data, evaluator and absences in step.
 
 | Route                                  | What it does                                                                    |
 | -------------------------------------- | ------------------------------------------------------------------------------- |
-| `POST /api/assistant/ask`              | `{ question, assistant: FORMAL\|CONVERSATION, caseId?, stageId? }` → answer + sources |
+| `POST /api/assistant/ask`              | `{ question, assistant: FORMAL\|CONVERSATION, caseId?, stageId? }` → answer + sources; question and case context are pseudonymized (`anonymize.ts`) before an external LLM |
 | `GET /api/assistant/suggestions`       | Example questions, `?stageId=` per stage                                        |
 | `GET /api/assistant/documents`         | Every source document: `{ id, title, description, url, indexed, note }`         |
 | `GET /api/docs`                        | Same list, always on (also with `FEATURE_ASSISTANT=false`)                      |
@@ -509,8 +509,9 @@ powiadomienia oraz ankiety pulsu. Dane demonstracyjne trafiają tylko do pustej 
 
 - Wszystko działa lokalnie; żadne dane nie opuszczają urzędu, o ile nie wskażesz zewnętrznego LLM. Z lokalnym
   modelem (profil `llm`) albo bez modelu aplikacja działa offline.
-- Do modelu językowego trafia tylko pytanie i potrzebny kontekst, bez imion i nazwisk (anonimizacja w
-  `src/assistant`); ankiety pulsu są anonimowe i raportowane tylko powyżej progu liczby odpowiedzi.
+- Do modelu językowego trafia tylko pytanie i potrzebny kontekst, po pseudonimizacji imion i nazwisk, komórek,
+  PESEL, e-maili i telefonów (`src/partner/anonymize.ts`, używane w asystencie `src/assistant/assistant.service.ts`
+  i w wirtualnym asystencie HR; odpowiedź modelu dostaje z powrotem oryginalne wartości po stronie serwera); ankiety pulsu są anonimowe i raportowane tylko powyżej progu liczby odpowiedzi.
 - Dostęp według ról: przełożony widzi wyłącznie swój zespół, oceniany tylko własne oceny (część II dopiero po
   przekazaniu), kadry monitoring, administrator konta i tryb korekty. Każda korekta pola zablokowanego po
   potwierdzeniu wymaga powodu i jest zapisywana (kto, kiedy, stara → nowa wartość) w historii teczki.
