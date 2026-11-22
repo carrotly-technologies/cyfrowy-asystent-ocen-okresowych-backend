@@ -54,6 +54,24 @@ export class PostgresUsersRepository extends UsersRepository {
     return row ? publicUser(toUserRow(row)) : null;
   }
 
+  async insert(row: UserRow): Promise<User> {
+    const [inserted] = await this.db
+      .insert(users)
+      .values(toRow(row))
+      .returning();
+    return publicUser(toUserRow(inserted));
+  }
+
+  async findByPersonId(personId: string): Promise<User | null> {
+    const [row] = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.personId, personId))
+      .orderBy(asc(users.seq))
+      .limit(1);
+    return row ? publicUser(toUserRow(row)) : null;
+  }
+
   async isEmpty(): Promise<boolean> {
     const [row] = await this.db.select({ id: users.id }).from(users).limit(1);
     return !row;

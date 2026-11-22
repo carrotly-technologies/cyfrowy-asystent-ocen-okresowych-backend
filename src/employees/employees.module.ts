@@ -23,5 +23,6 @@ import { PostgresEmployeesRepository } from './postgres-employees.repository.js'
     },
     EmployeesService,
   ],
+  exports: [EmployeesRepository],
 })
 export class EmployeesModule {}

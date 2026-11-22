@@ -36,6 +36,16 @@ export class InMemoryUsersRepository extends UsersRepository {
     return Promise.resolve(publicUser(row));
   }
 
+  insert(row: UserRow): Promise<User> {
+    this.rows.set(row.id, { ...row });
+    return Promise.resolve(publicUser(row));
+  }
+
+  findByPersonId(personId: string): Promise<User | null> {
+    const row = [...this.rows.values()].find((r) => r.personId === personId);
+    return Promise.resolve(row ? publicUser(row) : null);
+  }
+
   isEmpty(): Promise<boolean> {
     return Promise.resolve(this.rows.size === 0);
   }

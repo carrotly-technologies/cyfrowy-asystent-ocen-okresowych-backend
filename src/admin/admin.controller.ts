@@ -1,5 +1,6 @@
 import {
   ApiBearerAuth,
+  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -14,22 +15,36 @@ import {
   NotFoundException,
   Param,
   Patch,
+  Post,
 } from '@nestjs/common';
 import { CurrentUser } from '@nestjs/authentication';
 import { Roles } from '../auth/roles.decorator.js';
 import { toUserView, type User, type UserView } from '../auth/user.types.js';
 import { UsersRepository } from '../auth/users.repository.js';
-import { type UpdateUserInput, updateUserSchema } from './admin.schemas.js';
+import {
+  AccountsService,
+  type CreatedAccount,
+  type PersonAccount,
+} from './accounts.service.js';
+import {
+  type CreateAccountInput,
+  createAccountSchema,
+  type UpdateUserInput,
+  updateUserSchema,
+} from './admin.schemas.js';
 
 @ApiTags('Administracja')
 @ApiBearerAuth()
 @ApiErrors(401, 403)
 @Controller('admin/users')
-@Roles('ADMIN')
 export class AdminController {
-  constructor(private readonly users: UsersRepository) {}
+  constructor(
+    private readonly users: UsersRepository,
+    private readonly accounts: AccountsService,
+  ) {}
 
   @Get()
+  @Roles('ADMIN')
   @ApiOperation({
     summary: 'Konta użytkowników',
     description: 'Tylko ADMIN. Bez skrótów haseł.',
@@ -40,7 +55,38 @@ export class AdminController {
   }
 
   /** A new role applies to that user's next request (the token holds no role). */
+  @Post()
+  @Roles('HR', 'ADMIN')
+  @ApiOperation({
+    summary: 'Konto pracownika z kartoteki',
+    description:
+      'HR i ADMIN: `{ personId, login }` zakłada konto EMPLOYEE powiązane z osobą z kartoteki. ' +
+      'Odpowiedź zawiera jednorazowe hasło tymczasowe (pokazywane tylko raz, przechowywany jest wyłącznie skrót scrypt). ' +
+      '409: osoba ma już konto albo login jest zajęty.',
+  })
+  @ApiCreatedResponse({ description: '`{ account, temporaryPassword }`.' })
+  @ApiErrors(400, 404, 409)
+  create(
+    @Body({ schema: createAccountSchema }) body: CreateAccountInput,
+  ): Promise<CreatedAccount> {
+    return this.accounts.create(body);
+  }
+
+  @Get('person/:personId')
+  @Roles('HR', 'ADMIN')
+  @ApiParam({ name: 'personId', description: 'Identyfikator z kartoteki.' })
+  @ApiOperation({
+    summary: 'Konto pracownika z kartoteki',
+    description: '`{ account | null, suggestedLogin }`.',
+  })
+  @ApiOkResponse({ description: 'Konto osoby albo null i proponowany login.' })
+  @ApiErrors(404)
+  forPerson(@Param('personId') personId: string): Promise<PersonAccount> {
+    return this.accounts.forPerson(personId);
+  }
+
   @Patch(':id')
+  @Roles('ADMIN')
   @ApiParam({ name: 'id', description: 'Identyfikator konta, np. `u-nowak`.' })
   @ApiOperation({
     summary: 'Zmiana roli użytkownika',

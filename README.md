@@ -72,6 +72,8 @@ curl localhost:3000/api/me -H "Authorization: Bearer $TOKEN"
 | `GET /api/me`                | The signed-in user: `{ id, login, name, role, position, unit, officeName }`          |
 | `GET /api/admin/users`       | ADMIN: every account (no password hashes)                                            |
 | `PATCH /api/admin/users/:id` | ADMIN: `{ role }`; 409 for removing your own ADMIN role                              |
+| `POST /api/admin/users`      | HR and ADMIN: `{ personId, login }` → 201 `{ account, temporaryPassword }`: an `EMPLOYEE` account for a person from the kartoteka (the assessed person can then confirm part I and the assessment). The one-time temporary password is returned once and stored only as a scrypt hash; 409 for a taken login or a person who already has an account, 404 unknown person |
+| `GET /api/admin/users/person/:personId` | HR and ADMIN: `{ account \| null, suggestedLogin }` (login „i.nazwisko”)  |
 | `GET /api/admin/cases`       | ADMIN („tryb korekty”): every case (summary, evaluator, number of corrections)        |
 | `GET /api/admin/cases/:id`   | ADMIN: `{ case, fields }`: the case read-only and its correctable fields with current values |
 | `POST /api/admin/cases/:id/corrections` | ADMIN: `{ field, value, reason }` (reason ≥ 10 chars) → 201 `{ correction, case, fields }`; 400 bad value/field, 409 field not locked yet |
@@ -89,7 +91,7 @@ only by an ADMIN in correction mode. Every correction is audited in `CaseDetail.
 | ------------ | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `SUPERVISOR` | `GET /api/team`, `GET /api/cases` (own only), read, PATCH, observations and the evaluator's actions of own cases; `POST /api/employees/:id/cycles` for own employees; own journal about own employees | other supervisors' cases and employees, `EMPLOYEE_ACK_*` actions, `/api/hr/*`, `/api/admin/*` |
 | `EMPLOYEE`   | the assessed person: `GET /api/cases` and `GET /api/cases/:id` of own cases only (read only; no observations, part II only after hand-over), actions `EMPLOYEE_ACK_PART_I` and `EMPLOYEE_ACK_ASSESSMENT` | other cases, PATCH, observations, other actions, `/api/team`, `/api/hr/*`, `/api/admin/*`, journal |
-| `HR`         | `/api/hr/*`, `GET /api/cases` (all), `GET /api/cases/:id` (read only), HR register (kartoteka) reads and writes | PATCH, observations, actions, `/api/team`, `/api/admin/*`, journal |
+| `HR`         | `/api/hr/*`, `GET /api/cases` (all), `GET /api/cases/:id` (read only), HR register (kartoteka) reads and writes, `POST /api/admin/users` (EMPLOYEE accounts for people from the register) | PATCH, observations, actions, `/api/team`, other `/api/admin/*`, journal |
 | `ADMIN`      | technical role: `/api/admin/*` (accounts, „tryb korekty”), HR register and statistics read only        | register writes (employees, absences, substitutions, import, new cycle), cases, `/api/team`, `/api/hr/*`, journal |
 | `DIRECTOR`   | dyrektor generalny urzędu: `GET /api/objections`, `GET /api/cases(/:id)` of cases with a sprzeciw (read only), `POST /api/cases/:id/objection/decision` | other cases, PATCH, actions, `/api/team`, `/api/hr/*`, `/api/admin/*`, journal |
 | every role   | `/api/me`, assistant, `/api/docs`, criteria, sheets, assessments, `POST /api/demo/reset` | —                                                         |
@@ -102,6 +104,10 @@ only by an ADMIN in correction mode. Every correction is audited in `CaseDetail.
   (`postgres-users.repository.ts`), in memory without it (`users.in-memory.repository.ts`). The demo accounts
   (`users.seed.ts`) go into empty storage only and are restored by `POST /api/demo/reset` (role changes too). Supervisors are linked to `EVALUATORS` of the case seed by `evaluatorId`, employees to the
   assessed person (`Person.id`) by `personId`.
+- **Accounts for new employees.** HR creates the assessed person's account from the employee card in the kartoteka
+  („Utwórz konto dla pracownika”, `POST /api/admin/users`): login + one-time temporary password shown once, to be
+  handed over securely. Docelowo konta z LDAP/AD urzędu przez `UsersRepository` (wymienny moduł: wystarczy
+  implementacja `findCredentials`/`findById` nad katalogiem urzędu; role i powiązanie z kartoteką bez zmian).
 
 ### Demo accounts (for the jury)
 
