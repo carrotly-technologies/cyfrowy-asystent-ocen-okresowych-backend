@@ -1,6 +1,7 @@
 import { RO_2016 } from '../assessments/assessment.format.js';
 import { suggestSheet } from '../sheets/sheet-suggestion.rules.js';
-import { computeEvaluation, STAGE_NAMES } from './case.rules.js';
+import { MAX_ADDITIONAL } from '../sheets/sheets.data.js';
+import { computeEvaluation, sheetOf, STAGE_NAMES } from './case.rules.js';
 import { promotionRequestOf } from './promotion.rules.js';
 import { assessmentPeriodOf } from './assessment-period.rules.js';
 import { CaseRuleError } from './case-rule.error.js';
@@ -171,7 +172,7 @@ export function applyAction(
       next.stage = 'OPENING_TALK';
       next.completedOn.SHEET_SELECTION = today;
       log(
-        `Oceniający zatwierdził arkusz ${next.sheetId}${next.sheetId === suggestion.sheetId ? ' (zgodnie z propozycją systemu)' : ` (propozycja systemu: ${suggestion.sheetId})`}, kryteria dodatkowe ${next.partI.additionalCriteria.length}/3 i termin oceny ${formatDatePl(next.partI.assessmentDue)}.`,
+        `Oceniający zatwierdził arkusz ${next.sheetId}${next.sheetId === suggestion.sheetId ? ' (zgodnie z propozycją systemu)' : ` (propozycja systemu: ${suggestion.sheetId})`}, kryteria dodatkowe ${next.partI.additionalCriteria.length}/${sheetOf(next)?.maxAdditionalCriteria ?? MAX_ADDITIONAL} i termin oceny ${formatDatePl(next.partI.assessmentDue)}.`,
       );
       break;
     }

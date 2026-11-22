@@ -142,7 +142,7 @@ export class CasesController {
   @ApiOperation({
     summary: 'Zmiana danych oceny',
     description:
-      'Częściowa aktualizacja (arkusz, część I, oceny cząstkowe, uzasadnienie, IPRZ, część III). Tylko oceniający tej oceny.',
+      'Częściowa aktualizacja (arkusz, część I, oceny cząstkowe, uzasadnienie, IPRZ, część III). Tylko oceniający tej oceny. Kryteria dodatkowe (`partI.additionalCriteria`, najwyżej `maxAdditionalCriteria` arkusza, z wykazu kryteriów, bez powtórzeń i bez kryteriów obowiązkowych arkusza) można zmieniać w kroku wyboru arkusza i podczas rozmowy rozpoczynającej, do potwierdzenia części I; później 409. Usunięcie kryterium usuwa jego oczekiwania (`partI.expectations`), a zmiana po zatwierdzeniu arkusza trafia do historii sprawy.',
   })
   @ApiOkResponse({ description: 'Teczka oceny po zmianie (`CaseDetail`).' })
   @ApiErrors(400, 403, 404, 409)

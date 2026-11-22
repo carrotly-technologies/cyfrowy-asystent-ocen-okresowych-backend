@@ -192,9 +192,99 @@ describe('illegal transitions', () => {
 describe('patch locks and validation', () => {
   it('part I is locked after the evaluator confirmed it', () => {
     const error = conflict(() =>
-      applyPatch(seed('c-001'), { partI: { additionalCriteria: [] } }, TODAY),
+      applyPatch(seed('c-001'), { partI: { topics: { duties: 'x' } } }, TODAY),
     );
     expect(error.message).toContain('Część I jest zablokowana');
+  });
+
+  it('additional criteria cannot change after part I was confirmed (409)', () => {
+    const confirmed = run(seed('c-005'), 'CONFIRM_PART_I');
+    for (const record of [seed('c-001'), confirmed]) {
+      expect(
+        conflict(() =>
+          applyPatch(
+            record,
+            { partI: { additionalCriteria: ['kreatywnosc'] } },
+            TODAY,
+          ),
+        ).message,
+      ).toContain(
+        'Kryteria dodatkowe można zmienić tylko przed potwierdzeniem części I',
+      );
+    }
+  });
+
+  it('at the opening talk the evaluator adds and removes additional criteria (history, expectations)', () => {
+    let r = seed('c-005');
+    expect(r.stage).toBe('OPENING_TALK');
+    r = applyPatch(
+      r,
+      {
+        partI: {
+          additionalCriteria: ['kreatywnosc', 'negocjowanie'],
+          expectations: {
+            kreatywnosc: 'Nowe rozwiązania.',
+            negocjowanie: 'Ugoda.',
+          },
+        },
+      },
+      TODAY,
+    );
+    expect(r.partI.additionalCriteria).toEqual(['kreatywnosc', 'negocjowanie']);
+    expect(r.history.at(-1)).toEqual({
+      date: TODAY,
+      text: 'Zmieniono kryteria dodatkowe: dodano „Kreatywność”, „Negocjowanie” (kryteria dodatkowe 2/3).',
+    });
+
+    r = applyPatch(
+      r,
+      {
+        partI: { additionalCriteria: ['kreatywnosc', 'myslenie_analityczne'] },
+      },
+      TODAY,
+    );
+    expect(r.partI.additionalCriteria).toEqual([
+      'kreatywnosc',
+      'myslenie_analityczne',
+    ]);
+    // the removed criterion's expectations go with it
+    expect(r.partI.expectations).toEqual({ kreatywnosc: 'Nowe rozwiązania.' });
+    expect(r.history.at(-1)?.text).toMatch(
+      /^Zmieniono kryteria dodatkowe: dodano „Myślenie analityczne”; usunięto „Negocjowanie” \(kryteria dodatkowe 2\/3\)\.$/,
+    );
+
+    // same list again: no new history entry
+    const entries = r.history.length;
+    r = applyPatch(
+      r,
+      {
+        partI: { additionalCriteria: ['kreatywnosc', 'myslenie_analityczne'] },
+      },
+      TODAY,
+    );
+    expect(r.history).toHaveLength(entries);
+
+    r = run(r, 'CONFIRM_PART_I');
+    expect(r.partI.additionalCriteria).toHaveLength(2);
+  });
+
+  it('at the opening talk the limit of the sheet still applies (400)', () => {
+    expect(() =>
+      applyPatch(
+        seed('c-005'),
+        {
+          partI: {
+            additionalCriteria: [
+              'kreatywnosc',
+              'negocjowanie',
+              'myslenie_analityczne',
+              'orientacja_na_klienta',
+            ],
+          },
+        },
+        TODAY,
+      ),
+    ).toThrow(/najwyżej 3/);
   });
 
   it('part II is locked before the assessment stage; notatki robocze are not (field schema A/B/C)', () => {

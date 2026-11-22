@@ -1,4 +1,5 @@
 import { listPoints, RO_2016 } from '../assessments/assessment.format.js';
+import { MAX_ADDITIONAL } from '../sheets/sheets.data.js';
 import {
   caseCriteria,
   computeEvaluation,
@@ -60,9 +61,16 @@ function partIIGuard(record: CaseRecord, field: string): void {
   );
 }
 
-/** Drops part II entries of criteria that left the case (sheet or part I changed). */
+/**
+ * Drops entries of criteria that left the case (sheet or part I changed):
+ * their expectations in part I and their part II scores and notes.
+ */
 function pruneCriteria(record: CaseRecord, criteria: Set<string>): void {
-  for (const map of [record.decisions, record.deviationNotes]) {
+  for (const map of [
+    record.partI.expectations,
+    record.decisions,
+    record.deviationNotes,
+  ]) {
     for (const id of Object.keys(map)) {
       if (!criteria.has(id)) delete map[id];
     }
@@ -97,6 +105,11 @@ export function applyPatch(
   }
 
   if (patch.partI) {
+    if (patch.partI.additionalCriteria !== undefined && !partIOpen) {
+      throw new CaseRuleError(
+        `Kryteria dodatkowe można zmienić tylko przed potwierdzeniem części I${record.partI.confirmedByEvaluatorOn ? ` (część I potwierdzono ${formatDatePl(record.partI.confirmedByEvaluatorOn)})` : ''}. ${LOCKED_NOTE}`,
+      );
+    }
     if (!partIOpen) {
       throw new CaseRuleError(
         `Część I jest zablokowana: oceniający zatwierdził ją ${formatDatePl(record.partI.confirmedByEvaluatorOn!)}. ${LOCKED_NOTE}`,
@@ -132,9 +145,10 @@ export function applyPatch(
   ) {
     const sheet = sheetOf(next);
     const list = next.partI.additionalCriteria;
-    if (list.length > 3) {
+    const max = sheet?.maxAdditionalCriteria ?? MAX_ADDITIONAL;
+    if (list.length > max) {
       errors.push(
-        `Można wybrać najwyżej 3 kryteria dodatkowe (podano ${list.length}; §5 ust. 2 ${RO_2016}).`,
+        `Można wybrać najwyżej ${max} kryteria dodatkowe (podano ${list.length}; §5 ust. 2 ${RO_2016}).`,
       );
     }
     const seen = new Set<string>();
@@ -259,7 +273,36 @@ export function applyPatch(
   }
 
   if (errors.length > 0) throw new CaseValidationError(errors);
+  logAdditionalCriteriaChange(record, next, today);
   return next;
+}
+
+/**
+ * Notes a change of the additional criteria in the case history once the
+ * sheet was accepted (before that ACCEPT_SHEET notes the chosen criteria).
+ */
+function logAdditionalCriteriaChange(
+  before: CaseRecord,
+  next: CaseRecord,
+  today: string,
+): void {
+  if (before.stage === 'SHEET_SELECTION') return;
+  const old = before.partI.additionalCriteria;
+  const now = next.partI.additionalCriteria;
+  const added = now.filter((id) => !old.includes(id));
+  const removed = old.filter((id) => !now.includes(id));
+  if (added.length === 0 && removed.length === 0) return;
+  const names = (ids: string[]) =>
+    ids.map((id) => `„${criterionName(id)}”`).join(', ');
+  const changes = [
+    added.length > 0 ? `dodano ${names(added)}` : null,
+    removed.length > 0 ? `usunięto ${names(removed)}` : null,
+  ].filter(Boolean);
+  const max = sheetOf(next)?.maxAdditionalCriteria ?? MAX_ADDITIONAL;
+  next.history.push({
+    date: today,
+    text: `Zmieniono kryteria dodatkowe: ${changes.join('; ')} (kryteria dodatkowe ${now.length}/${max}).`,
+  });
 }
 
 /** Validates and adds an observation; returns the updated copy. */
