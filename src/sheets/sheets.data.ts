@@ -4,7 +4,7 @@ const RO_2016 = 'rozp. PRM z 4.04.2016 (Dz.U. poz. 470)';
 // §11 ust. 1 pkt 1 rozp. PRM z 4.04.2016
 const PERIODIC_SCALE = [1, 3, 5, 7, 9];
 // §5 ust. 2 rozp. PRM z 4.04.2016
-const MAX_ADDITIONAL = 3;
+export const MAX_ADDITIONAL = 3;
 
 const USC_2008 = 'ustawy z dnia 21 listopada 2008 r. o służbie cywilnej';
 

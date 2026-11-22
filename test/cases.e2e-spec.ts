@@ -224,6 +224,44 @@ describe('Cases, team, employee and HR (e2e)', () => {
     });
   });
 
+  it('opening talk: additional criteria change until part I is confirmed', async () => {
+    const criteria = { partI: { additionalCriteria: ['kreatywnosc'] } };
+    // only the evaluator of the case (HR and an employee get 403)
+    await asHr().patch('/api/cases/c-005').send(criteria).expect(403);
+    await withToken(app, wojcik)
+      .patch('/api/cases/c-005')
+      .send(criteria)
+      .expect(403);
+    let res = await http()
+      .patch('/api/cases/c-005')
+      .send({
+        partI: {
+          additionalCriteria: ['kreatywnosc', 'negocjowanie'],
+          expectations: { negocjowanie: 'Ugoda z wykonawcą.' },
+        },
+      })
+      .expect(200);
+    expect(res.body.partI.additionalCriteria).toEqual([
+      'kreatywnosc',
+      'negocjowanie',
+    ]);
+    res = await http().patch('/api/cases/c-005').send(criteria).expect(200);
+    expect(res.body.partI.expectations.negocjowanie).toBeUndefined();
+    res = await http().get('/api/cases/c-005').expect(200);
+    expect(res.body.partI.additionalCriteria).toEqual(['kreatywnosc']);
+    expect(JSON.stringify(res.body.history)).toContain(
+      'Zmieniono kryteria dodatkowe: usunięto „Negocjowanie”',
+    );
+    await act('c-005', 'CONFIRM_PART_I').expect(200);
+    res = await http()
+      .patch('/api/cases/c-005')
+      .send({ partI: { additionalCriteria: [] } })
+      .expect(409);
+    expect(res.body.message).toContain(
+      'Kryteria dodatkowe można zmienić tylko przed potwierdzeniem części I',
+    );
+  });
+
   it('illegal action -> 409 with a Polish explanation; unknown action -> 400', async () => {
     const res = await act('c-004', 'SIGN_ASSESSMENT').expect(409);
     expect(res.body.message).toMatch(/^Akcja „.+” jest teraz niedostępna\./);
