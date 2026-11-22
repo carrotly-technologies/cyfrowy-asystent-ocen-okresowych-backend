@@ -159,8 +159,13 @@ export class EmployeesController {
 
   @Post('employees/:id/cycles')
   @ApiOperation({ summary: 'Rozpoczęcie nowego cyklu oceny' })
-  @Roles('HR')
-  @ApiOperation({ summary: 'Rozpoczęcie nowego cyklu oceny okresowej' })
+  // SUPERVISOR: own team only („Przeprowadź ocenę” on /zespol/:id); 403 for other people.
+  @Roles('HR', 'SUPERVISOR')
+  @ApiOperation({
+    summary: 'Rozpoczęcie nowego cyklu oceny okresowej',
+    description:
+      'HR dla każdego pracownika, SUPERVISOR tylko dla osób, które ocenia (403 dla innych).',
+  })
   startCycle(@Param('id') id: string) {
     return this.employees.startCycle(id);
   }
