@@ -30,6 +30,7 @@ describe('Legal audit fixes (e2e)', () => {
       'a.nowak',
       'p.wojcik',
       'b.wisniewska',
+      't.jankowski',
     ]) {
       t[login] = await loginAs(app, login);
     }
@@ -64,12 +65,56 @@ describe('Legal audit fixes (e2e)', () => {
       .send({
         outcome: 'DISMISS',
         reason: 'Ocena zasadna',
-        deliveredOn: '2026-11-30',
+        decidedOn: '2026-11-20',
+        deliveredOn: '2026-11-21',
       })
       .expect(200);
     const objection = res.body.objections.at(-1);
-    expect(objection.decision.deliveredOn).toBe('2026-11-30');
-    expect(objection.courtAppealDeadline.date).toBe('2026-12-14');
+    expect(objection.decision).toMatchObject({
+      decidedOn: '2026-11-20',
+      deliveredOn: '2026-11-21',
+    });
+    // 21.11 + 14 = 05.12 (Saturday) -> Monday 07.12.2026
+    expect(objection.courtAppealDeadline.date).toBe('2026-12-07');
+    // "Stan i terminy": the court term, not the old objection term.
+    const employee = await as('t.jankowski')
+      .get('/api/cases/c-301')
+      .expect(200);
+    expect(employee.body.nextDeadline).toMatchObject({
+      label: 'Termin na odwołanie do sądu pracy',
+      date: '2026-12-07',
+    });
+  });
+
+  it('decision dates: a future delivery or one before the decision is a 400 with a Polish message', async () => {
+    const future = await as('b.wisniewska')
+      .post('/api/cases/c-301/objection/decision')
+      .send({ outcome: 'DISMISS', reason: 'x', deliveredOn: '2026-11-23' })
+      .expect(400);
+    expect(JSON.stringify(future.body)).toContain('w przyszłości');
+    await as('b.wisniewska')
+      .post('/api/cases/c-301/objection/decision')
+      .send({
+        outcome: 'DISMISS',
+        reason: 'x',
+        decidedOn: '2026-11-21',
+        deliveredOn: '2026-11-20',
+      })
+      .expect(400);
+    await as('b.wisniewska')
+      .post('/api/cases/c-301/objection/decision')
+      .send({ outcome: 'DISMISS', reason: 'x', deliveredOn: '21.11.20263' })
+      .expect(400);
+    const term = await as('b.wisniewska')
+      .get('/api/objections/court-term?deliveredOn=2026-11-21')
+      .expect(200);
+    expect(term.body).toMatchObject({
+      date: '2026-12-07',
+      label: 'Termin na odwołanie do sądu pracy',
+    });
+    await as('b.wisniewska')
+      .get('/api/objections/court-term?deliveredOn=jutro')
+      .expect(400);
   });
 
   it('part II is locked before the assessment stage; notatki robocze are not', async () => {

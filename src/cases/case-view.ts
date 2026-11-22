@@ -14,8 +14,12 @@ import { caseLocks } from './correction.rules.js';
 import { dueDateRequestRule, dueDateRequestsView } from './due-date.rules.js';
 import { dueChangeBlocker } from './due-date-change.rules.js';
 import { formalCheck } from './formal-check.rules.js';
-import { objectionNextSteps } from './objection-guide.rules.js';
-import { objectionViews } from './objection-terms.rules.js';
+import { objectionNextStepsFor } from './objection-guide.rules.js';
+import {
+  objectionDecisionNotice,
+  objectionRight,
+  objectionViews,
+} from './objection-terms.rules.js';
 import { objectionAddressee } from './objection-addressee.rules.js';
 import { promotionRequestOf } from './promotion.rules.js';
 import { PART_II_STAGES } from './patch.rules.js';
@@ -100,7 +104,13 @@ export function toDetail(
     acknowledgedOn: record.acknowledgedOn,
     objectionDeadline: objectionDeadlineOf(record, today, addressee),
     objectionAddressee: addressee,
-    objectionNextSteps: objectionNextSteps(addressee.to),
+    objectionNextSteps: objectionNextStepsFor(
+      record,
+      addressee.to,
+      addressee.who,
+    ),
+    objectionRight: objectionRight(record),
+    objectionDecisionNotice: objectionDecisionNotice(record, addressee.who),
     history: record.history,
     corrections: record.corrections ?? [],
     locks: caseLocks(record),

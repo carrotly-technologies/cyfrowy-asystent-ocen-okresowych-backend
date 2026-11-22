@@ -1,4 +1,5 @@
 import type {
+  ActorRef,
   CaseRecord,
   CaseStatus,
   Deadline,
@@ -128,4 +129,101 @@ export function objectionViews(
       courtAppealDeadline: court ? toDeadline(court, today) : null,
     };
   });
+}
+
+// --- Is there a right to a sprzeciw from the current assessment? -------------
+
+/**
+ * art. 83 ust. 4: an upheld objection ends with the assessment changed or made
+ * a second time; a sprzeciw lies only from the one made a second time. So the
+ * current assessment, once changed after an objection, has no objection path.
+ */
+export function assessmentChangedAfterObjection(record: CaseRecord): boolean {
+  return record.assessmentVersions?.at(-1)?.status === 'CHANGED';
+}
+
+export interface ObjectionRight {
+  /** false: no sprzeciw lies from the current assessment (it was changed). */
+  open: boolean;
+  /** Why not, in plain words for the assessed person; null when open. */
+  note: string | null;
+  legalBasis: string;
+}
+
+/** The single rule behind FILE_OBJECTION, the objection term, status and texts. */
+export function objectionRight(record: CaseRecord): ObjectionRight {
+  if (assessmentChangedAfterObjection(record)) {
+    return {
+      open: false,
+      note: `Ocena została zmieniona w wyniku uwzględnienia sprzeciwu. Od zmienionej oceny nie przysługuje kolejny sprzeciw. Odwołanie do sądu pracy (art. 83 ust. 5) ustawa wiąże z nieuwzględnieniem sprzeciwu albo jego nierozpatrzeniem w terminie; w razie wątpliwości co do dalszych kroków skontaktuj się z komórką kadr.`,
+      legalBasis: `art. 83 ust. 4–5 ${USC}`,
+    };
+  }
+  return {
+    open: true,
+    note: null,
+    legalBasis: `art. 83 ust. 1 ${USC}`,
+  };
+}
+
+// --- The decision of the objection as the evaluator must see it --------------
+
+export interface ObjectionDecisionNotice {
+  outcome: 'CHANGE' | 'REDO';
+  decidedOn: string;
+  decidedBy: ActorRef;
+  reason: string;
+  title: string;
+  text: string;
+  /** CHANGE: partial scores set by the decision (criterion id → before/after). */
+  changes: { criterionId: string; from: number | null; to: number }[];
+  legalBasis: string;
+}
+
+/**
+ * The upheld objection that produced the current assessment (CHANGE / REDO of
+ * the previous round), for the banner on the case; null otherwise.
+ * `who`: nominative of the decider ("Dyrektor generalny urzędu").
+ */
+export function objectionDecisionNotice(
+  record: CaseRecord,
+  who: string,
+): ObjectionDecisionNotice | null {
+  const version = record.assessmentVersions?.at(-1);
+  if (!version) return null;
+  const objection = (record.objections ?? []).find(
+    (o) => o.round === version.round,
+  );
+  const decision = objection?.decision;
+  if (!decision || decision.outcome === 'DISMISS') return null;
+  const base = {
+    decidedOn: decision.decidedOn,
+    decidedBy: decision.decidedBy,
+    reason: decision.reason,
+    legalBasis: `art. 83 ust. 4 ${USC}`,
+  };
+  if (decision.outcome === 'CHANGE') {
+    const changes = Object.entries(record.decisions)
+      .filter(([id, to]) => version.decisions[id] !== to)
+      .map(([criterionId, to]) => ({
+        criterionId,
+        from: version.decisions[criterionId] ?? null,
+        to,
+      }));
+    return {
+      ...base,
+      outcome: 'CHANGE',
+      title: `${who} uwzględnił sprzeciw i zmienił ocenę (${formatDatePl(decision.decidedOn)})`,
+      text: 'Oceny cząstkowe ustalone w rozstrzygnięciu sprzeciwu wiążą: części II i III nie można już zmieniać. Oceniający podpisuje zmienioną ocenę i ponownie przekazuje ją ocenianemu do zapoznania. Od zmienionej oceny nie przysługuje kolejny sprzeciw.',
+      changes,
+    };
+  }
+  return {
+    ...base,
+    outcome: 'REDO',
+    title: `${who} uwzględnił sprzeciw i polecił ponowne sporządzenie oceny (${formatDatePl(decision.decidedOn)})`,
+    text: 'Dotychczasowa ocena została anulowana. Oceniający przeprowadza ponownie rozmowę oceniającą, sporządza ocenę, podpisuje ją i przekazuje ocenianemu. Od oceny sporządzonej po raz drugi przysługuje sprzeciw.',
+    changes: [],
+    legalBasis: `art. 83 ust. 4 ${USC}`,
+  };
 }

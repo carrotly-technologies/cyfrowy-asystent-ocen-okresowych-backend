@@ -69,7 +69,10 @@ describe('Sheet PDF export (e2e)', () => {
     for (const [sheet, id] of Object.entries(sheets)) {
       const res = await pdf(hr, id).expect(200);
       if (process.env.PDF_OUT)
-        writeFileSync(`${process.env.PDF_OUT}.${sheet}.pdf`, res.body as Buffer);
+        writeFileSync(
+          `${process.env.PDF_OUT}.${sheet}.pdf`,
+          res.body as Buffer,
+        );
       const text = (res.body as Buffer).toString('latin1');
       expect(text).toMatch(/\/BaseFont \/[A-Z]{6}\+LiberationSerif/);
       expect(text).not.toContain('Roboto');

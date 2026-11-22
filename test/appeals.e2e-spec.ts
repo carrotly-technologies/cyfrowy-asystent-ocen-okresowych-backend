@@ -113,6 +113,17 @@ describe('Post-assessment paths: fikcja zapoznania, sprzeciw, zmiana terminu (e2
       .expect(200);
     expect(changed.body.currentStage).toBe('SIGNATURE');
     expect(changed.body.assessmentVersions[0].status).toBe('CHANGED');
+    // The evaluator sees the decision and may not edit the scores it set.
+    const evaluator = await as('r.sikora').get('/api/cases/c-301').expect(200);
+    expect(evaluator.body.objectionDecisionNotice).toMatchObject({
+      outcome: 'CHANGE',
+      reason: 'Opóźnienia niezależne od ocenianego.',
+    });
+    expect(evaluator.body.locks.partII).toContain('rozstrzygnięciu sprzeciwu');
+    await as('r.sikora')
+      .patch('/api/cases/c-301')
+      .send({ decisions: { rzetelnosc: 3 } })
+      .expect(409);
     for (const action of ['SIGN_ASSESSMENT', 'SEND_FOR_ACK']) {
       await as('r.sikora')
         .post('/api/cases/c-301/actions')
@@ -124,8 +135,18 @@ describe('Post-assessment paths: fikcja zapoznania, sprzeciw, zmiana terminu (e2
       .send({ action: 'EMPLOYEE_ACK_ASSESSMENT' })
       .expect(200);
     expect(acked.body.decisions.rzetelnosc).toBe(5);
-    expect(acked.body.status).toBe('OKRES_SPRZECIWU');
+    // art. 83 ust. 4: no further sprzeciw from the changed assessment.
+    expect(acked.body.status).toBe('ZAKONCZONA');
     expect(acked.body.legalActions).not.toContain('FILE_OBJECTION');
+    expect(acked.body.objectionDeadline).toBeNull();
+    expect(acked.body.objectionRight.open).toBe(false);
+    expect(acked.body.objectionNextSteps[0].text).toContain(
+      'nie przysługuje kolejny sprzeciw',
+    );
+    await as('t.jankowski')
+      .post('/api/cases/c-301/objection')
+      .send({ text: 'Jeszcze raz.' })
+      .expect(409);
   });
 
   it('DIRECTOR orders a new assessment: back to ASSESSMENT, previous one cancelled', async () => {

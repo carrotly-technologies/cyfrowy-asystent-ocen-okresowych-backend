@@ -1,3 +1,4 @@
+import { assessmentChangedAfterObjection } from './objection-terms.rules.js';
 import { GRADE_IDS } from '../civil-service-grades/data/grades.data.js';
 import {
   caseCriteria,
@@ -547,6 +548,8 @@ export function caseLocks(record: CaseRecord): {
       : null,
     partII: record.signedByEvaluatorOn
       ? `Część II i III zablokowane po podpisaniu oceny ${formatDatePl(record.signedByEvaluatorOn)}. ${note}`
-      : null,
+      : assessmentChangedAfterObjection(record)
+        ? `Część II i III zablokowane: ocenę zmieniono w rozstrzygnięciu sprzeciwu (art. 83 ust. 4 ustawy o służbie cywilnej); oceniający podpisuje zmienioną ocenę i przekazuje ją ocenianemu. ${note}`
+        : null,
   };
 }
