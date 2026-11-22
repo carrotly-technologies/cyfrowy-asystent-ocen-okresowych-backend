@@ -151,4 +151,30 @@ export const USER_SEED: readonly (User & { passwordHash: string })[] = [
     passwordHash:
       '$scrypt$ln=17,r=8,p=1$dskU4vBTmN5FQD+gj0z/Sg$Ve5p4jKyDy+PJjJketsh68S886ZZgv0USBCHgMTtaZQ',
   },
+  {
+    id: 'u-zawadzki',
+    login: 'k.zawadzki',
+    firstName: 'Krzysztof',
+    lastName: 'Zawadzki',
+    role: 'SUPERVISOR',
+    position: 'Sekretarz stanu',
+    unit: 'Kierownictwo ministerstwa (dane demonstracyjne)',
+    evaluatorId: 'ev-zawadzki',
+    personId: null,
+    passwordHash:
+      '$scrypt$ln=17,r=8,p=1$PetnBrQDOXEBlBLrUauPdQ$f+44/odD/BfGJJcsJpinUoJPkzHBhhbfs1dhooamw70',
+  },
+  {
+    id: 'u-wasilewska',
+    login: 'm.wasilewska',
+    firstName: 'Marta',
+    lastName: 'Wasilewska',
+    role: 'EMPLOYEE',
+    position: 'Prezes agencji rządowej (kierownik urzędu)',
+    unit: 'Agencja rządowa (dane demonstracyjne)',
+    evaluatorId: null,
+    personId: 'p-wasilewska',
+    passwordHash:
+      '$scrypt$ln=17,r=8,p=1$GZK5pR997F5JiwkOdgwGwA$TSe+jPF67/k5mkeGvlQB57x9UnQPyfunUu1Uz5xPUfE',
+  },
 ];

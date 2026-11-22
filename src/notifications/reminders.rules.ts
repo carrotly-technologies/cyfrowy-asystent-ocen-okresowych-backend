@@ -14,6 +14,7 @@ import {
 } from '../cases/deadlines.rules.js';
 import { obligatoryGradeFor } from '../cases/obligatory-grade.rules.js';
 import { objectionDeadlineOf, stageDeadline } from '../cases/stages.rules.js';
+import { objectionRight } from '../cases/objection-terms.rules.js';
 import {
   type ObjectionAddressee,
   objectionAddressee,
@@ -258,7 +259,9 @@ export function caseReminders(
       caseId: id,
       type: 'PENDING_ACK',
       title: 'Zapoznaj się z oceną okresową',
-      body: `Ocena została przekazana ${formatDatePl(record.sentForAckOn)}. Zapoznaj się z nią i potwierdź; od tego dnia biegnie 7-dniowy termin na sprzeciw (art. 83 ust. 1 ${USC}).`,
+      body: objectionRight(record).open
+        ? `Ocena została przekazana ${formatDatePl(record.sentForAckOn)}. Zapoznaj się z nią i potwierdź; od tego dnia biegnie 7-dniowy termin na sprzeciw (art. 83 ust. 1 ${USC}).`
+        : `Zmieniona ocena została przekazana ${formatDatePl(record.sentForAckOn)}. Zapoznaj się z nią i potwierdź; od zmienionej oceny nie przysługuje kolejny sprzeciw (art. 83 ust. 4 ${USC}).`,
     });
     if (waiting >= 7) {
       out.push({

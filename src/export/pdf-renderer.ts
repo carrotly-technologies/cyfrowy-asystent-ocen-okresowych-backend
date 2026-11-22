@@ -13,7 +13,10 @@ export const DOCUMENT_FONT = 'LiberationSerif';
  * `assets/fonts/LiberationSerif` with its licence. No browser, no network:
  * images and URLs are refused.
  */
-const fontsDir = resolve(import.meta.dirname, '../../assets/fonts/LiberationSerif');
+const fontsDir = resolve(
+  import.meta.dirname,
+  '../../assets/fonts/LiberationSerif',
+);
 
 let configured = false;
 function configure(): void {

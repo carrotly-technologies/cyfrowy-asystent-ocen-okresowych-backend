@@ -197,7 +197,7 @@ describe('Authentication, roles and permissions (e2e)', () => {
     it('sees the HR panel and every case', async () => {
       await as(hr).get('/api/hr/overview').expect(200);
       const all = await as(hr).get('/api/cases').expect(200);
-      expect(all.body).toHaveLength(16);
+      expect(all.body).toHaveLength(17);
       const detail = await as(hr).get('/api/cases/c-001').expect(200);
       expect(detail.body.status).toBe('W_TOKU');
     });
@@ -238,6 +238,8 @@ describe('Authentication, roles and permissions (e2e)', () => {
         'e.dabrowska',
         't.jankowski',
         'j.mazur',
+        'k.zawadzki',
+        'm.wasilewska',
       ]);
       expect(JSON.stringify(res.body)).not.toContain('scrypt');
     });

@@ -21,7 +21,84 @@ const BUDGET_UNIT = 'Wydział Budżetu i Finansów, Biuro Dyrektora Generalnego'
 const TEAM_UNIT = 'Wydział Analiz i Koordynacji, Departament Spraw Cyfrowych';
 
 export function appealsSeed(r: Rel): CaseRecord[] {
-  return [objectionAwaitingDirector(r), dueDateRequestPending(r)];
+  return [
+    objectionAwaitingDirector(r),
+    dueDateRequestPending(r),
+    sheetAWaitingForAck(r),
+  ];
+}
+
+/**
+ * Sheet A (kierownik urzędu): the signed assessment was handed over and waits
+ * for the assessed person (login m.wasilewska). A sprzeciw goes to the person who
+ * made the assessment (art. 83 ust. 2), who decides it (login k.zawadzki).
+ */
+function sheetAWaitingForAck(r: Rel): CaseRecord {
+  const cycleStart = {
+    kind: 'PREVIOUS_POSITIVE' as const,
+    assessedOn: r.months(-24, 2),
+  };
+  const confirmed = r.months(-24, 20);
+  const talk = r.days(-4);
+  const signed = r.days(-2);
+  return caseRecord({
+    id: 'c-202',
+    person: {
+      id: 'p-wasilewska',
+      firstName: 'Marta',
+      lastName: 'Wasilewska',
+      position: 'Prezes agencji rządowej (kierownik urzędu)',
+      unit: 'Agencja rządowa (dane demonstracyjne)',
+      employment: 'URZEDNIK',
+      hiredOn: '2017-04-03',
+      officeHead: true,
+      managesPeople: true,
+    },
+    evaluatorId: 'ev-zawadzki',
+    sheetId: 'A',
+    cycleStart,
+    previousAssessment: previousAssessment(cycleStart, 'powyżej oczekiwań'),
+    promotionRequest: { ...emptyPromotionRequest('URZEDNIK'), attached: 'NO' },
+    stage: 'ACKNOWLEDGEMENT',
+    completedOn: {
+      SHEET_SELECTION: confirmed,
+      OPENING_TALK: confirmed,
+      PART_I_ACK: confirmed,
+      OBSERVATION: r.days(-6),
+      ASSESSMENT: talk,
+      SIGNATURE: signed,
+    },
+    partI: {
+      ...emptyPartI(),
+      assessmentDue: defaultAssessmentDue(cycleStart.assessedOn),
+      confirmedByEvaluatorOn: confirmed,
+      acknowledgedByEmployeeOn: confirmed,
+    },
+    decisions: {
+      zarzadzanie_ludzmi: 7,
+      podejmowanie_decyzji: 5,
+      organizacja_pracy: 7,
+      wspolpraca: 5,
+      komunikacja: 7,
+      zarzadzanie_strategiczne: 5,
+    },
+    justification:
+      'Agencja zrealizowała plan działalności w terminie; wdrożono nowy system obsługi wniosków. Decyzje dotyczące reorganizacji departamentów podejmowano z opóźnieniem, a strategia na kolejne lata wymaga doprecyzowania mierników.',
+    iprz: 'Szkolenie z zarządzania strategicznego w administracji (I półrocze); przegląd mierników planu działalności z udziałem dyrektorów departamentów.',
+    assessmentTalkOn: talk,
+    signedByEvaluatorOn: signed,
+    sentForAckOn: signed,
+    history: [
+      {
+        date: confirmed,
+        text: 'Rozmowa rozpoczynająca. Zatwierdzono część I (arkusz A).',
+      },
+      {
+        date: signed,
+        text: 'Oceniający podpisał ocenę: pozytywna, „Na poziomie oczekiwań” (średnia 6,00). Ocenę przekazano do zapoznania.',
+      },
+    ],
+  });
 }
 
 function objectionAwaitingDirector(r: Rel): CaseRecord {

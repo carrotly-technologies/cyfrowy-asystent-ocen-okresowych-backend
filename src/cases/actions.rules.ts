@@ -22,6 +22,7 @@ import {
 import { closeMootDueDateRequests } from './due-date.rules.js';
 import { formalCheck } from './formal-check.rules.js';
 import { nextCycleStart } from './stages.rules.js';
+import { objectionRight } from './objection-terms.rules.js';
 import {
   type ObjectionAddressee,
   objectionAddressee,
@@ -245,7 +246,9 @@ export function applyAction(
       next.completedOn.ACKNOWLEDGEMENT = today;
       const objection = objectionDeadline(today, addressee.to);
       log(
-        `Oceniany zapoznał się z oceną. Sprzeciw do ${addressee.to} można wnieść do ${formatDatePl(objection.date!)} (7 dni od zapoznania; ${addressee.legalBasis}).`,
+        objectionRight(next).open
+          ? `Oceniany zapoznał się z oceną. Sprzeciw do ${addressee.to} można wnieść do ${formatDatePl(objection.date!)} (7 dni od zapoznania; ${addressee.legalBasis}).`
+          : `Oceniany zapoznał się ze zmienioną oceną. Od oceny zmienionej w wyniku uwzględnienia sprzeciwu nie przysługuje kolejny sprzeciw (art. 83 ust. 4 ${USC}).`,
       );
       const cycle = nextCycleStart(next, today);
       if (cycle) {
