@@ -98,6 +98,11 @@ export interface CaseSummary {
   currentStage: StageId;
   stages: StageInfo[];
   nextDeadline: Deadline | null;
+  /**
+   * Predicted date (`YYYY-MM-DD`) of the next periodic assessment: the last
+   * signed assessment of this person + 24 months; null when none is signed.
+   */
+  nextEvaluationDueOn: string | null;
   status: CaseStatus;
 }
 

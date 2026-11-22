@@ -20,6 +20,7 @@ import { objectionAddressee } from './objection-addressee.rules.js';
 import { promotionRequestOf } from './promotion.rules.js';
 import { PART_II_STAGES } from './patch.rules.js';
 import { assessmentPeriodOf } from './assessment-period.rules.js';
+import { nextEvaluationDueOn } from './deadlines.rules.js';
 import {
   buildStages,
   caseStatus,
@@ -28,7 +29,15 @@ import {
   objectionDeadlineOf,
 } from './stages.rules.js';
 
-export function toSummary(record: CaseRecord, today: string): CaseSummary {
+/**
+ * `previous`: the person's case before this one (its `nextCaseId` is this
+ * case), the source of the last signed assessment while this one is unsigned.
+ */
+export function toSummary(
+  record: CaseRecord,
+  today: string,
+  previous: CaseRecord | null = null,
+): CaseSummary {
   return {
     id: record.id,
     person: record.person,
@@ -37,6 +46,9 @@ export function toSummary(record: CaseRecord, today: string): CaseSummary {
     currentStage: record.stage,
     stages: buildStages(record, today),
     nextDeadline: nextDeadline(record, today),
+    nextEvaluationDueOn: nextEvaluationDueOn(
+      record.signedByEvaluatorOn ?? previous?.signedByEvaluatorOn ?? null,
+    ),
     status: caseStatus(record, today),
   };
 }
@@ -55,6 +67,7 @@ export function toDetail(
   evaluator: Evaluator,
   office: OfficeConfig,
   actor: Actor | null = 'EVALUATOR',
+  previous: CaseRecord | null = null,
 ): CaseDetailView {
   const { id: _id, ...evaluatorView } = evaluator;
   const evaluation = computeEvaluation(record, today);
@@ -66,7 +79,7 @@ export function toDetail(
     office,
   );
   const detail: CaseDetailView = {
-    ...toSummary(record, today),
+    ...toSummary(record, today, previous),
     evaluator: evaluatorView,
     officeName: office.name,
     office,

@@ -12,6 +12,7 @@ import {
   defaultAssessmentDue,
   rawAssessmentDue,
   describeDaysLeft,
+  nextEvaluationDueOn,
   objectionDeadline,
   openingTalkDeadline,
   reassessmentAfterNegativeDue,
@@ -184,5 +185,22 @@ describe('describeDaysLeft', () => {
     [-5, 'po terminie 5 dni'],
   ])('%d -> %s', (days, text) => {
     expect(describeDaysLeft(days)).toBe(text);
+  });
+});
+
+describe('nextEvaluationDueOn (art. 81 ust. 1: co 24 miesiące)', () => {
+  it.each([
+    ['2025-03-15', '2027-03-15'],
+    ['2024-12-31', '2026-12-31'],
+    ['2025-12-31', '2027-12-31'],
+    // 29.02 has no match 24 months later: the last day of February (R2).
+    ['2024-02-29', '2026-02-28'],
+    ['2026-02-28', '2028-02-28'],
+  ])('signed %s -> %s', (signed, due) => {
+    expect(nextEvaluationDueOn(signed)).toBe(due);
+  });
+
+  it('is null while no assessment has been signed', () => {
+    expect(nextEvaluationDueOn(null)).toBeNull();
   });
 });

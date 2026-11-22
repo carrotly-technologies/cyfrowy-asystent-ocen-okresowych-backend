@@ -85,6 +85,24 @@ describe('Cases, team, employee and HR (e2e)', () => {
     expect(res.body.todo.length).toBeGreaterThan(0);
   });
 
+  it('GET /api/team gives each case nextEvaluationDueOn: last signed assessment + 24 months', async () => {
+    const team = await http().get('/api/team').expect(200);
+    const cases: { id: string; nextEvaluationDueOn: string | null }[] =
+      team.body.cases;
+    for (const c of cases) {
+      expect(c).toHaveProperty('nextEvaluationDueOn');
+      const detail = await http().get(`/api/cases/${c.id}`).expect(200);
+      expect(detail.body.nextEvaluationDueOn).toBe(c.nextEvaluationDueOn);
+    }
+    // c-001 is unsigned; Anna Nowak's previous case (c-000) was signed.
+    const previous = await http().get('/api/cases/c-000').expect(200);
+    const [y, m, d] = (previous.body.signedByEvaluatorOn as string).split('-');
+    expect(cases.find((c) => c.id === 'c-001')!.nextEvaluationDueOn).toBe(
+      `${Number(y) + 2}-${m}-${d}`,
+    );
+    expect(cases.some((c) => c.nextEvaluationDueOn === null)).toBe(true);
+  });
+
   it('GET /api/cases/c-001 is the main demo case', async () => {
     const res = await http().get('/api/cases/c-001').expect(200);
     expect(res.body).toMatchObject({
