@@ -170,6 +170,8 @@ export class PartnerService implements OnModuleInit {
             kind: s.kind,
             level: s.level,
             title: s.title,
+            // The "why" of each flag, as on the employee card (no answer values).
+            reasons: s.reasons,
           })),
           notes: result.notes,
         };

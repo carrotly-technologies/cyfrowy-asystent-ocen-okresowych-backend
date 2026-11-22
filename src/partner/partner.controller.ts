@@ -91,7 +91,10 @@ export class PartnerController {
     summary: 'Sygnały dla zespołu przełożonego',
     description: 'Tylko SUPERVISOR, tylko własny zespół. Sygnały są doradcze.',
   })
-  @ApiOkResponse({ description: 'Zespół z sygnałami.' })
+  @ApiOkResponse({
+    description:
+      'Zespół z sygnałami. Każdy sygnał członka ma `reasons: { source, text }[]` (jak w karcie osoby).',
+  })
   team() {
     return this.partner.team();
   }
