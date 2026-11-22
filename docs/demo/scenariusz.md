@@ -50,7 +50,7 @@ Czasy odpowiadają nagraniu. Tekst w cudzysłowie to napis na ekranie (przy poka
 
 ### 2. Przełożona: zespół, powiadomienia i arkusz (0:07–0:24)
 
-- Karta **Joanna Kamińska** → `/zespol`: każda osoba na jednym z 7 etapów, najbliższy termin liczony z przepisów.
+- Karta **Joanna Kamińska** → „Oceny zespołu” (`/zespol`): każda osoba na jednym z 7 etapów, najbliższy termin liczony z przepisów.
 - Dzwonek „Powiadomienia”: zbliżające się terminy, wniosek o zmianę terminu, przedłużenie terminu o nieobecność.
   „Zbliżające się terminy, wnioski i przedłużenia terminów; harmonogram przypomina sam.”
 - Teczka **Julii Mazur (c-004)**, krok 1 „Arkusz i kryteria”: „Propozycja systemu: arkusz C” z podstawą (§3 ust. 4
