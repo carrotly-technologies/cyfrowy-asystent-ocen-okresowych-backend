@@ -211,6 +211,29 @@ describe('HR register: employees, absences, history, statistics (e2e)', () => {
     });
   });
 
+  describe('next periodic assessment', () => {
+    it('GET /api/employees/:id gives nextEvaluationDueOn, the same as GET /api/team', async () => {
+      const team = await as(supervisor).get('/api/team').expect(200);
+      const cases: {
+        person: { id: string };
+        nextEvaluationDueOn: string | null;
+      }[] = team.body.cases;
+      expect(cases.length).toBeGreaterThan(0);
+      for (const c of cases) {
+        const res = await as(hr)
+          .get(`/api/employees/${c.person.id}`)
+          .expect(200);
+        expect(res.body.nextEvaluationDueOn).toBe(c.nextEvaluationDueOn);
+      }
+      const list = await as(hr).get('/api/employees').expect(200);
+      for (const e of list.body) {
+        expect(e).toHaveProperty('nextEvaluationDueOn');
+        if (e.nextEvaluationDueOn !== null)
+          expect(e.nextEvaluationDueOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+    });
+  });
+
   describe('assessment cycle', () => {
     it('previews the opening-talk term before a cycle is started', async () => {
       const res = await as(hr).get('/api/employees/p-pietrzak').expect(200);
