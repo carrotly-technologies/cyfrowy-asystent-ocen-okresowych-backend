@@ -296,6 +296,37 @@ describe('Cases, team, employee and HR (e2e)', () => {
       .expect(400);
   });
 
+  it('observations stay open at the assessment talk stage and close after signing', async () => {
+    const observation = {
+      date: '2026-11-20',
+      criterionId: 'komunikacja',
+      kind: 'STRENGTH',
+      situation: 'Prezentacja dla kierownictwa.',
+      action: 'Przygotował zwięzłe podsumowanie.',
+      result: 'Decyzję podjęto na spotkaniu.',
+    };
+    const before = await http().get('/api/cases/c-001').expect(200);
+    expect(before.body.currentStage).toBe('ASSESSMENT');
+    expect(before.body.observationsLock).toBeNull();
+    const res = await http()
+      .post('/api/cases/c-001/observations')
+      .send(observation)
+      .expect(201);
+    expect(res.body.observations).toHaveLength(
+      before.body.observations.length + 1,
+    );
+
+    const signed = await http().get('/api/cases/c-006').expect(200);
+    expect(signed.body.observationsLock).toMatch(
+      /dziennik obserwacji jest zamknięty/,
+    );
+    const refused = await http()
+      .post('/api/cases/c-006/observations')
+      .send(observation)
+      .expect(409);
+    expect(JSON.stringify(refused.body)).toMatch(/Ocena została podpisana/);
+  });
+
   it('HR overview counts and simulated reminders', async () => {
     let res = await asHr().get('/api/hr/overview').expect(200);
     expect(res.body.cases).toHaveLength(17);
