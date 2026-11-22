@@ -1,12 +1,14 @@
 import type { CaseStatus } from '../cases/case.types.js';
 
 /**
- * Statuses with nothing for the evaluator to do: a finished assessment and an
- * objection under review by the director general (art. 83 ust. 2 ustawy). A
- * reminder to the evaluator makes no sense there.
+ * Statuses with nothing for the evaluator to do: a finished assessment, the
+ * 7 days for an objection (only the assessed person may act, art. 83 ust. 1
+ * ustawy) and an objection under review by the director general (art. 83
+ * ust. 2). A reminder to the evaluator makes no sense there.
  */
 export const NO_REMINDER_STATUSES: readonly CaseStatus[] = [
   'ZAKONCZONA',
+  'OKRES_SPRZECIWU',
   'SPRZECIW_W_ROZPATRZENIU',
 ];
 

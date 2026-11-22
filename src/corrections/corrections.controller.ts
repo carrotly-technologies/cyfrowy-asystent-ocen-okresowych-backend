@@ -101,7 +101,8 @@ export class CorrectionsController {
     try {
       const { record: next, correction } = applyCorrection(record, body, {
         id: randomUUID(),
-        at: new Date().toISOString(),
+        // the demo clock's day (DEMO_TODAY), the real time of day: the same day as the case history
+        at: `${this.cases.today}T${new Date().toISOString().slice(11)}`,
         today: this.cases.today,
         by: { userId: me.id, name: fullName(me) },
       });

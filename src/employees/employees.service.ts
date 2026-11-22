@@ -43,6 +43,7 @@ import { suggestSheet } from '../sheets/sheet-suggestion.rules.js';
 import { ABSENCE_TYPES } from './data/absence-types.data.js';
 import {
   archiveBlocker,
+  retentionUntil,
   byNewest,
   conflictingUnit,
   effectiveEvaluator,
@@ -335,6 +336,11 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
         : null,
       lastAssessment: history[0] ?? null,
       obligatoryPromotion: this.obligatory(employee, history),
+      // Shown before the archive dialog: when the retention ends and whether an assessment is still running.
+      archive: {
+        retentionUntil: retentionUntil(history.map((a) => a.assessedOn)),
+        inProgress: this.casesOf(employee.id).some((r) => !r.acknowledgedOn),
+      },
     };
   }
 
