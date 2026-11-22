@@ -280,7 +280,7 @@ author only (someone else's entry: 404). Lists are newest first.
 | `PATCH /api/observations/:id`          | Any of those fields; the merged observation is validated again                            |
 | `DELETE /api/observations/:id`         | 204                                                                                       |
 
-### Virtual HR partner and pulse survey (`src/partner`)
+### Virtual HR assistant ("Wirtualny asystent HR") and pulse survey (`src/partner`)
 
 Advisory module for people management; it never changes a case or a score ("decyzja należy do przełożonego").
 **Pulse**: a voluntary check-in of the employee every 14 days (5 questions, 1–5, 5 = best: obciążenie, energia,

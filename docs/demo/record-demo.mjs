@@ -187,7 +187,7 @@ await wait(3500);
 // 5. HR partner (wellbeing)
 await go('/dobrostan');
 await cap(
-  'Wirtualny HR partner',
+  'Wirtualny asystent HR',
   'Sygnały przeciążenia, spadku motywacji i ryzyka wypalenia — tylko podpowiedzi, nie część oceny',
 );
 log('5 hr partner');

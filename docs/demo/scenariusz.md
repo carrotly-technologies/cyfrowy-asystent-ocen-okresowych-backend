@@ -1,7 +1,7 @@
 # Scenariusz pokazu (demo ≤ 2 min)
 
 Cel: w 2 minuty jurorzy widzą cały proces oceny okresowej (rozp. PRM z 4.04.2016) od wyboru arkusza do sprzeciwu,
-powiadomienia o terminach, wirtualnego HR partnera i puls zespołu, kartotekę kadr (nieobecności, import z CSV)
+powiadomienia o terminach, wirtualnego asystenta HR i puls zespołu, kartotekę kadr (nieobecności, import z CSV)
 i monitoring w całym urzędzie.
 
 ## Nagranie
@@ -72,11 +72,11 @@ Czasy odpowiadają nagraniu. Tekst w cudzysłowie to napis na ekranie (przy poka
 - „Podpisz ocenę” → okno z wynikiem (negatywna, średnia 3,33) → „Podpisz ocenę”. Pola są zablokowane, następny krok
   to „Przekaż ocenianemu do zapoznania”.
 
-### 5. Wirtualny HR partner (0:58–1:08)
+### 5. Wirtualny asystent HR (0:58–1:08)
 
 - `/dobrostan`: sygnały w zespole (ryzyko wypalenia, przeciążenie, spadek motywacji, do docenienia), puls zespołu
   z okresów 2-tygodniowych i lista pracowników.
-- „Podpowiedzi HR partnera są wyłącznie pomocą, nie są częścią oceny okresowej.”
+- „Podpowiedzi wirtualnego asystenta HR są wyłącznie pomocą, nie są częścią oceny okresowej.”
 
 ### 6. Oceniany: potwierdzenie części I i puls (1:08–1:24)
 

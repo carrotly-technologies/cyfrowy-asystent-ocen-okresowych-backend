@@ -8,7 +8,7 @@ import { loginAs, withToken } from './auth.helpers.js';
 // Demo team of j.kaminska: p-nowak (a.nowak), p-wojcik (p.wojcik),
 // p-lewandowski, p-mazur, p-szymanski, p-dabrowska, p-zielinska, p-kowalczyk. r.sikora: p-wieczorek,
 // p-krawczyk (2 people: team averages hidden).
-describe('HR partner and pulse survey (e2e)', () => {
+describe('Virtual HR assistant and pulse survey (e2e)', () => {
   let app: INestApplication<App>;
   const tokens: Record<string, string> = {};
   const as = (login: string) => withToken(app, tokens[login]);
@@ -214,6 +214,8 @@ describe('HR partner and pulse survey (e2e)', () => {
         .get('/api/partner/cases/c-001/hints')
         .expect(200);
       expect(res.body.disclaimer).toContain('decyzja należy do przełożonego');
+      expect(res.body.disclaimer).toContain('wirtualnego asystenta HR');
+      expect(res.body.disclaimer).not.toMatch(/HR partner/);
       expect(
         res.body.areas.map((a: { criterionId: string }) => a.criterionId),
       ).toContain('komunikacja');
