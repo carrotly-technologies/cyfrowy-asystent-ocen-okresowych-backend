@@ -86,7 +86,7 @@ describe('evaluate: periodic', () => {
       ),
     );
     expect(result.average).toBeCloseTo(52 / 6);
-    expect(result.averageDisplay).toBe('8,66');
+    expect(result.averageDisplay).toBe('8,67');
     expect(result.level).toEqual({
       label: 'Znacznie powyżej oczekiwań',
       range: '>8–9',

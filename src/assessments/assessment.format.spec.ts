@@ -5,9 +5,12 @@ describe('formatPl', () => {
     [4.2, '4,20'],
     [4.1, '4,10'],
     [4, '4,00'],
-    [55 / 7, '7,85'],
+    [55 / 7, '7,86'],
+    [45 / 7, '6,43'],
+    [52 / 6, '8,67'],
+    [4.005, '4,01'],
     [38 / 6, '6,33'],
-  ])('formats %d as %s (truncated)', (value, expected) => {
+  ])('formats %d as %s (rounded half-up)', (value, expected) => {
     expect(formatPl(value)).toBe(expected);
   });
 });

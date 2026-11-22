@@ -4,14 +4,15 @@ export const RO_2016 = 'rozp. PRM z 4.04.2016';
 const EPSILON = 1e-9;
 
 /**
- * Formats a number the Polish way, truncated (not rounded) to `decimals`,
- * so a value just under a threshold is never displayed as the threshold.
- * 4.2 -> "4,20", 55 / 7 -> "7,85".
+ * Formats a number the Polish way, rounded half-up to `decimals`
+ * (the one display rounding used on the form, the sheet and the PDF).
+ * Level and result are always computed from the exact value, never from this.
+ * 4.2 -> "4,20", 45 / 7 -> "6,43", 55 / 7 -> "7,86".
  */
 export function formatPl(value: number, decimals = 2): string {
   const factor = 10 ** decimals;
-  const truncated = Math.floor(value * factor + EPSILON) / factor;
-  return truncated.toFixed(decimals).replace('.', ',');
+  const rounded = Math.round(value * factor + EPSILON) / factor;
+  return rounded.toFixed(decimals).replace('.', ',');
 }
 
 /** "ORGANIZACJA PRACY i ORIENTACJA..." -> "Organizacja pracy i orientacja...". */
