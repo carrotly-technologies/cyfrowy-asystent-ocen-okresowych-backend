@@ -87,9 +87,39 @@ export const SIGNAL_RULES = {
 const TITLES: Record<SignalKind, string> = {
   OVERLOAD: 'Sygnał przeciążenia',
   MOTIVATION_DROP: 'Możliwy spadek motywacji',
-  BURNOUT_RISK: 'Ryzyko wypalenia',
+  BURNOUT_RISK: 'Ryzyko przeciążenia lub wypalenia: sygnał z pulsu',
   APPRECIATION: 'Moment do docenienia',
 };
+
+/** Questions whose low answer raises the (general) pulse flag. */
+const PULSE_FLAG_QUESTIONS = [
+  'workload',
+  'energy',
+  'support',
+  'clarity',
+  'satisfaction',
+] as const satisfies readonly (keyof PulseResponse['answers'])[];
+
+/** An index with one decimal, e.g. 2,0. */
+const idx1 = (n: number) =>
+  (Math.round(n * 10) / 10).toFixed(1).replace('.', ',');
+
+/**
+ * The only pulse reason the supervisor sees: the overall wellbeing index of the latest pulse, against the average of
+ * up to 3 earlier ones. Never the answer to (or the name of) a single question.
+ */
+export function pulseIndexReason(pulses: readonly PulseResponse[]): string {
+  const latest = pulses.at(-1)!;
+  const idx = pulseIndex(latest.answers);
+  const base = pulses.slice(-4, -1).map((p) => pulseIndex(p.answers));
+  const date = formatDatePl(latest.date);
+  if (base.length > 0) {
+    const avg = base.reduce((a, b) => a + b, 0) / base.length;
+    if (idx < avg)
+      return `${date}: spadek wskaźnika dobrostanu: ${idx1(idx)} wobec średnio ${idx1(avg)}.`;
+  }
+  return `${date}: wskaźnik dobrostanu ${idx1(idx)} (skala 1–5) z sygnałem do rozmowy.`;
+}
 
 const actions = (...ids: PartnerActionId[]) =>
   ids.map((id) => PARTNER_ACTIONS[id]);
@@ -130,10 +160,6 @@ export function computeSignals(input: SignalInput): SignalsResult {
   const previous = pulses.at(-2);
   const low = (q: keyof PulseResponse['answers'], p = latest) =>
     !!p && p.answers[q] <= R.lowAnswer;
-  const pulseReason = (text: string): SignalReason => ({
-    source: 'PULSE',
-    text: `${formatDatePl(latest!.date)}: ${text}`,
-  });
 
   const recentObs = observations.filter(
     (o) => daysBetween(o.date, today) <= R.observationDays,
@@ -152,23 +178,19 @@ export function computeSignals(input: SignalInput): SignalsResult {
 
   const signals: Signal[] = [];
 
-  // Overload: the pulse or the task list says so; a recent change of duties adds to it.
+  // Overload from work data only (the pulse never names an area, see the pulse flag below).
   const overload: SignalReason[] = [];
-  if (low('workload'))
-    overload.push(pulseReason('pracownik sygnalizuje zbyt duże obciążenie.'));
-  else if (trend.droppedQuestions.includes('workload'))
-    overload.push(pulseReason('wyraźny spadek w obszarze obciążenia.'));
   if (work && work.overdueTasks >= R.overdueTasks)
     overload.push({
       source: 'TASKS',
       text: `${work.overdueTasks} zadania po terminie (z ${work.openTasks} otwartych).`,
     });
   const overloadFires = overload.length > 0;
-  for (const s of scopeChanges)
-    overload.push({
-      source: 'SCOPE',
-      text: `Zmiana zakresu obowiązków ${formatDatePl(s.date)}: ${s.text}`,
-    });
+  const scopeReasons: SignalReason[] = scopeChanges.map((s) => ({
+    source: 'SCOPE',
+    text: `Zmiana zakresu obowiązków ${formatDatePl(s.date)}: ${s.text}`,
+  }));
+  overload.push(...scopeReasons);
   if (overloadFires) {
     signals.push({
       kind: 'OVERLOAD',
@@ -184,13 +206,10 @@ export function computeSignals(input: SignalInput): SignalsResult {
     });
   }
 
-  // Motivation drop: falling pulse, low satisfaction or unclear priorities.
+  // Motivation drop: the overall index falls gradually (an index, no single question).
   const motivation: SignalReason[] = [];
   if (trend.kind === 'GRADUAL_DECLINE')
     motivation.push({ source: 'PULSE', text: trend.description });
-  if (low('satisfaction'))
-    motivation.push(pulseReason('niska satysfakcja z pracy.'));
-  if (low('clarity')) motivation.push(pulseReason('niejasne priorytety.'));
   const motivationFires = motivation.length > 0;
   if (
     developments.length >= 2 &&
@@ -215,31 +234,31 @@ export function computeSignals(input: SignalInput): SignalsResult {
       reasons: motivation,
       actions: actions(
         'SUPPORT_TALK',
-        ...(low('clarity') ? (['CLARIFY_GOALS'] as const) : []),
+        'CLARIFY_GOALS',
         'GROWTH_OPPORTUNITY',
         'MENTORING',
       ),
     });
   }
 
-  // Burnout risk: exhaustion that lasts, or a sudden fall under pressure.
-  const burnout: SignalReason[] = [];
-  const lowEnergyTwice = low('energy') && low('energy', previous);
-  if (lowEnergyTwice)
-    burnout.push({
-      source: 'PULSE',
-      text: 'Niska energia w dwóch kolejnych pulsach.',
-    });
-  if (trend.kind === 'SUDDEN_DROP') {
-    burnout.push({ source: 'PULSE', text: trend.description });
-  }
-  if (low('support')) burnout.push(pulseReason('niskie poczucie wsparcia.'));
-  const burnoutFires =
-    lowEnergyTwice ||
-    (trend.kind === 'SUDDEN_DROP' && (overloadFires || low('energy')));
-  if (burnoutFires) {
+  // Pulse flag: any low answer, a sudden drop or exhaustion in two pulses in a row. The flag and its reasons are
+  // general on purpose (privacy): neither the title nor the text says which question was low.
+  const lowAny = PULSE_FLAG_QUESTIONS.some((q) => low(q));
+  const lowTwice =
+    lowAny && !!previous && PULSE_FLAG_QUESTIONS.some((q) => low(q, previous));
+  const pulseFires = lowAny || trend.kind === 'SUDDEN_DROP';
+  if (pulseFires && latest) {
+    const burnout: SignalReason[] = [
+      { source: 'PULSE', text: pulseIndexReason(pulses) },
+    ];
+    if (lowTwice)
+      burnout.push({
+        source: 'PULSE',
+        text: 'Sygnał utrzymuje się w dwóch kolejnych pulsach.',
+      });
     if (overloadFires)
-      burnout.push(...overload.filter((r) => r.source !== 'PULSE'));
+      burnout.push(...overload.filter((r) => r.source === 'TASKS'));
+    burnout.push(...scopeReasons);
     if (absenceDays >= R.longAbsenceDays)
       burnout.push({
         source: 'ABSENCE',
@@ -247,11 +266,13 @@ export function computeSignals(input: SignalInput): SignalsResult {
       });
     signals.push({
       kind: 'BURNOUT_RISK',
-      level: burnout.length >= 3 ? 'ALERT' : 'WATCH',
+      level:
+        burnout.length >= 3 || level(burnout) === 'ALERT' ? 'ALERT' : 'WATCH',
       title: TITLES.BURNOUT_RISK,
       reasons: burnout,
       actions: actions(
         'SUPPORT_TALK',
+        'REPRIORITIZE',
         'PROJECT_BREAK',
         'TEAM_SUPPORT',
         'ANTI_BURNOUT_DEVELOPMENT',
