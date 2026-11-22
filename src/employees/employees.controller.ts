@@ -124,7 +124,11 @@ export class EmployeesController {
   @Get('employees/:id')
   @ApiOperation({ summary: 'Dane pracownika' })
   @Roles('HR', 'ADMIN', 'SUPERVISOR')
-  @ApiOperation({ summary: 'Dane pracownika' })
+  @ApiOperation({
+    summary: 'Dane pracownika',
+    description:
+      'Widok pracownika z rejestru oraz `nextCycle`. `nextEvaluationDueOn` (`YYYY-MM-DD` albo null): przewidywana data następnej oceny = data sporządzenia ostatniej oceny + 24 miesiące (art. 81 ust. 1), ta sama wartość co w `GET /api/team`.',
+  })
   get(@Param('id') id: string) {
     return this.employees.get(id);
   }

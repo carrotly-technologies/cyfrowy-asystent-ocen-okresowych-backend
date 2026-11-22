@@ -26,6 +26,7 @@ import {
 } from '../cases/dates.js';
 import {
   assessmentDueDeadline,
+  nextEvaluationDueOn,
   openingTalkDeadline,
   toDeadline,
 } from '../cases/deadlines.rules.js';
@@ -335,6 +336,11 @@ export class EmployeesService implements OnModuleInit, OnApplicationBootstrap {
           }
         : null,
       lastAssessment: history[0] ?? null,
+      // Same rule as CaseSummary.nextEvaluationDueOn in GET /team; without a
+      // signed system case, from the latest (e.g. imported) assessment.
+      nextEvaluationDueOn:
+        summary?.nextEvaluationDueOn ??
+        nextEvaluationDueOn(history[0]?.assessedOn ?? null),
       obligatoryPromotion: this.obligatory(employee, history),
       // Shown before the archive dialog: when the retention ends and whether an assessment is still running.
       archive: {

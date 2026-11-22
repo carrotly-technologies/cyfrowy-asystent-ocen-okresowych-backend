@@ -327,7 +327,7 @@ person data, evaluator and absences in step.
 
 | Route | What it does |
 | ----- | ------------ |
-| `GET /api/employees` | Register: `?q=` (name, position, unit), `unit`, `employment`, `sheet`, `evaluatorId`, `sort=lastName\|unit\|position\|deadline`; each with `evaluatorName`, `effectiveEvaluator*` (substitution), `sheetId` (case or suggestion), `currentCase`, `lastAssessment`, `obligatoryPromotion` |
+| `GET /api/employees` | Register: `?q=` (name, position, unit), `unit`, `employment`, `sheet`, `evaluatorId`, `sort=lastName\|unit\|position\|deadline`; each with `evaluatorName`, `effectiveEvaluator*` (substitution), `sheetId` (case or suggestion), `currentCase`, `lastAssessment`, `nextEvaluationDueOn` (last assessment + 24 months, as in `GET /api/team`), `obligatoryPromotion` |
 | `GET /api/employees/:id` | One employee (same view) plus `nextCycle` (`{ ok, reason, openingTalk }`, null with an open case): preview of a new cycle, so the UI warns when the opening-talk term already passed. `currentCase.assessmentDue` = assessment term with `baseDate` and `extended` (art. 81 ust. 7 absences; the opening-talk term is never extended). `obligatoryPromotion` has `deadline` (30 days from acknowledgement) and `nextStep` |
 | `GET /api/employees/units` | Known organisational units (register + evaluators). `POST`/`PATCH` refuse (400) a new unit that duplicates one of them (other case/spaces, or only its first part such as „Wydział Legislacji”) |
 | `POST /api/employees` | `{ firstName, lastName, unit, position, employment, officeHead, managesPeople, appointedYear, grade, gradeGrantedOn, indefiniteSince, evaluatorId }` (201) |
