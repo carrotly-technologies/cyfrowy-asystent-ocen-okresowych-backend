@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Cyfrowy Asystent Ocen Okresowych</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#052d64;--sc:#35659a;--primary:#0052a5;--text:#0b1f35;--text2:#52575f;--muted:#656a75;--faint:#a4aab2;--line:#ced2d7;--subtle:#eff3f7;--blue100:#ddebfb;--blue50:#f4f6fb;--green:#13803b}
+@page{size:1920px 1080px;margin:0}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff;color:var(--text);font-family:'Open Sans',system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.slide{position:relative;width:1920px;height:1080px;overflow:hidden;padding:96px 112px;display:grid;page-break-after:always;break-after:page;
+  background:radial-gradient(1100px 760px at 88% 50%,#f4f6fb,transparent 70%),#fff}
+.slide::before{content:"";position:absolute;left:0;top:0;right:0;height:10px;background:var(--navy)}
+.slide::after{content:"";position:absolute;left:0;top:10px;width:420px;height:4px;background:var(--sc)}
+.split{grid-template-columns:600px minmax(0,1fr);column-gap:80px;align-items:center}
+.stack{grid-template-rows:auto minmax(0,1fr) auto;justify-items:center;text-align:center;row-gap:36px}
+.copy{display:grid;gap:30px;align-content:center}
+.eyebrow{margin:0;font-size:30px;font-weight:600;color:var(--primary)}
+h1,h2{margin:0;font-weight:700;letter-spacing:-.025em;line-height:1.04;text-wrap:balance}
+h1{font-size:92px} h2{font-size:84px}
+.lede{margin:0;font-size:33px;line-height:1.42;color:var(--text2);max-width:600px;text-wrap:pretty}
+.stack .lede{max-width:1200px}
+.pageNo{position:absolute;right:56px;bottom:44px;font-size:22px;color:var(--faint)}
+.foot{position:absolute;left:112px;bottom:46px;font-size:22px;color:var(--muted)}
+.brand{display:inline-flex;align-items:center;gap:22px;font-weight:700;color:var(--navy)}
+.mark{display:grid;place-items:center;width:84px;height:84px;border-radius:4px;background:var(--navy);color:#fff}
+.mark svg{width:50px;height:50px}
+/* screenshot panel */
+.panel{position:relative;border:1px solid var(--line);border-radius:4px;background:#fff;overflow:hidden;box-shadow:0 30px 60px rgb(5 45 100 / .14)}
+.panel img{display:block;width:100%}
+.crop{position:relative;overflow:hidden}
+.crop img{position:absolute;max-width:none}
+.bar{display:flex;align-items:center;gap:10px;height:40px;padding:0 16px;background:var(--subtle);border-bottom:1px solid var(--line)}
+.bar i{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.callout{position:absolute;display:inline-flex;align-items:center;gap:12px;padding:16px 26px;border-radius:4px;font-size:28px;font-weight:700;background:var(--navy);color:#fff;box-shadow:0 14px 30px rgb(5 45 100 / .3)}
+.callout.light{background:#fff;color:var(--navy);border:3px solid var(--primary)}
+.art{display:grid;gap:28px;align-content:center;min-width:0}
+/* chips / lists */
+.chips{display:flex;flex-wrap:wrap;gap:14px}
+.chip{display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border:2px solid var(--line);border-radius:4px;font-size:23px;font-weight:600;background:#fff}
+.chip b{color:var(--primary)}
+.flow{display:flex;align-items:center;gap:0;flex-wrap:nowrap}
+.flow span{font-size:23px;font-weight:600;padding:12px 16px;background:var(--blue100);color:var(--navy);border-radius:4px;white-space:nowrap}
+.flow span.alt{background:var(--navy);color:#fff}
+.flow em{font-style:normal;color:var(--sc);font-size:24px;padding:0 6px}
+.label{font-size:22px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sc);margin:0 0 -8px}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.rule{border-left:6px solid var(--sc);background:#fff;padding:16px 22px;border-radius:0 4px 4px 0;box-shadow:0 1px 0 var(--line) inset,0 -1px 0 var(--line) inset,-1px 0 0 var(--line) inset}
+.rule strong{display:block;font-size:30px;color:var(--navy);line-height:1.2}
+.rule span{font-size:22px;color:var(--text2);line-height:1.35}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.stat{background:var(--navy);color:#fff;border-radius:4px;padding:40px 44px}
+.stat strong{display:block;font-size:88px;line-height:1;letter-spacing:-.03em;font-weight:800}
+.stat span{display:block;margin-top:14px;font-size:30px;line-height:1.3;color:#ddebfb}
+.stat.sc{background:var(--sc)}
+.pains{display:grid;gap:18px;margin:0;padding:0;list-style:none}
+.pains li{display:flex;gap:22px;align-items:flex-start;font-size:31px;line-height:1.35;padding:22px 28px;background:#fff;border:1px solid var(--line);border-radius:4px}
+.pains li i{flex:none;font-style:normal;font-weight:800;color:#fff;background:#b3261e;width:44px;height:44px;border-radius:4px;display:grid;place-items:center;font-size:26px;margin-top:2px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.card{background:#fff;border:1px solid var(--line);border-top:6px solid var(--primary);border-radius:4px;padding:20px 26px}
+.card h3{margin:0 0 6px;font-size:28px;color:var(--navy)}
+.card p{margin:0;font-size:22px;line-height:1.4;color:var(--text2)}
+.card.navy{background:var(--navy);border-color:var(--navy);color:#fff}
+.card.navy h3{color:#fff}.card.navy p{color:#ddebfb}
+.arch{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:stretch;padding:28px;border:3px dashed var(--line);border-radius:4px}
+.box{border:2px solid var(--line);border-radius:4px;padding:22px 24px;background:#fff}
+.box h3{margin:0 0 6px;font-size:29px}
+.box p{margin:0;font-size:22px;color:var(--text2);line-height:1.4}
+.box.main{background:var(--blue100);border-color:var(--primary)}
+.box.opt{border-style:dashed}
+.arch .cap{grid-column:1/-1;font-size:22px;color:var(--muted);font-weight:600}
+.accounts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;text-align:left}
+.acc{border:1px solid var(--line);border-radius:4px;padding:16px 20px;background:#fff}
+.acc code{font-family:ui-monospace,'DejaVu Sans Mono',monospace;font-size:27px;font-weight:700;color:var(--primary)}
+.acc span{display:block;font-size:21px;color:var(--text2);margin-top:2px}
+.url{display:inline-flex;align-items:center;gap:20px;padding:22px 36px;background:var(--navy);color:#fff;border-radius:4px;font-size:44px;font-weight:700}
+.next{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<!-- 1 Title -->
+<section class="slide stack">
+  <div class="copy" style="justify-items:center;margin-top:40px">
+    <p class="eyebrow">HackNation 2026 · wyzwanie KPRM, Departament Służby Cywilnej</p>
+    <div class="brand" style="font-size:40px"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg></span>Cyfrowy Asystent Ocen Okresowych</div>
+    <h1>Ocena okresowa bez papieru.<br>Zgodna z prawem, z myślą o rozwoju.</h1>
+    <p class="lede">Prowadzi przełożonego, ocenianego i kadry przez całą ocenę okresową w służbie cywilnej: od arkusza i kryteriów po zapoznanie i sprzeciw. Terminy liczy sam, a AI tylko podpowiada.</p>
+  </div>
+  <div class="art" style="justify-items:center">
+    <div class="flow">
+      <span>Arkusz A/B/C</span><em>→</em><span>Rozmowa</span><em>→</em><span>Potwierdzenie</span><em>→</em><span>Obserwacje</span><em>→</em><span>Ocena</span><em>→</em><span>Podpis</span><em>→</em><span>Zapoznanie</span><em>→</em><span class="alt">Sprzeciw</span>
+    </div>
+  </div>
+  <div></div>
+  <p class="foot">Osoby i dane w prezentacji są fikcyjne (dane demonstracyjne). Bez godła i oficjalnych znaków.</p>
+  <span class="pageNo">1</span>
+</section>
+
+<!-- 2 Problem -->
+<section class="slide split">
+  <div class="copy">
+    <p class="eyebrow">Problem</p>
+    <h2>Proces prawny prowadzony na papierze.</h2>
+    <p class="lede">Ocena okresowa co 24 miesiące to obowiązek z ustawy o służbie cywilnej. Dziś to głównie formularz do wypełnienia, a nie rozmowa o rozwoju.</p>
+  </div>
+  <div class="art">
+    <div class="stats">
+      <div class="stat"><strong>≈123 tys.</strong><span>osób w korpusie służby cywilnej</span></div>
+      <div class="stat sc"><strong>≈1743</strong><span>urzędy: ministerstwa, urzędy wojewódzkie, skarbówka, inspekcje, komendy</span></div>
+    </div>
+    <ul class="pains">
+      <li><i>!</i><span>Arkusze papierowe, czasem wypełniane odręcznie; trudny obieg dokumentów.</span></li>
+      <li><i>!</i><span>Terminy liczone ręcznie; błędy formalne wychodzą dopiero przy sprzeciwie.</span></li>
+      <li><i>!</i><span>Formalizm wypiera informację zwrotną i plan rozwoju (IPRZ).</span></li>
+    </ul>
+  </div>
+  <span class="pageNo">2</span>
+</section>
+
+<!-- 3 Solution -->
+<section class="slide split">
+  <div class="copy">
+    <p class="eyebrow">Rozwiązanie</p>
+    <h2>Cały proces w jednej teczce.</h2>
+    <p class="lede">Każdy krok z rozporządzenia jako etap. System proponuje arkusz A, B lub C i kryteria, zbiera obserwacje z całego okresu i prowadzi do podpisu.</p>
+  </div>
+  <div class="art">
+    <div class="panel">
+      <div class="bar"><i></i><i></i><i></i></div>
+      <div class="crop" style="height:420px"><img src="screens/proces.png" style="width:100%;left:0;top:-104px" alt="Teczka oceny: siedem etapów od arkusza do zapoznania"></div>
+      <span class="callout" style="right:28px;top:66px">7 etapów z rozporządzenia</span>
+    </div>
+    <p class="label">Dalej: sprzeciw i decyzja</p>
+    <div class="flow"><span>Zapoznanie (lub fikcja zapoznania)</span><em>→</em><span class="alt">Sprzeciw w 7 dni</span><em>→</em><span>Decyzja w 14 dni</span></div>
+    <p class="label">Każda rola ma swój widok</p>
+    <div class="chips">
+      <span class="chip"><b>●</b> Przełożony</span><span class="chip"><b>●</b> Oceniany</span><span class="chip"><b>●</b> Kadry</span><span class="chip"><b>●</b> Dyrektor generalny</span><span class="chip"><b>●</b> Administrator</span>
+    </div>
+  </div>
+  <span class="pageNo">3</span>
+</section>
+
+<!-- 4 Law & automation -->
+<section class="slide split">
+  <div class="copy">
+    <p class="eyebrow">Zgodność z prawem i automatyzacja</p>
+    <h2>Terminy liczą się same.</h2>
+    <p class="lede">Reguły z ustawy o służbie cywilnej i rozporządzenia PRM z 2016 r. Każda ma paragraf i test. Przypomnienia wysyłają się same.</p>
+  </div>
+  <div class="art">
+    <div class="panel" style="height:470px">
+      <div class="crop" style="height:470px"><img src="screens/terminy.png" style="width:100%;top:0;left:0" alt="Oceny zespołu: etap i najbliższy termin każdej oceny"></div>
+      <span class="callout" style="right:24px;bottom:16px">Etap i najbliższy termin z przepisów</span>
+    </div>
+    <div class="rules">
+      <div class="rule"><strong>24 miesiące</strong><span>między ocenami; 6 mies. po ocenie negatywnej (art. 81)</span></div>
+      <div class="rule"><strong>30 dni / 7 dni</strong><span>rozmowa rozpoczynająca; 7 dni na sprzeciw od zapoznania</span></div>
+      <div class="rule"><strong>Nieobecność &gt; 1 mies.</strong><span>sama przedłuża termin oceny (art. 81 ust. 7)</span></div>
+      <div class="rule"><strong>Sprzeciw: adresat z art. 83</strong><span>dyrektor generalny (B, C) lub oceniający (A); decyzja w 14 dni</span></div>
+      <div class="rule"><strong>Kontrola formalna</strong><span>blokuje podpis, dopóki arkusz ma braki (§&nbsp;11–12)</span></div>
+      <div class="rule"><strong>Tryb korekty z audytem</strong><span>zablokowane pola poprawia tylko administrator, z powodem</span></div>
+    </div>
+  </div>
+  <span class="pageNo">4</span>
+</section>
+
+<!-- 5 Virtual HR assistant -->
+<section class="slide split">
+  <div class="copy">
+    <p class="eyebrow">Wirtualny asystent HR</p>
+    <h2>Widzi sygnały. Decyduje przełożony.</h2>
+    <p class="lede">Dobrowolny puls co 14 dni pokazuje przeciążenie i ryzyko wypalenia, zawsze z odpowiedzią „dlaczego”. Podpowiada rozmowę, informację zwrotną i formy rozwoju do IPRZ.</p>
+  </div>
+  <div class="art">
+    <div class="panel" style="height:640px">
+      <div class="crop" style="height:640px"><img src="screens/dobrostan.png" style="width:100%;top:-50px;left:0" alt="Dobrostan zespołu: sygnały z pulsu, przeciążenie i powód każdego sygnału"></div>
+    </div>
+    <div class="chips">
+      <span class="chip"><b>✓</b> Pojedynczych odpowiedzi nie widzi nikt poza pracownikiem</span>
+      <span class="chip"><b>✓</b> Wynik zespołu dopiero od 3 odpowiedzi</span>
+      <span class="chip"><b>✓</b> Nie wpływa na ocenę okresową</span>
+    </div>
+  </div>
+  <span class="pageNo">5</span>
+</section>
+
+<!-- 6 AI -->
+<section class="slide split">
+  <div class="copy">
+    <p class="eyebrow">Asystent AI</p>
+    <h2>Pytasz o przepis. Dostajesz źródło.</h2>
+    <p class="lede">Odpowiedzi tylko z bazy wiedzy: ustawy, rozporządzeń, poradników KPRM i wzorów arkuszy, z linkiem do strony. Gdy czegoś tam nie ma, mówi „nie znalazłem”.</p>
+  </div>
+  <div class="art" style="grid-template-columns:560px 1fr;align-items:center;gap:36px">
+    <div class="panel crop" style="height:860px;width:560px">
+      <img src="screens/asystent-full2.png" style="width:2240px;left:-1682px;top:-171px" alt="Asystent formalny: odpowiedź z cytatami i listą źródeł z numerami stron">
+    </div>
+    <div style="display:grid;gap:14px">
+      <div class="card"><h3>Źródło przy każdej odpowiedzi</h3><p>Fragment przepisu lub poradnika z numerem strony; otwiera się jednym kliknięciem.</p></div>
+      <div class="card"><h3>Anonimizacja</h3><p>Imiona i nazwiska, komórki, PESEL, e-maile i telefony są pseudonimizowane, zanim cokolwiek trafi do modelu.</p></div>
+      <div class="card"><h3>Darmowe lub lokalne modele</h3><p>Dowolny endpoint zgodny z OpenAI, np. lokalna Ollama. Bez modelu działa wyszukiwanie lokalne (BM25).</p></div>
+      <div class="card navy"><h3>Tylko doradza</h3><p>Nie ocenia pracownika. Decyzja zawsze należy do przełożonego.</p></div>
+    </div>
+  </div>
+  <span class="pageNo">6</span>
+</section>
+
+<!-- 7 Deployment -->
+<section class="slide split">
+  <div class="copy">
+    <p class="eyebrow">Wdrożenie</p>
+    <h2>Wdrożysz w każdym urzędzie.</h2>
+    <p class="lede">Open source (EUPL-1.2), bez płatnych licencji. Cała aplikacja startuje jednym poleceniem i działa bez internetu.</p>
+  </div>
+  <div class="art">
+    <div class="arch">
+      <div class="box"><h3>Przeglądarka</h3><p>React + Vite, wygląd gov.pl, WCAG, tryb ciemny i wysoki kontrast</p></div>
+      <div class="box main"><h3>API</h3><p>NestJS; reguły prawne w jednym miejscu; OpenAPI 3</p></div>
+      <div class="box"><h3>PostgreSQL 17</h3><p>migracje przy starcie; bez bazy: tryb w pamięci</p></div>
+      <div class="box opt"><h3>Model językowy</h3><p>opcjonalny, lokalny (Ollama) lub zgodny z OpenAI</p></div>
+      <div class="box opt"><h3>E-mail (SMTP)</h3><p>opcjonalna kopia powiadomień</p></div>
+      <div class="box opt"><h3>EZD / system kadrowy</h3><p>eksport JSON arkusza przez API</p></div>
+      <p class="cap">docker compose up · Linux, Windows, macOS</p>
+    </div>
+    <div class="cols">
+      <div class="card"><h3>Nowelizacja? Jedna zmiana</h3><p>Każda reguła to czysta funkcja z testem i paragrafem: termin, arkusz, adresat sprzeciwu.</p></div>
+      <div class="card"><h3>Konta z kartoteki</h3><p>Kadry zakładają konto pracownikowi z kartoteki; import CSV, docelowo LDAP/AD.</p></div>
+    </div>
+  </div>
+  <span class="pageNo">7</span>
+</section>
+
+<!-- 8 Demo -->
+<section class="slide stack">
+  <div class="copy" style="justify-items:center">
+    <p class="eyebrow">Wypróbuj</p>
+    <h2>Działa już dziś.</h2>
+  </div>
+  <div class="art" style="justify-items:center;gap:34px;width:100%">
+    <span class="url">cyfrowy.rabbithole.carrotly.tech</span>
+    <div class="accounts" style="width:1500px">
+      <div class="acc"><code>j.kaminska</code><span>przełożona: zespół, oceny, dobrostan</span></div>
+      <div class="acc"><code>a.nowak</code><span>oceniana: moje oceny, puls</span></div>
+      <div class="acc"><code>e.dabrowska</code><span>oceniana w okresie sprzeciwu</span></div>
+      <div class="acc"><code>a.lis</code><span>kadry: monitoring, kartoteka, statystyki</span></div>
+      <div class="acc"><code>b.wisniewska</code><span>dyrektor generalny: sprzeciwy</span></div>
+      <div class="acc"><code>admin</code><span>administrator: konta, tryb korekty</span></div>
+    </div>
+    <p style="margin:0;font-size:25px;color:var(--text2)">Hasło kont demonstracyjnych: w README repozytorium.</p>
+    <p class="label" style="margin-top:6px">Co dalej</p>
+    <div class="next">
+      <span class="chip">Pilotaż w urzędzie</span><span class="chip">Logowanie przez LDAP/AD</span><span class="chip">Integracja z EZD urzędu</span><span class="chip">Lokalny model językowy w urzędzie</span>
+    </div>
+  </div>
+  <div></div>
+  <p class="foot">Open source, licencja EUPL-1.2 · dane demonstracyjne są fikcyjne</p>
+  <span class="pageNo">8</span>
+</section>
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 # Opis projektu – zgłoszenie HackNation 2026 (wyzwanie KPRM)
 
-Materiały: prezentacja [`prezentacja.pdf`](prezentacja.pdf) (15 slajdów, źródło [`slajdy.html`](slajdy.html)),
+Materiały: prezentacja [`prezentacja.pdf`](prezentacja.pdf) (8 slajdów, źródło [`caoo-pitch.html`](caoo-pitch.html)), pełna wersja [`prezentacja-pelna.pdf`](prezentacja-pelna.pdf) (15 slajdów, źródło [`slajdy.html`](slajdy.html)),
 zrzuty ekranu z prototypu w [`zrzuty/`](zrzuty/).
 
 - Prototyp: https://cyfrowy.rabbithole.carrotly.tech
