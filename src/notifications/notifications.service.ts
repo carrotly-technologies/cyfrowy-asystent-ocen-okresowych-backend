@@ -106,6 +106,15 @@ export class NotificationsService {
     );
   }
 
+  /** Marks read the notifications whose action is done (see resolvedNotificationKeys). */
+  resolve(
+    exact: readonly string[],
+    prefixes: readonly string[],
+  ): Promise<number> {
+    if (!exact.length && !prefixes.length) return Promise.resolve(0);
+    return this.repo.markReadByKeys(exact, prefixes, new Date().toISOString());
+  }
+
   clear(): Promise<void> {
     return this.repo.clear();
   }

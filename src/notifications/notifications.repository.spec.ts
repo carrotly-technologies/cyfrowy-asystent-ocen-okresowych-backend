@@ -69,4 +69,33 @@ describe.each([
     await repo.clear();
     expect(await repo.listForUser('u1')).toEqual([]);
   });
+
+  it('marks read the notifications whose action is done, by exact key or prefix', async () => {
+    await repo.insertIfAbsent(n({ id: 'a', key: 'c-1:ACK_PART_I:2026-11-01' }));
+    await repo.insertIfAbsent(
+      n({ id: 'b', userId: 'u2', key: 'c-1:REMIND_PART_I:2026-11-20' }),
+    );
+    await repo.insertIfAbsent(n({ id: 'c', key: 'c-1:TALK:inv-1' }));
+    await repo.insertIfAbsent(n({ id: 'd', key: 'c-1:TALK:inv-10' }));
+    await repo.insertIfAbsent(
+      n({ id: 'e', key: 'c-10:ACK_PART_I:2026-11-01' }),
+    );
+    const at = '2026-11-21T12:00:00.000Z';
+    expect(
+      await repo.markReadByKeys(
+        ['c-1:TALK:inv-1'],
+        ['c-1:ACK_PART_I:', 'c-1:REMIND_PART_I:'],
+        at,
+      ),
+    ).toBe(3);
+    const read = [
+      ...(await repo.listForUser('u1')),
+      ...(await repo.listForUser('u2')),
+    ]
+      .filter((x) => x.readAt)
+      .map((x) => x.id)
+      .sort();
+    expect(read).toEqual(['a', 'b', 'c']);
+    expect(await repo.markReadByKeys([], [], at)).toBe(0);
+  });
 });
